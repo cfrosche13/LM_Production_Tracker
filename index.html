@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PrintTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Libre+Franklin:wght@400;500;600;700&family=Josefin+Slab:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+<!-- Firebase -->
+<script type="module" src="js/firebase.js"></script>
+<link rel="stylesheet" href="css/styles.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <img src="data:image/png;base64,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" alt="Evergreen Studio Production Tracker" style="height:64px;object-fit:contain;" />
+  <div style="flex:1;display:flex;align-items:stretch;justify-content:space-evenly;gap:10px;">
+    <!-- Total Printed counter -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:#fff5f8;border:1px solid #f0c8d8;border-radius:8px;padding:5px 20px;gap:1px;flex:1;max-width:180px;">
+      <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#c090a8;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Total Printed</span>
+      <span id="counter-printed" style="font-family:'Abril Fatface',serif;font-size:24px;color:#e8457a;line-height:1;">0</span>
+      <span id="counter-printed-bad" style="font-family:'Josefin Slab',serif;font-size:9px;color:#cc3333;white-space:nowrap;">0 bad</span>
+    </div>
+    <!-- Total Stamped counter -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:#f8f5ff;border:1px solid #d8c8f0;border-radius:8px;padding:5px 20px;gap:1px;flex:1;max-width:180px;">
+      <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#9070c0;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Total Stamped</span>
+      <span id="counter-stamped" style="font-family:'Abril Fatface',serif;font-size:24px;color:#7733aa;line-height:1;">0</span>
+      <span id="counter-stamped-bad" style="font-family:'Josefin Slab',serif;font-size:9px;color:#cc3333;white-space:nowrap;">0 bad</span>
+    </div>
+    <!-- Reports button -->
+    <div style="display:flex;align-items:stretch;flex:1;max-width:180px;">
+      <button id="pr-shortcut-btn" onclick="goToReports()" style="width:100%;">📊 Production Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- MASTER CONTROLS TEMPLATE (moved into active view by JS) -->
+<div id="master-controls" style="display:none;">
+  <div class="top-field" id="ctrl-operator">
+    <span class="top-label">Operator</span>
+    <input class="top-input" id="global-operator" placeholder="Your name..." style="width:130px;" />
+  </div>
+  <div class="top-field" id="ctrl-category">
+    <span class="top-label">Piece Category</span>
+    <select class="top-select" id="global-category" style="width:130px;"></select>
+  </div>
+  <div class="top-field" id="ctrl-subtype">
+    <span class="top-label">Piece Type</span>
+    <select class="top-select" id="global-subtype" style="width:130px;" onchange="runUpdatePieceLabel()"></select>
+  </div>
+  <div class="top-field" id="ctrl-machine">
+    <span class="top-label">Machine</span>
+    <div id="machine-btns">
+      <button class="machine-btn" data-machine="30"        onclick="selectMachine(this)">30</button>
+      <button class="machine-btn" data-machine="30+"       onclick="selectMachine(this)">30+</button>
+      <button class="machine-btn" data-machine="H5"        onclick="selectMachine(this)">H5</button>
+      <button class="machine-btn" data-machine="Colex"     onclick="selectMachine(this)">Colex</button>
+      <button class="machine-btn" data-machine="Drinkware" onclick="selectMachine(this)">Drinkware</button>
+      <button class="machine-btn" data-machine="Wallets"   onclick="selectMachine(this)">Wallets</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div id="nav-bar">
+  <button class="nav-btn active" id="nav-printing"    onclick="switchView('printing')">🖨 Printing</button>
+  <button class="nav-btn"        id="nav-maintenance" onclick="switchView('maintenance')">🔧 Maintenance</button>
+  <button class="nav-btn"        id="nav-waiting"     onclick="switchView('waiting')">⏱ Waiting</button>
+  <button class="nav-btn"        id="nav-stamped"     onclick="switchView('stamped')">🪙 Stamped</button>
+  <button class="nav-btn"        id="nav-settings"    onclick="switchView('settings')">⚙ Settings</button>
+  <button class="nav-btn"        id="nav-orders"      onclick="switchView('orders')">📦 Open Orders</button>
+</div>
+
+<!-- TRANSITION TIMER BAR -->
+<div id="transition-bar">
+  <div id="transition-btns">
+    <button id="trans-btn-changeover" class="trans-btn" onclick="transitionToggle('changeover')">
+      <span class="trans-btn-icon">⇄</span>
+      <span class="trans-btn-label">Changeover</span>
+      <span class="trans-btn-timer" id="trans-timer-changeover">00:00</span>
+    </button>
+    <button id="trans-btn-piecetype" class="trans-btn" onclick="transitionToggle('piecetype')">
+      <span class="trans-btn-icon">◈</span>
+      <span class="trans-btn-label">New Piece Type</span>
+      <span class="trans-btn-timer" id="trans-timer-piecetype">00:00</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PRINTING VIEW
+══════════════════════════════════════════ -->
+<div class="view active" id="view-printing">
+
+  <div id="view-controls-slot-printing" class="view-controls-strip"></div>
+
+  <!-- SCREEN A: Quick Start -->
+  <div id="print-mode-select" style="display:none;flex-direction:column;align-items:center;padding-top:32px;">
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c04070;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px;">Quick Start</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:12px;color:#b090a0;margin-bottom:28px;text-align:center;">Pick machine &amp; mode — start immediately.<br>Operator and piece type can be filled in while the printer is running.</div>
+
+    <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Machine row (mirrored from controls strip for quick visibility) -->
+      <div>
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Machine</div>
+        <div id="qs-machine-btns" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="qs-machine-btn" data-machine="30"        onclick="qsPickMachine(this)">30</button>
+          <button class="qs-machine-btn" data-machine="30+"       onclick="qsPickMachine(this)">30+</button>
+          <button class="qs-machine-btn" data-machine="H5"        onclick="qsPickMachine(this)">H5</button>
+          <button class="qs-machine-btn" data-machine="Colex"     onclick="qsPickMachine(this)">Colex</button>
+          <button class="qs-machine-btn" data-machine="Drinkware" onclick="qsPickMachine(this)">Drinkware</button>
+          <button class="qs-machine-btn" data-machine="Wallets"   onclick="qsPickMachine(this)">Wallets</button>
+        </div>
+      </div>
+
+      <!-- Mode — Step 1: Stop/Go or Continuous; Step 2: FC/OC revealed below -->
+      <div>
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Print Mode</div>
+
+        <!-- Step 1: two big function buttons -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="qs-mode-grid">
+          <button id="qs-fn-stopgo" onclick="qsPickFunction('stopgo')"
+            style="background:#fff;border:1px solid #f0c8d8;border-radius:12px;padding:18px;cursor:pointer;text-align:left;transition:all 0.15s;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#e8457a;flex-shrink:0;"></div>
+              <span style="font-family:'Abril Fatface',serif;font-size:18px;color:#1a2a18;">Stop / Go</span>
+            </div>
+            <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#b090a0;margin-left:20px;">Qty per changeover</div>
+          </button>
+          <button id="qs-fn-continuous" onclick="qsPickFunction('continuous')"
+            style="background:#fff;border:1px solid #f0c8d8;border-radius:12px;padding:18px;cursor:pointer;text-align:left;transition:all 0.15s;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#3366cc;flex-shrink:0;"></div>
+              <span style="font-family:'Abril Fatface',serif;font-size:18px;color:#1a2a18;">Continuous</span>
+            </div>
+            <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#b090a0;margin-left:20px;">Qty at end of run</div>
+          </button>
+        </div>
+
+        <!-- Hidden real mode buttons — kept for keyboard shortcut wiring -->
+        <div style="display:none;">
+          <button class="qs-mode-btn" id="qs-btn-stopgo-fc"     data-mode="stopgo-fc"     onclick="qsPickMode(this)"></button>
+          <button class="qs-mode-btn" id="qs-btn-stopgo-oc"     data-mode="stopgo-oc"     onclick="qsPickMode(this)"></button>
+          <button class="qs-mode-btn" id="qs-btn-continuous-fc" data-mode="continuous-fc" onclick="qsPickMode(this)"></button>
+          <button class="qs-mode-btn" id="qs-btn-continuous-oc" data-mode="continuous-oc" onclick="qsPickMode(this)"></button>
+        </div>
+      </div>
+
+      <!-- Big start button -->
+      <button id="qs-start-btn" onclick="qsStartRun()"
+        style="width:100%;padding:18px;font-family:'Abril Fatface',serif;font-size:20px;font-weight:700;background:#e8457a;color:#fff;border:none;border-radius:12px;cursor:pointer;letter-spacing:0.03em;box-shadow:0 3px 16px rgba(232,69,122,0.30);transition:all 0.15s;">
+        ▶ Start Timer Now
+      </button>
+
+    </div>
+  </div>
+
+  <!-- SCREEN B: Active run -->
+  <div id="print-run-screen" style="display:none;flex-direction:column;align-items:center;padding-top:10px;">
+
+    <!-- Context strip — live updating during the run -->
+    <div id="run-context-strip" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;width:100%;max-width:600px;">
+      <span id="run-ctx-machine" style="font-family:'Josefin Slab',serif;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #b8e0b0;background:#eef8eb;color:#52a040;font-weight:600;"></span>
+      <span id="run-mode-badge" style="font-family:'Josefin Slab',serif;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid;"></span>
+      <span id="run-ctx-piece" style="font-family:'Josefin Slab',serif;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #f0c8d8;background:#fff5f8;color:#c090a8;font-style:italic;">piece type not set</span>
+      <span id="run-ctx-op" style="font-family:'Josefin Slab',serif;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #f0c8d8;background:#fff5f8;color:#c090a8;font-style:italic;margin-left:auto;">no operator</span>
+    </div>
+
+    <!-- Timer -->
+    <div id="run-timer-display" style="font-family:'Abril Fatface',serif;font-size:76px;font-weight:800;letter-spacing:-0.03em;transition:color 0.3s;">00:00:00</div>
+    <div id="run-timer-label" style="font-family:'Josefin Slab',serif;font-size:11px;color:#e8a0bc;text-transform:uppercase;letter-spacing:0.14em;margin-top:4px;">Elapsed Time</div>
+
+    <!-- Live counters -->
+    <div style="display:flex;gap:12px;margin-top:16px;margin-bottom:20px;">
+      <div style="background:#fff;border:1px solid #f0c8d8;border-radius:10px;padding:10px 24px;text-align:center;min-width:110px;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;" id="run-co-label">Changeovers</div>
+        <div style="font-family:'Abril Fatface',serif;font-size:28px;color:#e8457a;" id="run-lap-count-num">0</div>
+      </div>
+      <div style="background:#fff;border:1px solid #b8e8b0;border-radius:10px;padding:10px 24px;text-align:center;min-width:110px;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Pieces logged</div>
+        <div style="font-family:'Abril Fatface',serif;font-size:28px;color:#228844;" id="run-pieces-count">0</div>
+      </div>
+    </div>
+
+    <!-- Primary action buttons — text-based, large tap targets -->
+    <div id="run-action-btns" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;width:100%;max-width:600px;margin-bottom:12px;">
+      <button id="run-btn-changeover" onclick="runChangeover()"
+        style="padding:20px 10px;font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;background:#e8457a;color:#fff;border:none;border-radius:10px;cursor:pointer;transition:all 0.15s;letter-spacing:0.04em;">
+        <div id="changeover-btn-label">Changeover</div>
+        <div style="font-size:10px;opacity:0.65;margin-top:3px;">[Enter]</div>
+      </button>
+      <button id="run-btn-pause" onclick="runPause()"
+        style="padding:20px 10px;font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;background:#fff8f0;color:#cc8800;border:2px solid #cc8800;border-radius:10px;cursor:pointer;transition:all 0.15s;">
+        <div id="pause-btn-label">Pause</div>
+        <div style="font-size:10px;opacity:0.65;margin-top:3px;">[Space]</div>
+      </button>
+      <button id="run-btn-stop" onclick="runStop()"
+        style="padding:20px 10px;font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;background:#fff0f0;color:#cc3333;border:2px solid #cc3333;border-radius:10px;cursor:pointer;transition:all 0.15s;">
+        <div>Stop</div>
+        <div style="font-size:10px;opacity:0.65;margin-top:3px;">[Esc]</div>
+      </button>
+    </div>
+
+    <!-- Inline qty entry — expands on changeover, no modal -->
+    <div id="run-inline-qty" style="display:none;width:100%;max-width:600px;background:#fff;border:2px solid #e8457a;border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#c03060;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;" id="run-inline-qty-title">Log qty — this table</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <div style="flex:1;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Good</div>
+          <input id="run-co-good" type="number" min="0" placeholder="0" tabindex="1"
+            style="width:100%;padding:10px;font-family:'Abril Fatface',serif;font-size:28px;text-align:center;border:1.5px solid #f0c8d8;border-radius:8px;background:#fff5f8;color:#c03060;outline:none;"
+            onkeydown="if(event.key==='Tab'){event.preventDefault();document.getElementById('run-co-bad').focus();}" />
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Bad</div>
+          <input id="run-co-bad" type="number" min="0" placeholder="0" tabindex="2"
+            style="width:100%;padding:10px;font-family:'Abril Fatface',serif;font-size:28px;text-align:center;border:1.5px solid #f0c8d8;border-radius:8px;background:#fff5f8;color:#cc3333;outline:none;"
+            onkeydown="if(event.key==='Tab'){event.preventDefault();runInlineQtyConfirm();}" />
+        </div>
+        <button onclick="runInlineQtyConfirm()" tabindex="3"
+          style="padding:10px 18px;font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#e8457a;color:#fff;border:none;border-radius:8px;cursor:pointer;align-self:flex-end;white-space:nowrap;letter-spacing:0.04em;">
+          Done ↵
+        </button>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="runInlineQtySkip()" style="font-family:'Josefin Slab',serif;font-size:11px;color:#c090a8;background:none;border:none;cursor:pointer;">Skip for now</button>
+      </div>
+    </div>
+
+    <!-- Run Details — fill in while printer is running -->
+    <div id="run-details-panel" style="width:100%;max-width:600px;background:#fff;border:1px solid #f0c8d8;border-radius:10px;margin-bottom:12px;overflow:hidden;">
+      <div id="run-details-header" onclick="toggleRunDetails()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:#1a2a18;letter-spacing:0.04em;">Run Details</span>
+          <span id="run-details-status" style="font-family:'Josefin Slab',serif;font-size:11px;color:#e8457a;">⚠ fill in while printing</span>
+        </div>
+        <span id="run-details-chevron" style="font-size:12px;color:#c090a8;transition:transform 0.2s;">▼</span>
+      </div>
+      <div id="run-details-body" style="padding:0 16px 16px;border-top:1px solid #fde0ea;display:flex;flex-direction:column;gap:12px;">
+        <div style="padding-top:12px;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Operator</div>
+          <input id="run-detail-operator" type="text" placeholder="Your name..."
+            oninput="runDetailsUpdate()"
+            style="width:100%;font-family:'Josefin Slab',serif;font-size:13px;background:#eef8eb;border:1px solid #b8e0b0;border-radius:6px;color:#1a2a18;padding:7px 12px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Category</div>
+            <select id="run-detail-category" onchange="runDetailRefreshSubtype()"
+              style="width:100%;font-family:'Josefin Slab',serif;font-size:13px;background:#eef8eb;border:1px solid #b8e0b0;border-radius:6px;color:#1a2a18;padding:7px 12px;outline:none;cursor:pointer;"></select>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Piece Type</div>
+            <select id="run-detail-subtype" onchange="runDetailsUpdate()"
+              style="width:100%;font-family:'Josefin Slab',serif;font-size:13px;background:#eef8eb;border:1px solid #b8e0b0;border-radius:6px;color:#1a2a18;padding:7px 12px;outline:none;cursor:pointer;"></select>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Hidden legacy slot (kept for JS compatibility) -->
+    <div id="run-subtype-slot" style="display:none;"></div>
+    <div id="run-info-bar" style="display:none;">
+      <span id="run-op-label"></span>
+      <span id="run-piece-label"></span>
+      <span id="run-lap-count"></span>
+    </div>
+
+    <div style="margin-top:4px;">
+      <button onclick="runCancel()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#b090a0;background:#fff5f8;border:1px solid #f0dded;border-radius:6px;padding:6px 20px;cursor:pointer;letter-spacing:0.05em;">✕ Cancel Run</button>
+    </div>
+
+    <div id="run-log-section" style="width:100%;max-width:600px;margin-top:20px;">
+      <div class="log-section-title" id="run-log-title">Changeover Log</div>
+      <div id="run-log-list"><div class="empty-log">No entries yet.</div></div>
+    </div>
+  </div>
+
+  <!-- SCREEN C: Production Reports -->
+  <div id="print-jobs-screen" style="display:block;">
+    <div id="add-job-bar">
+      <button id="back-to-mode-btn" style="display:inline-block;" onclick="goToNewRun()">← New Run</button>
+      <button onclick="goToQualityReport()" style="font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#7733aa;color:#fff;border:2px solid #6622aa;border-radius:8px;padding:10px 22px;cursor:pointer;letter-spacing:0.05em;">⚠ Quality Report</button>
+      <button onclick="window.open('https://egstudiolog.netlify.app/','_blank')" style="font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#1a6aaa;color:#fff;border:2px solid #155a99;border-radius:8px;padding:10px 22px;cursor:pointer;letter-spacing:0.05em;">📁 Print Log ↗</button>
+      <button onclick="exportReportsToExcel()" style="font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#228844;color:#fff;border:2px solid #1a6633;border-radius:8px;padding:10px 22px;cursor:pointer;letter-spacing:0.05em;">⬇ Export Excel</button>
+      <button id="new-job-btn" onclick="openJobModal(null)" style="display:none;">+ New Job</button>
+    </div>
+
+    <!-- Printing Reports -->
+    <div id="reports-section">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.14em;margin-right:4px;">Production Reports</div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:6px 12px;">
+          <label style="font-family:'Josefin Slab',serif;font-size:10px;color:#90b888;text-transform:uppercase;letter-spacing:0.08em;">From</label>
+          <input type="date" id="report-date-from" onchange="renderReports()"
+            style="font-family:'Josefin Slab',serif;font-size:12px;color:#1a2a18;background:transparent;border:none;outline:none;cursor:pointer;" />
+          <span style="color:#b8e0b0;font-size:12px;">→</span>
+          <label style="font-family:'Josefin Slab',serif;font-size:10px;color:#90b888;text-transform:uppercase;letter-spacing:0.08em;">To</label>
+          <input type="date" id="report-date-to" onchange="renderReports()"
+            style="font-family:'Josefin Slab',serif;font-size:12px;color:#1a2a18;background:transparent;border:none;outline:none;cursor:pointer;" />
+        </div>
+        <button onclick="setReportDateToday()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#72a868;background:#eef8eb;border:1px solid #c2e8b8;border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.05em;">Today</button>
+        <button onclick="setReportDateYesterday()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#72a868;background:#eef8eb;border:1px solid #c2e8b8;border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.05em;">Yesterday</button>
+        <div id="report-date-label" style="font-family:'Josefin Slab',serif;font-size:11px;color:#b8d8b0;letter-spacing:0.06em;margin-left:auto;"></div>
+        <button onclick="switchReportsTab('oee')" id="btn-tab-oee"
+          style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#7733aa;background:#f5f0ff;border:1px solid #d0b8ee;border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.05em;">📊 OEE</button>
+        <button onclick="switchReportsTab('production')" id="btn-tab-production"
+          style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#c090a8;background:#fdf5f8;border:1px solid #f0c8d8;border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.05em;display:none;">← Production</button>
+      </div>
+      <div id="oee-panel" style="display:none;">
+        <div id="oee-panel-body"></div>
+      </div>
+      <div id="reports-grid-scroll-wrap">
+        <div id="reports-grid-scroll" style="padding-right:4px;">
+          <div id="reports-grid"></div>
+        </div>
+      </div>
+      <div id="reports-empty" class="empty-log" style="display:none;">No production data yet — complete a run to see reports.</div>
+      <!-- Hourly production chart -->
+      <div id="hourly-chart-wrap" style="display:none;margin-top:32px;background:#fff;border:1px solid #c2e8b8;border-radius:12px;padding:22px 24px;box-shadow:0 2px 12px rgba(60,140,50,0.08);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.14em;">Production by Hour</div>
+          <div id="chart-legend" style="display:flex;gap:14px;flex-wrap:wrap;"></div>
+        </div>
+        <div style="position:relative;">
+          <canvas id="hourly-chart" style="width:100%;display:block;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quality Report Screen -->
+    <div id="quality-report-section" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <button onclick="document.getElementById('quality-report-section').style.display='none';document.getElementById('reports-section').style.display='block';" style="font-family:'Josefin Slab',serif;font-size:11px;background:#f0e8f8;color:#7733aa;border:1px solid #ddbfee;border-radius:6px;padding:6px 14px;cursor:pointer;">← Back</button>
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#7733aa;text-transform:uppercase;letter-spacing:0.14em;">Quality Report</div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <!-- Toggle buttons -->
+          <div style="display:flex;align-items:center;gap:0;background:#faf0ff;border:1px solid #ddbfee;border-radius:8px;overflow:hidden;">
+            <button id="qr-btn-today" onclick="qrSetRange('today')"
+              style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border:none;cursor:pointer;letter-spacing:0.05em;background:#7733aa;color:#fff;transition:all 0.15s;">Today</button>
+            <button id="qr-btn-yesterday" onclick="qrSetRange('yesterday')"
+              style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border:none;border-left:1px solid #ddbfee;cursor:pointer;letter-spacing:0.05em;background:transparent;color:#aa55cc;transition:all 0.15s;">Yesterday</button>
+            <button id="qr-btn-week"  onclick="qrSetRange('week')"
+              style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border:none;border-left:1px solid #ddbfee;cursor:pointer;letter-spacing:0.05em;background:transparent;color:#aa55cc;transition:all 0.15s;">Last Week</button>
+            <button id="qr-btn-month" onclick="qrSetRange('month')"
+              style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border:none;border-left:1px solid #ddbfee;cursor:pointer;letter-spacing:0.05em;background:transparent;color:#aa55cc;transition:all 0.15s;">This Month</button>
+            <button id="qr-btn-custom" onclick="qrSetRange('custom')"
+              style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border:none;border-left:1px solid #ddbfee;cursor:pointer;letter-spacing:0.05em;background:transparent;color:#aa55cc;transition:all 0.15s;">Custom</button>
+          </div>
+          <!-- Custom date inputs — shown only when Custom is active -->
+          <div id="qr-custom-inputs" style="display:none;align-items:center;gap:6px;background:#faf0ff;border:1px solid #ddbfee;border-radius:8px;padding:5px 12px;">
+            <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#aa55cc;text-transform:uppercase;letter-spacing:0.1em;">From</span>
+            <input type="date" id="qr-date-from" onchange="renderDefectSummary()"
+              style="font-family:'Josefin Slab',serif;font-size:12px;color:#7733aa;border:none;background:transparent;outline:none;cursor:pointer;" />
+            <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#aa55cc;text-transform:uppercase;letter-spacing:0.1em;">To</span>
+            <input type="date" id="qr-date-to" onchange="renderDefectSummary()"
+              style="font-family:'Josefin Slab',serif;font-size:12px;color:#7733aa;border:none;background:transparent;outline:none;cursor:pointer;" />
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- Column 1: Defective Raw Material -->
+        <div style="flex:1;min-width:200px;background:#faf0ff;border:1px solid #ddbfee;border-radius:10px;padding:14px 16px;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#aa55cc;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">⚠ Defective Raw Material</div>
+          <div id="defect-summary-rows"></div>
+        </div>
+        <!-- Column 2: Bad Quantity -->
+        <div style="flex:1;min-width:200px;background:#fff5f5;border:1px solid #f0c0c0;border-radius:10px;padding:14px 16px;">
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#cc3333;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">✗ Bad Quantity by Piece Type</div>
+          <div id="bad-qty-summary-rows"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAINTENANCE VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-maintenance">
+  <div id="view-controls-slot-maintenance" class="view-controls-strip"></div>
+
+  <!-- Maintenance tabs -->
+  <div style="display:flex;gap:0;border-bottom:2px solid #e8d8c0;background:#fff;width:100%;flex-shrink:0;">
+    <button id="maint-tab-actions" onclick="maintSwitchTab('actions')"
+      style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;padding:11px 24px;border:none;background:transparent;color:#e87820;border-bottom:2px solid #e87820;cursor:pointer;letter-spacing:0.05em;margin-bottom:-2px;">
+      Actions
+    </button>
+    <button id="maint-tab-log" onclick="maintSwitchTab('log')"
+      style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;padding:11px 24px;border:none;background:transparent;color:#c0a080;border-bottom:2px solid transparent;cursor:pointer;letter-spacing:0.05em;margin-bottom:-2px;">
+      Log
+    </button>
+    <button id="maint-tab-reports" onclick="maintSwitchTab('reports')"
+      style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;padding:11px 24px;border:none;background:transparent;color:#c0a080;border-bottom:2px solid transparent;cursor:pointer;letter-spacing:0.05em;margin-bottom:-2px;">
+      Reports
+    </button>
+  </div>
+
+  <!-- Actions tab -->
+  <div id="maint-panel-actions">
+    <div class="view-header"><div class="view-header-title">Maintenance</div></div>
+    <div id="mech-banner"></div>
+    <div class="maint-grid">
+      <button class="maint-btn" id="maint-mechanical" onclick="openMechModal()">
+        <span class="maint-icon">⚙️</span>Mechanical
+      </button>
+      <button class="maint-btn" id="maint-cleaning" onclick="openCleanModal()">
+        <span class="maint-icon">🧹</span>Cleaning
+      </button>
+      <button class="maint-btn" id="maint-defective" onclick="openDefectiveModal()">
+        <span class="maint-icon">⚠️</span>Defective Raw Material
+      </button>
+    </div>
+  </div>
+
+  <!-- Log tab -->
+  <div id="maint-panel-log" style="display:none;width:100%;max-width:680px;">
+
+    <!-- Log filter pills -->
+    <div style="display:flex;gap:8px;padding:14px 16px 6px;flex-wrap:wrap;">
+      <button id="maint-log-filter-all"      onclick="maintLogFilter('all')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #e87820;background:#e87820;color:#fff;cursor:pointer;letter-spacing:0.05em;">All</button>
+      <button id="maint-log-filter-cleaning"  onclick="maintLogFilter('cleaning')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #c0d0e0;background:#fff;color:#5599cc;cursor:pointer;letter-spacing:0.05em;">🧹 Cleaning</button>
+      <button id="maint-log-filter-mechanical" onclick="maintLogFilter('mechanical')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #c0d0e0;background:#fff;color:#228833;cursor:pointer;letter-spacing:0.05em;">⚙️ Mechanical</button>
+      <button id="maint-log-filter-defective" onclick="maintLogFilter('defective')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #c0d0e0;background:#fff;color:#aa55cc;cursor:pointer;letter-spacing:0.05em;">⚠️ Defective</button>
+    </div>
+
+    <div id="maint-log-list" style="padding:8px 16px 24px;"><div class="empty-log">No entries yet.</div></div>
+  </div>
+
+  <!-- Reports tab -->
+  <div id="maint-panel-reports" style="display:none;width:100%;max-width:720px;padding:16px;">
+    <div id="maint-reports-grid" style="display:flex;flex-direction:column;gap:12px;"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     WAITING VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-waiting">
+  <div id="view-controls-slot-waiting" class="view-controls-strip" style="width:100%;max-width:500px;justify-content:flex-start;"></div>
+
+  <div class="view-header" style="width:100%;max-width:500px;">
+    <div class="view-header-title">Waiting</div>
+  </div>
+  <div id="wait-display">00:00:00</div>
+  <div id="wait-label">Time Waiting</div>
+  <div id="wait-controls">
+    <button class="wait-ctrl-btn" id="wait-start" onclick="waitStart()">▶ Start</button>
+    <button class="wait-ctrl-btn" id="wait-stop"  onclick="waitStop()">■ Stop</button>
+    <button class="wait-ctrl-btn" id="wait-reset" onclick="waitReset()">↺ Reset</button>
+  </div>
+  <div style="width:100%;max-width:500px;margin-top:16px;">
+    <div class="mf full">
+      <label style="font-size:10px;color:#8899dd;font-family:'Josefin Slab',serif;text-transform:uppercase;letter-spacing:0.08em;">Notes</label>
+      <textarea id="wait-notes" placeholder="Reason for waiting..." style="font-family:'Josefin Slab',serif;font-size:13px;background:#fff;border:1px solid #b8c8f0;border-radius:6px;color:#1a2a18;padding:8px 10px;width:100%;outline:none;resize:vertical;min-height:60px;" onfocus="this.style.borderColor='#4466ee'" onblur="this.style.borderColor='#b8c8f0'"></textarea>
+    </div>
+  </div>
+  <div id="wait-log">
+    <div class="log-section-title">Session Log</div>
+    <div id="wait-log-list"><div class="empty-log">No sessions yet.</div></div>
+  </div>
+</div>
+
+<!-- ══════════ JOB MODAL ══════════ -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="job-modal-title">New Job</div>
+    <div class="modal-grid">
+      <div class="mf full"><label>Job Title</label><input id="f-title" placeholder="e.g. Holiday Welcome Mat" /></div>
+      <div class="mf"><label>Client</label><input id="f-client" placeholder="Client name" /></div>
+      <div class="mf"><label>Operator</label><input id="f-op" placeholder="Auto-filled from top" /></div>
+      <div class="mf"><label>Piece Category</label><select id="f-category"></select></div>
+      <div class="mf"><label>Piece Type</label><select id="f-piecetype"></select></div>
+      <div class="mf"><label>Print Type</label><select id="f-type"><option>Digital</option><option>Large Format</option></select></div>
+      <div class="mf"><label>Status</label><select id="f-status"></select></div>
+      <div class="mf"><label>Due Date</label><input id="f-due" type="date" /></div>
+      <div class="mf"><label>Qty</label><input id="f-qty" type="number" placeholder="0" /></div>
+      <div class="mf full"><label>Notes</label><input id="f-notes" placeholder="Special instructions..." /></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('job-modal')">Cancel</button>
+      <button class="btn-save"   onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MECHANICAL MODAL ══════════ -->
+<div class="modal-overlay" id="mech-modal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">Mechanical Issue</div>
+    <!-- Step 1: choose fix or down -->
+    <div id="mech-s1">
+      <p style="font-size:13px;color:#555;font-family:'Josefin Slab',serif;margin-bottom:16px;">Is this a quick fix or is the machine going down?</p>
+      <div class="mech-choices">
+        <button class="mech-choice" id="mech-fix-btn"  onclick="mechChoose('fix')">✓ Operator Fix</button>
+        <button class="mech-choice" id="mech-down-btn" onclick="mechChoose('down')">✗ Down</button>
+      </div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-cancel" onclick="closeModal('mech-modal');mechBack()">Cancel</button>
+      </div>
+    </div>
+    <!-- Step 2: details -->
+    <div id="mech-s2" style="display:none;">
+      <div id="mech-s2-body"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="mechBack()">← Back</button>
+        <button class="btn-cancel" onclick="closeModal('mech-modal');mechBack()">Cancel</button>
+        <button id="mech-log-btn" class="btn-save" onclick="mechConfirm()">Log It</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CLEANING MODAL ══════════ -->
+<div class="modal-overlay" id="clean-modal" style="align-items:flex-start;overflow-y:auto;padding:16px 0;">
+  <div style="background:#fff;border:1px solid #b8d8ee;border-radius:16px;width:100%;max-width:560px;margin:auto;display:flex;flex-direction:column;box-shadow:0 12px 60px rgba(50,100,170,0.15);overflow:hidden;">
+
+    <!-- Header -->
+    <div style="background:#0d1824;padding:20px 24px 16px;display:flex;justify-content:space-between;align-items:flex-start;">
+      <div style="flex:1;">
+        <div style="font-family:'Abril Fatface',serif;font-size:20px;color:#88ccee;letter-spacing:0.02em;">Cleaning Checklist</div>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:4px;flex-wrap:wrap;">
+          <div id="clean-timer-display" style="font-family:'Abril Fatface',serif;font-size:48px;color:#fff;line-height:1;">00:00:00</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button id="clean-start-btn" onclick="cleanStart()"
+              style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#1a3a5a;color:#88ccee;border:1px solid #2a5a8a;border-radius:7px;padding:8px 18px;cursor:pointer;letter-spacing:0.05em;white-space:nowrap;">&#9654; Start Timer</button>
+            <button id="clean-stop-btn" onclick="cleanStop()" style="display:none;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2a0a0a;color:#cc4444;border:1px solid #5a1a1a;border-radius:7px;padding:8px 18px;cursor:pointer;letter-spacing:0.05em;white-space:nowrap;">&#9632; Stop Timer</button>
+          </div>
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:9px;color:#5588aa;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">Elapsed Time</div>
+      </div>
+      <button onclick="cleanCancel()" style="font-family:'Josefin Slab',serif;font-size:18px;color:#5588aa;background:none;border:none;cursor:pointer;padding:4px 8px;line-height:1;margin-top:-4px;">&#10005;</button>
+    </div>
+
+    <!-- Controls -->
+    <div style="background:#111e2a;padding:14px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;border-bottom:1px solid #1e3040;">
+
+      <!-- Machine -->
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#5588aa;text-transform:uppercase;letter-spacing:0.1em;">Machine</span>
+        <select id="clean-machine" onchange="cleanRenderChecklist()"
+          style="font-family:'Josefin Slab',serif;font-size:13px;background:#0d1824;border:1px solid #2a4a6a;border-radius:6px;color:#88ccee;padding:6px 10px;outline:none;cursor:pointer;">
+          <option value="">— Select —</option>
+          <option value="30">30</option>
+          <option value="30+">30+</option>
+          <option value="H5">H5</option>
+          <option value="Colex">Colex</option>
+          <option value="Drinkware">Drinkware</option>
+          <option value="Wallets">Wallets</option>
+        </select>
+      </div>
+
+      <!-- Operator -->
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px;">
+        <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#5588aa;text-transform:uppercase;letter-spacing:0.1em;">Operator</span>
+        <input id="clean-operator" placeholder="Your name..."
+          style="font-family:'Josefin Slab',serif;font-size:13px;background:#0d1824;border:1px solid #2a4a6a;border-radius:6px;color:#fff;padding:6px 10px;outline:none;width:100%;" />
+      </div>
+
+      <!-- Shift type -->
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#5588aa;text-transform:uppercase;letter-spacing:0.1em;">Shift Type</span>
+        <select id="clean-shift" onchange="cleanRenderChecklist()"
+          style="font-family:'Josefin Slab',serif;font-size:13px;background:#0d1824;border:1px solid #2a4a6a;border-radius:6px;color:#88ccee;padding:6px 10px;outline:none;cursor:pointer;">
+          <option value="Start of Shift">Start of Shift</option>
+          <option value="Mid Shift">Mid Shift</option>
+          <option value="End of Shift">End of Shift</option>
+          <option value="40 Hour">40 Hour</option>
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Semi-Annual">Semi-Annual</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Checklist body -->
+    <div id="clean-checklist-body" style="padding:20px 24px;flex:1;min-height:200px;"></div>
+
+    <!-- Notes -->
+    <div style="padding:0 24px 16px;">
+      <div style="font-family:'Josefin Slab',serif;font-size:9px;color:#5588aa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Notes</div>
+      <textarea id="clean-notes" placeholder="Additional notes..."
+        style="font-family:'Josefin Slab',serif;font-size:12px;background:#f5faff;border:1px solid #b8d8ee;border-radius:6px;color:#1a2a38;padding:8px 10px;width:100%;outline:none;resize:vertical;min-height:52px;"
+        onfocus="this.style.borderColor='#4488cc'" onblur="this.style.borderColor='#b8d8ee'"></textarea>
+    </div>
+
+    <!-- Progress indicator -->
+    <div id="clean-progress-bar" style="padding:0 24px 10px;display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;background:#ddeef8;border-radius:99px;height:6px;overflow:hidden;">
+        <div id="clean-progress-fill" style="height:100%;width:0%;background:#2288cc;border-radius:99px;transition:width 0.3s;"></div>
+      </div>
+      <span id="clean-progress-label" style="font-family:'Josefin Slab',serif;font-size:11px;color:#88aacc;white-space:nowrap;min-width:52px;text-align:right;">0 / 0</span>
+    </div>
+    <!-- In-progress resume banner (shown when prior progress exists) -->
+    <div id="clean-resume-banner" style="display:none;margin:0 24px 10px;padding:8px 14px;background:#1a3a5a;border:1px solid #2a5a8a;border-radius:8px;font-family:'Josefin Slab',serif;font-size:11px;color:#88ccee;">
+      ↻ Prior progress restored — continue where you left off
+    </div>
+
+    <!-- Footer buttons -->
+    <div style="padding:14px 24px 20px;display:flex;gap:10px;border-top:1px solid #e0eef8;">
+      <button id="clean-save-progress-btn" onclick="cleanSaveProgress()"
+        style="font-family:'Josefin Slab',serif;font-size:13px;font-weight:700;background:#1a3a5a;color:#88ccee;border:1px solid #2a5a8a;border-radius:8px;padding:10px 18px;cursor:pointer;letter-spacing:0.05em;transition:all 0.2s;">
+        ↓ Save &amp; Continue Later
+      </button>
+      <button id="clean-submit-btn" onclick="cleanSubmit()" disabled
+        style="font-family:'Josefin Slab',serif;font-size:13px;font-weight:700;background:#ccddee;color:#6699aa;border:none;border-radius:8px;padding:10px 22px;cursor:not-allowed;letter-spacing:0.05em;flex:1;transition:all 0.2s;">✓ Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DEFECTIVE MODAL ══════════ -->
+<div class="modal-overlay" id="defective-modal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-title">Defective Raw Material</div>
+    <div class="tally-center">
+      <div class="mf full" style="width:100%;text-align:center;">
+        <label>Defect Count</label>
+        <input id="tally-display" type="number" min="0" placeholder="0" style="font-family:'Abril Fatface',serif;font-size:48px;color:#aa55cc;text-align:center;background:#f8f0ff;border:1px solid #ddc0ff;border-radius:8px;padding:10px;width:100%;" />
+      </div>
+      <div class="modal-grid" style="width:100%;margin-top:12px;">
+        <div class="mf">
+          <label>Piece Category</label>
+          <select id="tally-category" onchange="refreshTallySubtype()"></select>
+        </div>
+        <div class="mf">
+          <label>Piece Type</label>
+          <select id="tally-subtype"></select>
+        </div>
+      </div>
+      <div class="mf full" style="width:100%;margin-top:4px;text-align:left;">
+        <label>Notes</label>
+        <textarea id="tally-notes" placeholder="Describe the defect..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-cancel" onclick="closeModal('defective-modal')">Close</button>
+        <button class="btn-save"   onclick="logDefective()">Log Entry</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAUSE REASON MODAL ══════════ -->
+<div class="modal-overlay" id="pause-reason-modal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-title">Pause — Reason</div>
+    <div class="mf full" style="width:100%;">
+      <label>Why are you pausing?</label>
+      <textarea id="pause-reason-text" placeholder="Enter reason..." style="min-height:80px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pauseReasonConfirm();}"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:12px;">
+      <button class="btn-cancel" onclick="pauseReasonConfirm()">Skip</button>
+      <button class="btn-save"   onclick="pauseReasonConfirm()">Confirm Pause</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CHANGEOVER QTY MODAL ══════════ -->
+<div class="modal-overlay" id="changeover-qty-modal">
+  <div class="modal-box" style="max-width:340px;">
+    <div class="modal-title">Changeover — Log Qty</div>
+    <div class="modal-grid">
+      <div class="mf">
+        <label>Qty Good</label>
+        <input id="co-qty-good" type="number" min="0" placeholder="0" tabindex="1"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();document.getElementById('co-qty-bad').focus();}" />
+      </div>
+      <div class="mf">
+        <label>Qty Bad</label>
+        <input id="co-qty-bad" type="number" min="0" placeholder="0" tabindex="2"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();changeoverQtyConfirm();}" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="changeoverQtySkip()" tabindex="3">Skip</button>
+      <button class="btn-save"   onclick="changeoverQtyConfirm()" tabindex="4">Log & Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STOP QTY MODAL (stop/go only) ══════════ -->
+<div class="modal-overlay" id="stop-qty-modal">
+  <div class="modal-box" style="max-width:340px;">
+    <div class="modal-title">Final Piece — Log Qty</div>
+    <div class="modal-grid">
+      <div class="mf">
+        <label>Qty Good</label>
+        <input id="stop-qty-good" type="number" min="0" placeholder="0" tabindex="1"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();document.getElementById('stop-qty-bad').focus();}" />
+      </div>
+      <div class="mf">
+        <label>Qty Bad</label>
+        <input id="stop-qty-bad" type="number" min="0" placeholder="0" tabindex="2"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();stopQtyConfirm();}" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="stopQtySkip()" tabindex="3">Skip</button>
+      <button class="btn-save"   onclick="stopQtyConfirm()" tabindex="4">Log & Stop</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RUN SUMMARY MODAL ══════════ -->
+<div class="modal-overlay" id="run-summary-modal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">Run Complete</div>
+    <div id="run-summary-meta" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
+    <div class="modal-grid">
+      <div class="mf" id="summary-qty-good-wrap">
+        <label>Qty Good</label>
+        <input id="summary-qty-good" type="number" min="0" placeholder="0"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();event.stopPropagation();document.getElementById('summary-qty-bad').focus();return false;}" />
+      </div>
+      <div class="mf" id="summary-qty-bad-wrap">
+        <label>Qty Bad</label>
+        <input id="summary-qty-bad" type="number" min="0" placeholder="0"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();event.stopPropagation();runSummaryConfirm();return false;}" />
+      </div>
+      <div class="mf full">
+        <label>Notes</label>
+        <textarea id="summary-notes" placeholder="Any notes about this run..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="runSummarySkip()">Skip</button>
+      <button type="button" class="btn-save"   onclick="runSummaryConfirm()">Save & Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS files in dependency order -->
+<script src="js/constants.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/oee.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/timers.js"></script>
+<script src="js/maintenance.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/printing.js"></script>
+<script src="js/stamped.js"></script>
+<script src="js/app.js"></script>
+
+<!-- ══════════════════════════════════════════
+     STAMPED VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-stamped" style="background:#fdf8ff;">
+
+  <div id="view-controls-slot-stamped" class="view-controls-strip"></div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;padding-top:32px;gap:28px;">
+
+    <!-- Timer -->
+    <div id="st-timer-display" style="font-family:'Abril Fatface',serif;font-size:88px;color:#7733aa;letter-spacing:-3px;line-height:1;transition:color 0.3s;">00:00</div>
+
+    <!-- Start / Stop buttons -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div style="display:flex;gap:24px;">
+        <button id="st-start-btn" onclick="stStart()" style="font-family:'Josefin Slab',serif;font-size:15px;font-weight:700;background:#7733aa;color:#fff;border:none;border-radius:10px;padding:14px 38px;cursor:pointer;box-shadow:0 3px 12px rgba(119,51,170,0.25);transition:all 0.15s;">▶ Start</button>
+        <button id="st-stop-btn"  onclick="stStop()"  style="font-family:'Josefin Slab',serif;font-size:15px;font-weight:700;background:#fff0f0;color:#cc3333;border:2px solid #cc3333;border-radius:10px;padding:14px 38px;cursor:pointer;transition:all 0.15s;" disabled>■ Stop</button>
+      </div>
+      <button onclick="stCancel()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#b090a0;background:#fff5f8;border:1px solid #f0dded;border-radius:6px;padding:6px 20px;cursor:pointer;letter-spacing:0.05em;">✕ Cancel</button>
+    </div>
+
+    <!-- Tally counters -->
+    <div style="display:flex;gap:16px;align-items:stretch;">
+
+      <!-- Good tally -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;background:#f8f0ff;border:1px solid #d8b0f0;border-radius:14px;padding:20px 36px;">
+        <select id="st-piece-select"
+          style="font-family:'Josefin Slab',serif;font-size:12px;color:#7733aa;background:#fff;border:1px solid #d8b0f0;border-radius:6px;padding:4px 10px;outline:none;cursor:pointer;text-align:center;"
+          onchange="stUpdatePieceLabel()"></select>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button onclick="stTallyDec()" style="font-family:'Abril Fatface',serif;font-size:26px;background:#fff;color:#9944bb;border:2px solid #d8b0f0;border-radius:50%;width:48px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+          <input id="st-tally" type="number" min="0" value="0"
+            style="font-family:'Abril Fatface',serif;font-size:68px;color:#7733aa;line-height:1;width:140px;text-align:center;border:none;background:transparent;outline:none;-moz-appearance:textfield;"
+            oninput="stTally=parseInt(this.value)||0;"
+            onkeydown="if(event.key==='ArrowUp'){event.preventDefault();stTallyInc();}if(event.key==='ArrowDown'){event.preventDefault();stTallyDec();}" />
+          <button onclick="stTallyInc()" style="font-family:'Abril Fatface',serif;font-size:26px;background:#7733aa;color:#fff;border:none;border-radius:50%;width:48px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+        </div>
+        <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#228844;text-transform:uppercase;letter-spacing:0.1em;margin-top:-4px;">✓ Stamped</span>
+      </div>
+
+      <!-- Misprint tally -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f0c0c0;border-radius:14px;padding:20px 36px;">
+        <select id="st-misprint-select"
+          style="font-family:'Josefin Slab',serif;font-size:12px;color:#cc3333;background:#fff;border:1px solid #f0c0c0;border-radius:6px;padding:4px 10px;outline:none;cursor:pointer;text-align:center;"
+          onchange="stPopulateMisprintSelect()"></select>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button onclick="stMisprintDec()" style="font-family:'Abril Fatface',serif;font-size:26px;background:#fff;color:#cc3333;border:2px solid #f0c0c0;border-radius:50%;width:48px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+          <input id="st-misprint" type="number" min="0" value="0"
+            style="font-family:'Abril Fatface',serif;font-size:68px;color:#cc3333;line-height:1;width:140px;text-align:center;border:none;background:transparent;outline:none;-moz-appearance:textfield;"
+            oninput="stMisprint=parseInt(this.value)||0;"
+            onkeydown="if(event.key==='ArrowUp'){event.preventDefault();stMisprintInc();}if(event.key==='ArrowDown'){event.preventDefault();stMisprintDec();}" />
+          <button onclick="stMisprintInc()" style="font-family:'Abril Fatface',serif;font-size:26px;background:#cc3333;color:#fff;border:none;border-radius:50%;width:48px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+        </div>
+        <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#cc3333;text-transform:uppercase;letter-spacing:0.1em;margin-top:-4px;">✗ Misprints</span>
+      </div>
+
+    </div>
+
+    <!-- Session log -->
+    <div style="width:100%;max-width:480px;">
+      <div class="log-section-title" style="color:#7733aa;">Session Log</div>
+      <div id="st-log-list"><div class="empty-log">No sessions yet.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── STAMPED RUN SUMMARY MODAL ── -->
+<div class="modal-overlay" id="st-summary-modal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title" style="color:#7733aa;">Run Complete</div>
+    <div class="modal-grid">
+      <div class="mf"><label>Qty Good</label>
+        <input id="st-summary-qty-good" type="number" min="0" placeholder="0"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();document.getElementById('st-summary-qty-bad').focus();}" /></div>
+      <div class="mf"><label>Qty Bad</label>
+        <input id="st-summary-qty-bad" type="number" min="0" placeholder="0"
+          onkeydown="if(event.key==='Tab'){event.preventDefault();document.getElementById('st-summary-notes').focus();}" /></div>
+      <div class="mf full"><label>Notes</label>
+        <textarea id="st-summary-notes" placeholder="Any notes..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="stSummaryConfirm()">Save Run</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- ══════════ REPORT CARD DETAIL MODAL ══════════ -->
+<div class="modal-overlay" id="card-detail-modal" onclick="if(event.target===this)closeModal('card-detail-modal')">
+  <div style="background:#fff;border:1px solid #f0c8d8;border-radius:16px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 60px rgba(220,80,120,0.18);overflow:hidden;">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 26px 16px;border-bottom:1px solid #fde0ea;flex-shrink:0;">
+      <div>
+        <div id="cdm-machine" style="font-family:'Abril Fatface',serif;font-size:22px;color:#e8457a;line-height:1;"></div>
+        <div id="cdm-date" style="font-family:'Josefin Slab',serif;font-size:11px;color:#c090a8;margin-top:4px;letter-spacing:0.06em;"></div>
+      </div>
+      <button onclick="closeModal('card-detail-modal')" style="font-family:'Josefin Slab',serif;font-size:18px;color:#c090a8;background:none;border:none;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:1px solid #fde0ea;flex-shrink:0;background:#fff5f8;">
+      <button id="cdm-tab-summary" onclick="cdmSwitchTab('summary')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:10px 22px;border:none;background:transparent;color:#e8457a;border-bottom:2px solid #e8457a;cursor:pointer;letter-spacing:0.05em;">Summary</button>
+      <button id="cdm-tab-edit" onclick="cdmSwitchTab('edit')"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:10px 22px;border:none;background:transparent;color:#c090a8;border-bottom:2px solid transparent;cursor:pointer;letter-spacing:0.05em;">Edit / Delete</button>
+    </div>
+    <!-- Body -->
+    <div id="cdm-body" style="overflow-y:auto;padding:22px 26px;flex:1;scrollbar-width:thin;scrollbar-color:#f0c8d8 #fff5f8;"></div>
+    <!-- Edit tab -->
+    <div id="cdm-edit-body" style="display:none;overflow-y:auto;padding:22px 26px;flex:1;scrollbar-width:thin;scrollbar-color:#f0c8d8 #fff5f8;"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SETTINGS VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-settings" style="background:#f8fbfd;">
+  <div id="view-controls-slot-settings" class="view-controls-strip" style="display:none;"></div>
+  <div style="max-width:760px;margin:0 auto;padding:24px 16px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-family:'Abril Fatface',serif;font-size:22px;color:#336688;">Efficiency Targets</div>
+      <button onclick="settingsSave()" id="settings-save-btn"
+        style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#336688;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s;">
+        ✓ Save Targets
+      </button>
+    </div>
+
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:20px;line-height:1.6;">
+      Set target rates for each piece type. These will be used to calculate efficiency scores on your production reports.
+    </div>
+
+    <!-- Open Orders URL -->
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#4488aa;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:12px;">
+      Open Orders — OneDrive / SharePoint URL
+    </div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:10px;line-height:1.6;">
+      Paste the direct download link to your daily LMContainers Excel export. The tracker will fetch it automatically on load.
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
+      <input id="settings-orders-url" type="url" placeholder="https://company.sharepoint.com/...download=1"
+        style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:8px 12px;outline:none;color:#1a2a38;" />
+      <button onclick="settingsSaveOrdersUrl()"
+        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#336688;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;white-space:nowrap;">Save URL</button>
+    </div>
+
+    <div id="settings-targets-table"></div>
+
+    <!-- OEE Ideal Cycle Times -->
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#4488aa;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
+      OEE — Ideal Cycle Time (sec / unit)
+    </div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+      The theoretical best time to produce one unit on each machine. Used to calculate Performance in OEE.
+    </div>
+    <div id="settings-oee-cycles"></div>
+
+    <div id="settings-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#228844;margin-top:12px;text-align:center;">
+      ✓ Targets saved successfully
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PIECE TYPE DRILL-DOWN MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="pt-drill-modal" onclick="if(event.target===this)closeModal('pt-drill-modal')">
+  <div style="background:#fff;border:1px solid #f0c8d8;border-radius:16px;width:100%;max-width:600px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 60px rgba(220,80,120,0.18);overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 14px;border-bottom:1px solid #fde0ea;flex-shrink:0;">
+      <div>
+        <div id="ptd-title" style="font-family:'Abril Fatface',serif;font-size:20px;color:#e8457a;line-height:1;"></div>
+        <div id="ptd-machine" style="font-family:'Josefin Slab',serif;font-size:11px;color:#c090a8;margin-top:3px;letter-spacing:0.06em;"></div>
+      </div>
+      <button onclick="closeModal('pt-drill-modal')" style="font-family:'Josefin Slab',serif;font-size:18px;color:#c090a8;background:none;border:none;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+    </div>
+    <div id="ptd-body" style="overflow-y:auto;padding:20px 24px;flex:1;scrollbar-width:thin;scrollbar-color:#f0c8d8 #fff5f8;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     OPEN ORDERS VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-orders" style="background:#f5fbf7;">
+  <div id="view-controls-slot-orders" class="view-controls-strip" style="display:none;"></div>
+  <div style="max-width:900px;margin:0 auto;padding:20px 16px;">
+
+    <!-- Header row -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="font-family:'Abril Fatface',serif;font-size:22px;color:#1a3a28;">Open Orders</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span id="orders-last-updated" style="font-family:'Josefin Slab',serif;font-size:10px;color:#90b888;"></span>
+        <label id="orders-upload-btn" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#228844;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;letter-spacing:0.05em;display:inline-flex;align-items:center;gap:6px;">
+          ⬆ Upload LMContainers File<input type="file" accept=".xlsx,.xls" style="display:none;" onchange="handleOrdersUpload(event)"/>
+        </label>
+      </div>
+    </div>
+
+    <!-- Drag & drop zone — shown when no data loaded -->
+    <div id="orders-dropzone"
+      ondragover="event.preventDefault();this.style.borderColor='#228844';this.style.background='#e0f7e8';"
+      ondragleave="this.style.borderColor='#b8d8b0';this.style.background='#f5fbf7';"
+      ondrop="event.preventDefault();this.style.borderColor='#b8d8b0';this.style.background='#f5fbf7';handleOrdersDrop(event);"
+      style="border:2px dashed #b8d8b0;border-radius:12px;padding:40px 24px;text-align:center;margin-bottom:20px;background:#f5fbf7;transition:all 0.2s;cursor:pointer;"
+      onclick="document.querySelector('#orders-upload-btn input').click()">
+      <div style="font-size:36px;margin-bottom:10px;">📂</div>
+      <div style="font-family:'Abril Fatface',serif;font-size:16px;color:#336644;margin-bottom:6px;">Drop LMContainers file here</div>
+      <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90b888;">or click to browse — accepts .xlsx</div>
+      <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#b8d8b0;margin-top:8px;">Export daily from your warehouse system and drop it here each morning</div>
+    </div>
+
+    <!-- Summary stats -->
+    <div id="orders-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;"></div>
+
+    <!-- Aging buckets -->
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#4488aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;">Aging</div>
+    <div id="orders-aging" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;"></div>
+
+    <!-- Piece type breakdown -->
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#4488aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;">Unproduced by Piece Type vs Today's Output</div>
+    <div id="orders-by-type" style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px;"></div>
+
+    <!-- No data state -->
+    <div id="orders-empty" style="font-family:'Josefin Slab',serif;font-size:13px;color:#90b888;text-align:center;padding:40px;">
+      No open orders data yet.<br>
+      <span style="font-size:11px;">Upload a file or configure a OneDrive URL in Settings to auto-fetch.</span>
+    </div>
+  </div>
+</div>
+<datalist id="pf-operators-list"></datalist>
+</body>
+</html>

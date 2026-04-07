@@ -1,0 +1,9 @@
+# Source monoliths (preserved for reference, not part of the app)
+print-tracker (43).html
+printtrack-manager (13).html
+
+# Claude Code session files
+.claude/
+
+# Deploy folder (generated, not source)
+deploy/
