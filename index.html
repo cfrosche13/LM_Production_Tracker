@@ -495,6 +495,19 @@
   </div>
 </div>
 
+<!-- ══════════ MACHINE BACK UP MODAL ══════════ -->
+<div class="modal-overlay" id="mech-up-modal">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-title">Machine Back Up</div>
+    <p style="font-size:13px;color:#555;font-family:'Josefin Slab',serif;margin-bottom:14px;">Confirm the machine is running again and optionally add notes.</p>
+    <div class="mf full"><label>Notes (optional)</label><textarea id="mech-up-notes" placeholder="e.g. Technician repaired belt, cleared jam..."></textarea></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-cancel" onclick="closeModal('mech-up-modal')">Cancel</button>
+      <button class="btn-save" onclick="mechUpConfirm()">✓ Machine Back Up</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ MECHANICAL MODAL ══════════ -->
 <div class="modal-overlay" id="mech-modal">
   <div class="modal-box" style="max-width:400px;">

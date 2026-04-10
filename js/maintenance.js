@@ -111,9 +111,23 @@ function setBanner(state, fixCount, svc) {
     Object.assign(b.style, {background:"#0a1a0a",border:"1px solid #2a5a2a",color:"#55cc55",fontFamily:"'Josefin Slab',serif",fontSize:"13px",borderRadius:"8px",padding:"13px 18px"});
     b.textContent = `✓ Machine running — ${fixCount} fix(es) logged this session`;
   } else {
-    Object.assign(b.style, {background:"#1a0808",border:"1px solid #5a1a1a",color:"#ff5555",fontFamily:"'Josefin Slab',serif",fontSize:"13px",borderRadius:"8px",padding:"13px 18px"});
-    b.textContent = `✗ MACHINE DOWN${svc?" — Service Call: "+svc:""}`;
+    Object.assign(b.style, {background:"#1a0808",border:"1px solid #5a1a1a",color:"#ff5555",fontFamily:"'Josefin Slab',serif",fontSize:"13px",borderRadius:"8px",padding:"13px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"});
+    b.innerHTML = `<span>✗ MACHINE DOWN${svc?" — Service Call: "+svc:""}</span><button onclick="openMechUpModal()" style="padding:7px 14px;background:#0a1a0a;border:1px solid #2a5a2a;border-radius:6px;color:#55cc55;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">✓ Machine Back Up</button>`;
   }
+}
+function openMechUpModal() {
+  document.getElementById("mech-up-notes").value = "";
+  openModal("mech-up-modal");
+}
+function mechUpConfirm() {
+  const op    = document.getElementById("global-operator").value || "—";
+  const notes = document.getElementById("mech-up-notes").value.trim();
+  const now   = new Date();
+  addMaintEntry({type:"Machine Back Up", color:"#228833", detail:"Machine returned to service", notes, op, time:now});
+  const b = document.getElementById("mech-banner");
+  Object.assign(b.style, {background:"#0a1a0a",border:"1px solid #2a5a2a",color:"#55cc55",fontFamily:"'Josefin Slab',serif",fontSize:"13px",borderRadius:"8px",padding:"13px 18px",display:"block"});
+  b.textContent = "✓ Machine back up and running";
+  closeModal("mech-up-modal");
 }
 
 // ── CLEANING ──
@@ -423,7 +437,7 @@ function renderMaintReports() {
   grid.innerHTML = "";
 
   const SHIFT_TYPES = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
-  const MECH_TYPES  = ["Operator Fix","Machine Down"];
+  const MECH_TYPES  = ["Operator Fix","Machine Down","Machine Back Up"];
 
   // Group maint log by machine
   const byMachine = {};
@@ -439,7 +453,9 @@ function renderMaintReports() {
     const entries = byMachine[machine] || [];
     const mechEntries = entries.filter(e => MECH_TYPES.includes(e.type));
     const cleanEntries = entries.filter(e => e.type === "Cleaning");
-    const hasDown = mechEntries.some(e => e.type === "Machine Down");
+    const downOrUp = mechEntries.filter(e => e.type === "Machine Down" || e.type === "Machine Back Up");
+    const lastDownOrUp = downOrUp.length ? downOrUp.reduce((a,b) => new Date(a.time) > new Date(b.time) ? a : b) : null;
+    const hasDown = lastDownOrUp?.type === "Machine Down";
 
     // Figure out which shift types have been completed for this machine
     const completedShifts = {};
@@ -506,7 +522,7 @@ function renderMaintReports() {
 
 function openMaintMachineDetail(machine) {
   const SHIFT_TYPES = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
-  const MECH_TYPES  = ["Operator Fix","Machine Down"];
+  const MECH_TYPES  = ["Operator Fix","Machine Down","Machine Back Up"];
   const entries = maintLog.filter(e => (e.machine || "Unassigned") === machine);
   const mechEntries  = entries.filter(e => MECH_TYPES.includes(e.type));
   const cleanEntries = entries.filter(e => e.type === "Cleaning");
@@ -516,13 +532,15 @@ function openMaintMachineDetail(machine) {
 
   // Mechanical issues section
   if (mechEntries.length) {
-    const hasDown = mechEntries.some(e => e.type === "Machine Down");
+    const _downOrUp2 = mechEntries.filter(e => e.type === "Machine Down" || e.type === "Machine Back Up");
+    const _lastDU2 = _downOrUp2.length ? _downOrUp2.reduce((a,b) => new Date(a.time) > new Date(b.time) ? a : b) : null;
+    const hasDown = _lastDU2?.type === "Machine Down";
     html += `<div style="background:${hasDown?'#fff5f5':'#fff8f0'};border:1px solid ${hasDown?'#ffaaaa':'#f0c080'};border-radius:8px;padding:14px 16px;margin-bottom:16px;">
       <div style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${hasDown?'#cc2222':'#e87820'};margin-bottom:10px;">${hasDown?'⚠ Mechanical Issues':'⚙ Operator Fixes'}</div>`;
     mechEntries.forEach(e => {
       html += `<div style="padding:8px 0;border-bottom:1px solid #f5e8d8;display:flex;flex-direction:column;gap:2px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:${e.type==='Machine Down'?'#cc2222':'#e87820'};">${e.type}</span>
+          <span style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:${e.type==='Machine Down'?'#cc2222':e.type==='Machine Back Up'?'#228833':'#e87820'};">${e.type}</span>
           <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#aaa;">${e.time ? new Date(e.time).toLocaleString() : ""}</span>
         </div>
         ${e.detail ? `<div style="font-family:'Josefin Slab',serif;font-size:11px;color:#555;">${e.detail}</div>` : ""}
@@ -613,7 +631,7 @@ function renderMaintLog() {
   const filterMap = {
     all: null,
     cleaning:   "Cleaning",
-    mechanical: ["Operator Fix","Machine Down"],
+    mechanical: ["Operator Fix","Machine Down","Machine Back Up"],
     defective:  "Defective Material"
   };
   const f = filterMap[_maintLogFilter] || null;
