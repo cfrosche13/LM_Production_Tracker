@@ -60,10 +60,12 @@ function init() {
       renderWaitLog();
     });
 
-    // Machine events
+    // Targets — only re-render settings if the tab is currently open
     window._fb.listenTargets(data => {
       window._targets = data;
-      renderSettingsTargets();
+      window._targetsLoaded = true;
+      const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+      if (settingsActive) renderSettingsTargets();
     });
 
     window._fb.listenEvents(data => {
@@ -97,6 +99,21 @@ function init() {
     window._fb.listenChecklistProgress(data => {
       window._checklistProgress = data || {};
     });
+
+    // ── Restore today's tally counts from Firebase and sync them into sessions ──
+    // This makes counts tallied earlier in the day (or in a previous page load)
+    // appear immediately in report cards without the operator having to re-tally.
+    window._fb.fetchTallyState(todayStr()).then(data => {
+      if (!data || !data.counts) return;
+      // Only restore if no tally work has been done this session yet
+      if (Object.keys(_tallyCounts).length > 0) return;
+      _tallyCounts    = { ...data.counts };
+      _tallyMisprints = { ...(data.misprints || {}) };
+      // Re-render the tally cards if the screen is open
+      if (typeof tallyRenderCards === "function") tallyRenderCards();
+      // Write the restored counts into sessions/{machine} so reports show them
+      if (typeof _tallyAutoSaveNow === "function") _tallyAutoSaveNow();
+    }).catch(() => {}); // silently ignore if offline / no data
   };
 
   // Set default date filter to today
@@ -123,34 +140,43 @@ function init() {
 function selectMachine(btn) {
   document.querySelectorAll(".machine-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
+  // Keep the global dropdown in sync
+  const dd = document.getElementById("global-machine");
+  if (dd) dd.value = btn.dataset.machine || "";
 }
+
+// Called by the global-machine dropdown in the top bar
+function selectMachineByName(name) {
+  // Sync all .machine-btn active states
+  document.querySelectorAll(".machine-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.machine === name);
+  });
+  // Sync all .qs-machine-btn active states + _qsMachine
+  document.querySelectorAll(".qs-machine-btn").forEach(b => {
+    b.classList.toggle("qs-active", b.dataset.machine === name);
+  });
+  if (typeof _qsMachine !== "undefined") _qsMachine = name;
+}
+
 
 function goToNewRun() {
   document.getElementById("print-jobs-screen").style.display = "none";
   document.getElementById("print-run-screen").style.display  = "none";
   document.getElementById("reports-section").style.display   = "none";
+  if (typeof _tallyActive !== "undefined") _tallyActive = false;
   switchView('printing');
-  const modeSelect = document.getElementById("print-mode-select");
-  modeSelect.style.display = "flex";
-  qsInitMachine();
 }
 
 function goToReports() {
-  // Switch to printing view
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("view-printing").classList.add("active");
-  document.getElementById("nav-printing").classList.add("active");
-  // Show reports screen
-  document.getElementById("print-mode-select").style.display = "none";
-  document.getElementById("print-run-screen").style.display  = "none";
-  const js = document.getElementById("print-jobs-screen");
-  js.style.display = "block";
-  document.getElementById("back-to-mode-btn").style.display = "inline-block";
-  document.getElementById("reports-section").style.display = "block";
+  // Use switchView so the nav, transition bar, and machine buttons update correctly
+  switchView('printing');
+  // Now override which printing sub-screen is visible
+  ["print-function-select","print-mode-select","print-tally-screen","print-run-screen"]
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
+  document.getElementById("print-jobs-screen").style.display    = "block";
+  document.getElementById("back-to-mode-btn").style.display     = "inline-block";
+  document.getElementById("reports-section").style.display      = "block";
   document.getElementById("quality-report-section").style.display = "none";
-
-  // Hide controls strip on reports/home screen
   const strip = document.getElementById("view-controls-slot-printing");
   if (strip) strip.style.display = "none";
   renderReports();
@@ -166,9 +192,9 @@ function switchView(name) {
   document.getElementById("view-"+name).classList.add("active");
   document.getElementById("nav-"+name).classList.add("active");
 
-  // Transition bar only relevant for printing
+  // Transition bar relevant for printing and colex
   const tb = document.getElementById("transition-bar");
-  if (tb) tb.style.display = name === 'printing' ? '' : 'none';
+  if (tb) tb.style.display = (name === 'printing' || name === 'colex') ? '' : 'none';
   if (name === 'settings') {
     renderSettingsTargets();
     const urlInput = document.getElementById("settings-orders-url");
@@ -199,6 +225,10 @@ function switchView(name) {
     } else if (name === 'waiting') {
       slot.appendChild(machEl);
       document.querySelectorAll(".machine-btn").forEach(b => b.style.display = "");
+    } else if (name === 'colex') {
+      slot.appendChild(opEl);
+      // No machine picker needed — Colex view is always Colex
+      document.querySelectorAll(".machine-btn").forEach(b => b.style.display = "none");
     }
     // settings — no controls
   }
@@ -236,24 +266,27 @@ function switchView(name) {
     }
   }
 
-  // When returning to printing, go to mode select unless a run is active
+  // When returning to printing, route to the right screen
   if (name === 'printing') {
-    // Always ensure the controls strip is visible when on printing tab
     const printStrip = document.getElementById("view-controls-slot-printing");
-    if (printStrip) printStrip.style.display = "none"; // handled inline on quick-start + run screens
-    // Hide Wallets from printing machine buttons
+    if (printStrip) printStrip.style.display = "none";
+    // Hide Wallets and Colex from printing machine buttons
     document.querySelectorAll(".machine-btn").forEach(b => {
-      b.style.display = b.dataset.machine === "Wallets" ? "none" : "";
+      b.style.display = (b.dataset.machine === "Wallets" || b.dataset.machine === "Colex") ? "none" : "";
     });
+    const funcSel   = document.getElementById("print-function-select");
+    const modeSel   = document.getElementById("print-mode-select");
+    const tallyScr  = document.getElementById("print-tally-screen");
+    const runScr    = document.getElementById("print-run-screen");
+    const jobsScr   = document.getElementById("print-jobs-screen");
+    // Hide all first
+    [modeSel, tallyScr, runScr, jobsScr].forEach(el => { if (el) el.style.display = "none"; });
     if (runRunning) {
-      document.getElementById("print-mode-select").style.display = "none";
-      document.getElementById("print-jobs-screen").style.display = "none";
-      document.getElementById("print-run-screen").style.display = "flex";
+      runScr.style.display = "flex";
+    } else if (typeof _tallyActive !== "undefined" && _tallyActive) {
+      tallyScr.style.display = "flex";
     } else {
-      document.getElementById("print-run-screen").style.display = "none";
-      document.getElementById("print-jobs-screen").style.display = "none";
-      document.getElementById("print-mode-select").style.display = "flex";
-      qsInitMachine();
+      funcSel.style.display = "flex";
     }
   }
 }
@@ -446,4 +479,16 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-window.addEventListener("resize", () => { if (document.getElementById("hourly-chart-wrap").style.display !== "none") renderReports(); });
+window.addEventListener("resize", () => {
+  if (document.getElementById("hourly-chart-wrap").style.display !== "none") renderReports();
+  _updateStickyOffsets();
+});
+
+function _updateStickyOffsets() {
+  const topBar = document.getElementById("top-bar");
+  const navBar = document.getElementById("nav-bar");
+  if (topBar) document.documentElement.style.setProperty("--top-bar-h", topBar.offsetHeight + "px");
+  if (navBar) document.documentElement.style.setProperty("--nav-bar-h", navBar.offsetHeight + "px");
+}
+// Measure once layout is painted
+requestAnimationFrame(_updateStickyOffsets);

@@ -1,0 +1,549 @@
+// ═══════════════════════════════════════
+// TALLY COUNT MODE
+// ═══════════════════════════════════════
+
+let _tallyMachine       = "";
+let _tallyCat           = "";        // "" = show all categories
+let _tallyCounts        = {};        // key: "Cat · SubType" → count
+let _tallyMisprints     = {};        // key: "Cat · SubType" → count
+let _tallyActive        = false;
+let _tallyAutoSaveTimer = null;
+
+const _TALLY_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces"];
+
+// ── Auto-save ──
+function _tallyScheduleSave() {
+  clearTimeout(_tallyAutoSaveTimer);
+  _tallyAutoSaveTimer = setTimeout(_tallyAutoSaveNow, 600);
+}
+
+function _tallyAutoSaveNow() {
+  if (!window._fb) return;
+  const d       = new Date();
+  const dateStr = d.getFullYear() + "-"
+                + String(d.getMonth() + 1).padStart(2, "0") + "-"
+                + String(d.getDate()).padStart(2, "0");
+
+  // Resolve current machine from global dropdown → tally picker → machine buttons
+  const machine = document.getElementById("global-machine")?.value
+               || _tallyMachine
+               || document.querySelector(".machine-btn.active")?.dataset.machine
+               || "";
+  const op = document.getElementById("global-operator")?.value || "—";
+
+  // Save the raw snapshot (existing behaviour)
+  window._fb.saveTallyState(dateStr, {
+    machine:   machine || "—",
+    counts:    { ..._tallyCounts },
+    misprints: { ..._tallyMisprints },
+    savedAt:   d.toISOString(),
+  });
+
+  // Also write each piece type as a session record under sessions/{machine}
+  // so tally counts appear in production reports alongside time-study sessions.
+  // We use a deterministic key (tally_{date}_{safeKey}) so each save overwrites
+  // the same record instead of creating duplicates.
+  if (machine && machine !== "—") {
+    Object.keys(_tallyCounts).forEach(pieceKey => {
+      const count    = _tallyCounts[pieceKey]    || 0;
+      const misprint = _tallyMisprints[pieceKey] || 0;
+      if (count === 0 && misprint === 0) return;
+
+      const pph      = (typeof getTarget === "function") ? (getTarget(pieceKey, "pph") || 0) : 0;
+      const totalSec = pph > 0 ? count * (3600 / pph) : 0;
+      const fbKey    = "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_");
+
+      window._fb.setTallySession(machine, fbKey, {
+        mode:        "tally",
+        qtyGood:     count,
+        qtyBad:      misprint,
+        pieceType:   pieceKey,
+        op,
+        time:        d.toISOString(),
+        totalSec,
+        changeovers: 0,
+        notes:       "Tally count",
+      });
+    });
+  }
+
+  // Flash the status indicator
+  const el = document.getElementById("tc-autosave-status");
+  if (el) {
+    el.textContent = "✓ Saved";
+    el.style.color = "#52a040";
+    clearTimeout(el._fadeTimer);
+    el._fadeTimer = setTimeout(() => {
+      if (el) { el.textContent = ""; }
+    }, 2000);
+  }
+}
+
+// ── Entry point ──
+function selectPrintFunction(fn) {
+  const funcSelect  = document.getElementById("print-function-select");
+  const modeSelect  = document.getElementById("print-mode-select");
+  const tallyScreen = document.getElementById("print-tally-screen");
+  if (fn === "timestudy") {
+    funcSelect.style.display  = "none";
+    tallyScreen.style.display = "none";
+    modeSelect.style.display  = "flex";
+    qsInitMachine();
+  } else {
+    funcSelect.style.display  = "none";
+    modeSelect.style.display  = "none";
+    _tallyActive = true;
+    tallyRender();
+    tallyScreen.style.display = "flex";
+  }
+}
+
+function goToFunctionSelect() {
+  document.getElementById("print-function-select").style.display = "flex";
+  document.getElementById("print-mode-select").style.display     = "none";
+  document.getElementById("print-tally-screen").style.display    = "none";
+  document.getElementById("print-run-screen").style.display      = "none";
+  document.getElementById("print-jobs-screen").style.display     = "none";
+  _tallyActive = false;
+}
+
+// ── Render tally screen shell ──
+function tallyRender() {
+  const screen = document.getElementById("print-tally-screen");
+  if (!screen) return;
+  // Sync machine buttons
+  document.querySelectorAll(".tally-machine-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.machine === _tallyMachine)
+  );
+  // Sync cat tabs — "All" tab is active when _tallyCat is ""
+  document.querySelectorAll(".tally-cat-tab").forEach(b => {
+    b.classList.toggle("active",
+      (b.dataset.cat === "All" && _tallyCat === "") ||
+      (b.dataset.cat !== "All" && b.dataset.cat === _tallyCat)
+    );
+  });
+  tallyRenderCards();
+}
+
+function tallyPickMachine(btn) {
+  _tallyMachine = btn.dataset.machine;
+  document.querySelectorAll(".tally-machine-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.machine === _tallyMachine)
+  );
+  document.querySelectorAll(".machine-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.machine === _tallyMachine)
+  );
+}
+
+function tallyPickCat(btn) {
+  const cat = btn.dataset.cat;
+  if (cat === "All") {
+    _tallyCat = "";
+  } else {
+    // Clicking the active tab again returns to All
+    _tallyCat = (_tallyCat === cat) ? "" : cat;
+  }
+  document.querySelectorAll(".tally-cat-tab").forEach(b => {
+    b.classList.toggle("active",
+      (b.dataset.cat === "All" && _tallyCat === "") ||
+      (b.dataset.cat !== "All" && b.dataset.cat === _tallyCat)
+    );
+  });
+  tallyRenderCards();
+}
+
+// ── Main cards renderer ──
+function tallyRenderCards() {
+  const area = document.getElementById("tally-cards-area");
+  if (!area) return;
+  area.innerHTML = "";
+
+  const showAll       = _tallyCat === "";
+  const catsToShow    = showAll ? _TALLY_PIECE_CATS : (_tallyCat === "Misprints" ? [] : [_tallyCat]);
+  const showMisprints = showAll || _tallyCat === "Misprints";
+
+  catsToShow.forEach(cat => {
+    if (showAll) {
+      const hdr = document.createElement("div");
+      hdr.style.cssText = "font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#c04070;text-transform:uppercase;letter-spacing:0.12em;padding:2px 0 8px;margin-top:8px;border-bottom:2px solid #f0c8d8;margin-bottom:10px;";
+      hdr.textContent = cat;
+      area.appendChild(hdr);
+    }
+    _tallyRenderCatSection(area, cat);
+  });
+
+  if (showMisprints) {
+    if (showAll) {
+      const hdr = document.createElement("div");
+      hdr.style.cssText = "font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#882222;text-transform:uppercase;letter-spacing:0.12em;padding:2px 0 8px;margin-top:8px;border-bottom:2px solid #ffaaaa;margin-bottom:10px;";
+      hdr.textContent = "Misprints";
+      area.appendChild(hdr);
+    }
+    _tallyRenderMisprintsSection(area);
+  }
+
+  _tallyRenderFooter(area);
+}
+
+// ── Category section ──
+function _tallyRenderCatSection(area, displayCat) {
+  let subs, pieceKeyCat;
+  if (displayCat === "Coir OC") {
+    pieceKeyCat = "Coir";
+    subs = (PIECE_TYPES["Coir"] || []).filter(s => s.includes("OC") || s === "Flocked");
+  } else if (displayCat === "Coir FC") {
+    pieceKeyCat = "Coir";
+    subs = (PIECE_TYPES["Coir"] || []).filter(s => s.includes("FC"));
+  } else {
+    pieceKeyCat = displayCat;
+    subs = PIECE_TYPES[displayCat] || [];
+  }
+  if (!subs.length) return;
+
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:16px;";
+  subs.forEach(sub => {
+    grid.appendChild(_tallyMakePieceCard(pieceKeyCat + " · " + sub, sub));
+  });
+  area.appendChild(grid);
+}
+
+// ── Piece card ──
+function _tallyMakePieceCard(key, sub) {
+  const count    = _tallyCounts[key] || 0;
+  const pph      = getTarget(key, "pph") || 0;
+  const secEa    = pph > 0 ? 3600 / pph : 0;
+  const totalSec = count * secEa;
+  const esc      = CSS.escape(key);
+
+  const card = document.createElement("div");
+  card.style.cssText = "background:#fff;border:2px solid #f0c8d8;border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;";
+
+  // Header row: label + ⋮ menu button
+  const headerRow = document.createElement("div");
+  headerRow.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;width:100%;position:relative;";
+
+  const lbl = document.createElement("div");
+  lbl.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#882244;text-transform:uppercase;letter-spacing:0.05em;text-align:left;line-height:1.3;flex:1;";
+  lbl.textContent = sub;
+
+  const kebab = document.createElement("button");
+  kebab.textContent = "⋮";
+  kebab.title = "Options";
+  kebab.style.cssText = "background:none;border:none;cursor:pointer;font-size:16px;color:#ccaabb;padding:0 2px;line-height:1;flex-shrink:0;";
+  kebab.addEventListener("click", e => { e.stopPropagation(); _tallyShowKebabMenu(e.currentTarget, key, false); });
+
+  headerRow.appendChild(lbl);
+  headerRow.appendChild(kebab);
+
+  // Non-editable count display
+  const countEl = document.createElement("div");
+  countEl.id = "tc-count-" + esc;
+  countEl.textContent = count;
+  countEl.style.cssText = "font-family:'Abril Fatface',serif;font-size:36px;color:#e8457a;background:#fff5f8;border:2px solid #f0c8d8;border-radius:8px;padding:8px 4px;width:100%;text-align:center;box-sizing:border-box;line-height:1.2;";
+
+  // + / − buttons
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;";
+
+  const minusBtn = document.createElement("button");
+  minusBtn.textContent = "−";
+  minusBtn.style.cssText = "padding:10px 0;border-radius:7px;background:#fff0f4;border:2px solid #f0c8d8;color:#c8457a;font-family:'Abril Fatface',serif;font-size:22px;cursor:pointer;touch-action:manipulation;user-select:none;line-height:1;";
+  minusBtn.addEventListener("click", () => tallyUndo(key));
+
+  const plusBtn = document.createElement("button");
+  plusBtn.textContent = "+";
+  plusBtn.style.cssText = "padding:10px 0;border-radius:7px;background:#e8457a;border:2px solid #c0305a;color:#fff;font-family:'Abril Fatface',serif;font-size:22px;cursor:pointer;touch-action:manipulation;user-select:none;line-height:1;";
+  plusBtn.addEventListener("click", () => tallyInc(key));
+
+  btnRow.appendChild(minusBtn);
+  btnRow.appendChild(plusBtn);
+
+  // Expected time display
+  const timeWrap = document.createElement("div");
+  timeWrap.id = "tc-time-" + esc;
+  timeWrap.style.cssText = `text-align:center;width:100%;background:#f0f6fb;border-radius:6px;padding:5px 2px;${secEa ? "" : "opacity:0.35;"}`;
+
+  const timeVal = document.createElement("div");
+  timeVal.id = "tc-timeval-" + esc;
+  timeVal.style.cssText = "font-family:'Abril Fatface',serif;font-size:14px;color:#336688;line-height:1.2;";
+  timeVal.textContent = fmt(totalSec);
+
+  const timeLbl = document.createElement("div");
+  timeLbl.style.cssText = "font-family:'Josefin Slab',serif;font-size:7px;color:#6688aa;text-transform:uppercase;letter-spacing:0.06em;";
+  timeLbl.textContent = "exp. time";
+
+  timeWrap.appendChild(timeVal);
+  timeWrap.appendChild(timeLbl);
+
+  card.appendChild(headerRow);
+  card.appendChild(countEl);
+  card.appendChild(btnRow);
+  card.appendChild(timeWrap);
+  return card;
+}
+
+// ── Misprints section — one card per piece subtype, keyed same as _tallyCounts ──
+function _tallyRenderMisprintsSection(area) {
+  _TALLY_PIECE_CATS.forEach(cat => {
+    // Sub-header for each category within Misprints
+    const subHdr = document.createElement("div");
+    subHdr.style.cssText = "font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;color:#882222;text-transform:uppercase;letter-spacing:0.12em;padding:2px 0 6px;margin-top:6px;border-bottom:1px solid #ffaaaa;margin-bottom:8px;";
+    subHdr.textContent = cat;
+    area.appendChild(subHdr);
+
+    let subs, pieceKeyCat;
+    if (cat === "Coir OC") {
+      pieceKeyCat = "Coir";
+      subs = (PIECE_TYPES["Coir"] || []).filter(s => s.includes("OC") || s === "Flocked");
+    } else if (cat === "Coir FC") {
+      pieceKeyCat = "Coir";
+      subs = (PIECE_TYPES["Coir"] || []).filter(s => s.includes("FC"));
+    } else {
+      pieceKeyCat = cat;
+      subs = PIECE_TYPES[cat] || [];
+    }
+    if (!subs.length) return;
+
+    const grid = document.createElement("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:12px;";
+    subs.forEach(sub => {
+      grid.appendChild(_tallyMakeMisprintPieceCard(pieceKeyCat + " · " + sub, sub));
+    });
+    area.appendChild(grid);
+  });
+}
+
+// ── Misprint piece card ──
+function _tallyMakeMisprintPieceCard(key, sub) {
+  const count = _tallyMisprints[key] || 0;
+  const esc   = CSS.escape("mp-" + key);
+
+  const card = document.createElement("div");
+  card.style.cssText = "background:#fff5f5;border:2px solid #ffaaaa;border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;";
+
+  // Header row: label + ⋮ menu button
+  const headerRow = document.createElement("div");
+  headerRow.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;width:100%;position:relative;";
+
+  const lbl = document.createElement("div");
+  lbl.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#882222;text-transform:uppercase;letter-spacing:0.05em;text-align:left;line-height:1.3;flex:1;";
+  lbl.textContent = sub;
+
+  const kebab = document.createElement("button");
+  kebab.textContent = "⋮";
+  kebab.title = "Options";
+  kebab.style.cssText = "background:none;border:none;cursor:pointer;font-size:16px;color:#ccaaaa;padding:0 2px;line-height:1;flex-shrink:0;";
+  kebab.addEventListener("click", e => { e.stopPropagation(); _tallyShowKebabMenu(e.currentTarget, key, true); });
+
+  headerRow.appendChild(lbl);
+  headerRow.appendChild(kebab);
+
+  // Non-editable count display
+  const countEl = document.createElement("div");
+  countEl.id = "tc-mp-" + esc;
+  countEl.textContent = count;
+  countEl.style.cssText = "font-family:'Abril Fatface',serif;font-size:36px;color:#cc3333;background:#fff5f5;border:2px solid #ffaaaa;border-radius:8px;padding:8px 4px;width:100%;text-align:center;box-sizing:border-box;line-height:1.2;";
+
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;";
+
+  const minusBtn = document.createElement("button");
+  minusBtn.textContent = "−";
+  minusBtn.style.cssText = "padding:10px 0;border-radius:7px;background:#fff0f0;border:2px solid #ffaaaa;color:#cc3333;font-family:'Abril Fatface',serif;font-size:22px;cursor:pointer;touch-action:manipulation;user-select:none;line-height:1;";
+  minusBtn.addEventListener("click", () => {
+    _tallyMisprints[key] = Math.max(0, (_tallyMisprints[key] || 0) - 1);
+    const el = document.getElementById("tc-mp-" + esc);
+    if (el) el.textContent = _tallyMisprints[key];
+    _tallyScheduleSave();
+  });
+
+  const plusBtn = document.createElement("button");
+  plusBtn.textContent = "+";
+  plusBtn.style.cssText = "padding:10px 0;border-radius:7px;background:#cc3333;border:2px solid #992222;color:#fff;font-family:'Abril Fatface',serif;font-size:22px;cursor:pointer;touch-action:manipulation;user-select:none;line-height:1;";
+  plusBtn.addEventListener("click", () => {
+    _tallyMisprints[key] = (_tallyMisprints[key] || 0) + 1;
+    const el = document.getElementById("tc-mp-" + esc);
+    if (el) el.textContent = _tallyMisprints[key];
+    _tallyScheduleSave();
+  });
+
+  btnRow.appendChild(minusBtn);
+  btnRow.appendChild(plusBtn);
+  card.appendChild(headerRow);
+  card.appendChild(countEl);
+  card.appendChild(btnRow);
+  return card;
+}
+
+// ── Count manipulation ──
+function tallyInc(key) {
+  _tallyCounts[key] = (_tallyCounts[key] || 0) + 1;
+  _tallyUpdateCard(key);
+  _tallyScheduleSave();
+}
+function tallyUndo(key) {
+  if (!_tallyCounts[key]) return;
+  _tallyCounts[key]--;
+  _tallyUpdateCard(key);
+  _tallyScheduleSave();
+}
+function tallySetCount(key, rawVal) {
+  _tallyCounts[key] = Math.max(0, parseInt(rawVal) || 0);
+  _tallyUpdateTimeOnly(key);
+  _tallyScheduleSave();
+}
+function _tallyUpdateCard(key) {
+  const count = _tallyCounts[key] || 0;
+  const esc   = CSS.escape(key);
+  const el    = document.getElementById("tc-count-" + esc);
+  if (el) el.textContent = count;
+  _tallyUpdateTimeOnly(key);
+}
+
+// ── ⋮ Kebab dropdown menu ──
+function _tallyShowKebabMenu(anchor, key, isMisprint) {
+  document.getElementById("tally-kebab-menu")?.remove();
+
+  const menu = document.createElement("div");
+  menu.id = "tally-kebab-menu";
+  menu.style.cssText = "position:absolute;right:0;top:100%;z-index:500;background:#fff;border:1px solid #e8e8e8;border-radius:9px;box-shadow:0 4px 20px rgba(0,0,0,0.13);min-width:210px;overflow:hidden;";
+
+  function menuItem(label, color, onClick) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.style.cssText = `display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;border-bottom:1px solid #f4f4f4;cursor:pointer;font-family:'Libre Franklin',sans-serif;font-size:13px;color:${color};`;
+    btn.addEventListener("mouseenter", () => btn.style.background = "#f9f9f9");
+    btn.addEventListener("mouseleave", () => btn.style.background = "none");
+    btn.addEventListener("click", () => { menu.remove(); onClick(); });
+    return btn;
+  }
+
+  menu.appendChild(menuItem("Add / Subtract from Total", "#1a2a18", () => _tallyOpenAdjustModal(key, isMisprint)));
+  const resetItem = menuItem("Reset Counter", "#cc3333", () => {
+    if (isMisprint) {
+      _tallyMisprints[key] = 0;
+      const el = document.getElementById("tc-mp-" + CSS.escape("mp-" + key));
+      if (el) el.textContent = 0;
+      _tallyScheduleSave();
+    } else {
+      _tallyCounts[key] = 0;
+      _tallyUpdateCard(key);
+      _tallyScheduleSave();
+    }
+  });
+  resetItem.style.borderBottom = "none";
+  menu.appendChild(resetItem);
+
+  anchor.style.position = "relative";
+  anchor.appendChild(menu);
+
+  // Dismiss on next outside click
+  setTimeout(() => {
+    document.addEventListener("click", () => document.getElementById("tally-kebab-menu")?.remove(), { once: true });
+  }, 0);
+}
+
+// ── Add/Subtract modal ──
+function _tallyEnsureAdjustModal() {
+  if (document.getElementById("tally-adjust-modal")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "tally-adjust-modal";
+  overlay.style.cssText = "display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.35);align-items:center;justify-content:center;";
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+      <button id="tally-adjust-close"
+        style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:#aaa;">×</button>
+      <div style="font-family:'Libre Franklin',sans-serif;font-size:18px;font-weight:700;color:#1a2a18;margin-bottom:20px;">Add or Subtract From Total</div>
+      <input id="tally-adjust-input" type="number" placeholder="e.g. 5  or  -2"
+        style="width:100%;box-sizing:border-box;font-size:15px;padding:12px 14px;border:1.5px solid #ddd;border-radius:8px;outline:none;font-family:'Libre Franklin',sans-serif;color:#333;margin-bottom:8px;" />
+      <div style="font-family:'Libre Franklin',sans-serif;font-size:12px;color:#aaa;margin-bottom:20px;">Add a positive or negative number to the existing total</div>
+      <button id="tally-adjust-confirm"
+        style="width:100%;padding:14px;background:#52a040;color:#fff;border:none;border-radius:8px;font-family:'Libre Franklin',sans-serif;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:0.02em;">Add to Total</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.style.display = "none"; });
+  document.getElementById("tally-adjust-close").addEventListener("click", () => { overlay.style.display = "none"; });
+}
+
+function _tallyOpenAdjustModal(key, isMisprint) {
+  _tallyEnsureAdjustModal();
+  const overlay = document.getElementById("tally-adjust-modal");
+  const input   = document.getElementById("tally-adjust-input");
+  input.value   = "";
+  overlay.style.display = "flex";
+  setTimeout(() => input.focus(), 80);
+
+  // Clone confirm to clear any prior listener
+  const oldBtn = document.getElementById("tally-adjust-confirm");
+  const confirm = oldBtn.cloneNode(true);
+  oldBtn.replaceWith(confirm);
+
+  function doCommit() {
+    const typed = parseInt(input.value, 10);
+    if (isNaN(typed) || input.value.trim() === "") return;
+    if (isMisprint) {
+      _tallyMisprints[key] = Math.max(0, (_tallyMisprints[key] || 0) + typed);
+      const el = document.getElementById("tc-mp-" + CSS.escape("mp-" + key));
+      if (el) el.textContent = _tallyMisprints[key];
+    } else {
+      _tallyCounts[key] = Math.max(0, (_tallyCounts[key] || 0) + typed);
+      _tallyUpdateCard(key);
+    }
+    _tallyScheduleSave();
+    overlay.style.display = "none";
+  }
+
+  confirm.addEventListener("click", doCommit);
+  input.onkeydown = e => {
+    if (e.key === "Enter")  doCommit();
+    if (e.key === "Escape") overlay.style.display = "none";
+  };
+}
+function _tallyUpdateTimeOnly(key) {
+  const count    = _tallyCounts[key] || 0;
+  const pph      = getTarget(key, "pph") || 0;
+  const totalSec = count * (pph > 0 ? 3600 / pph : 0);
+  const el = document.getElementById("tc-timeval-" + CSS.escape(key));
+  if (el) el.textContent = fmt(totalSec);
+}
+
+// ── Footer ──
+function _tallyRenderFooter(area) {
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;padding-bottom:24px;";
+  footer.innerHTML = `
+    <span id="tc-autosave-status" style="font-family:'Josefin Slab',serif;font-size:11px;color:#52a040;min-width:60px;"></span>
+    <button onclick="tallyReset()" style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;padding:9px 20px;border-radius:8px;background:#fff;border:1px solid #f0c8d8;color:#c8457a;cursor:pointer;">↺ Reset All</button>
+  `;
+  area.appendChild(footer);
+}
+
+// ── Reset ──
+function tallyReset() {
+  // Delete tally-derived sessions from Firebase before clearing local counts
+  const machine = document.getElementById("global-machine")?.value
+               || _tallyMachine
+               || document.querySelector(".machine-btn.active")?.dataset.machine
+               || "";
+  if (machine && machine !== "—" && window._fb) {
+    const d       = new Date();
+    const dateStr = d.getFullYear() + "-"
+                  + String(d.getMonth() + 1).padStart(2, "0") + "-"
+                  + String(d.getDate()).padStart(2, "0");
+    Object.keys(_tallyCounts).forEach(pieceKey => {
+      if ((_tallyCounts[pieceKey] || 0) > 0 || (_tallyMisprints[pieceKey] || 0) > 0) {
+        const fbKey = "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_");
+        window._fb.deleteTallySession(machine, fbKey);
+      }
+    });
+  }
+
+  _tallyCounts    = {};
+  _tallyMisprints = {};
+  tallyRenderCards();
+  _tallyAutoSaveNow();  // immediately clear the Firebase snapshot
+}
+

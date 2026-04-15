@@ -1,5 +1,5 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, onValue, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -176,6 +176,11 @@
         deleteSession:     (machine, key) => set(ref(db, `sessions/${machine}/${key}`), null),
         deleteAllSessions: (machine)      => set(ref(db, `sessions/${machine}`), null),
 
+        // Tally-derived sessions — use set() with a deterministic key so each
+        // piece type overwrites in-place rather than accumulating duplicates
+        setTallySession:    (machine, key, session) => set(ref(db, `sessions/${machine}/${key}`), session),
+        deleteTallySession: (machine, key)          => set(ref(db, `sessions/${machine}/${key}`), null),
+
         saveTargets:   (targets) => set(ref(db, "targets"), targets),
         listenTargets: (cb)      => onValue(ref(db, "targets"), snap => cb(snap.val() || {})),
 
@@ -193,6 +198,11 @@
         // Operator shift log — start/end of day per operator
         saveShiftEntry: (dateStr, entry) => push(ref(db, `shiftLog/${dateStr}`), entry),
         listenShiftLog: (cb) => onValue(ref(db, "shiftLog"), snap => cb(snap.val() || {})),
+
+        // Tally auto-save snapshot — keyed by date, holds in-progress counts
+        saveTallyState:  (dateStr, data) => set(ref(db, `tallyState/${dateStr}`), data),
+        // One-time fetch of today's tally snapshot (used on startup to restore counts)
+        fetchTallyState: (dateStr)       => get(ref(db, `tallyState/${dateStr}`)).then(snap => snap.val()),
       };
       window._fbReady = true;
       document.dispatchEvent(new Event("fbReady"));

@@ -11,7 +11,7 @@ const STATUS_COLORS = {
 const PIECE_TYPES = {
   "Coir":          ["28x16 OC","28x16 FC","30x18 OC","30x18 FC","36x24 OC","36x24 FC","60x24 OC","60x24 FC","Flocked"],
   "Non-Coir Mats": ["AF Large","AF Small","PVC","Drying Mat"],
-  "Signs":         ["16x24","12x12","12x8 Plock","11x6 Plock","6x6 Plock","Leaner","Mantle Sign","18\" Circle","Yard Sign"],
+  "Signs":         ["16x24","12x12","12x8 Plock","11x6 Plock","6x6 Plock","Leaner","Double Sided Leaner","Mantle Sign","18\" Circle","Yard Sign"],
   "Wallets":       ["Cross Body","Trifold Black","Trifold Brown","Bifold Black","Bifold Brown","Bifold Tumbled Leather","Wristlet Black","Wristlet Brown","Front Pocket Black","Front Pocket Brown","Toiletry Bag","Clock"],
   "Display Pieces": ["Vert. Yard Display","Horz. Yard Display","Leaner Display","Yard Sign Display"],
 };
@@ -192,6 +192,16 @@ const CLEANING_CHECKLISTS = {
   }
 };
 
+const COLEX_YARD_SIGN_YIELD = 10; // pieces per sheet
+
+const COLEX_MERCHANDISERS = [
+  { id: "vym", label: "Vertical YS Merchandiser",   yield: 1 },
+  { id: "hym", label: "Horizontal YS Merchandiser", yield: 1 },
+  { id: "plm", label: "Porch Leaner Merchandiser",  yield: 6 },
+  { id: "gym", label: "Generic YS Merchandiser",    yield: 3 },
+];
+const COLEX_MERCH_TIME_DEFAULTS = { vym: 1800, hym: 1800, plm: 1800, gym: 1800 }; // seconds per sheet
+
 const OEE_MACHINE_MAP = { "30": "30F", "30+": "30F+", "H5": "H5", "Colex": "Colex", "Wallets": "Wallets", "Drinkware": "Drinkware" };
 const OEE_IDEAL_CYCLE_DEFAULTS = { "30": 94, "30+": 42.5, "H5": 32.5, "Colex": 0, "Wallets": 0, "Drinkware": 0 }; // seconds per unit
 
@@ -218,6 +228,7 @@ const TABLE_CAPACITY_DEFAULTS = {
   "Signs · 11x6 Plock": 12,
   "Signs · 6x6 Plock": 48,
   "Signs · Leaner": 2,
+  "Signs · Double Sided Leaner": 1,
   "Signs · Mantle Sign": 24,
   "Signs · 18\" Circle": 8,
   "Signs · Yard Sign": 10,

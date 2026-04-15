@@ -7,16 +7,72 @@
 <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Libre+Franklin:wght@400;500;600;700&family=Josefin+Slab:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
 <!-- Firebase -->
 <script type="module" src="js/firebase.js"></script>
-<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/styles.css?v=2" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
+<!-- SESSION GATE — blocks use until operator name + machine are set -->
+<div id="session-gate" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(15,30,14,0.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;padding:38px 36px;max-width:340px;width:90%;text-align:center;box-shadow:0 12px 50px rgba(0,0,0,0.32);">
+    <div style="font-family:'Abril Fatface',serif;font-size:26px;color:#1a2a18;margin-bottom:6px;">Start Your Session</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#8aaa80;margin-bottom:28px;text-transform:uppercase;letter-spacing:0.1em;">Who's operating, and on which machine?</div>
+
+    <div style="text-align:left;margin-bottom:16px;">
+      <label style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:6px;">Operator Name</label>
+      <input id="gate-operator" placeholder="Your name..."
+        onkeydown="if(event.key==='Enter')sessionGateConfirm()"
+        style="width:100%;box-sizing:border-box;font-family:'Josefin Slab',serif;font-size:15px;color:#1a2a18;border:1.5px solid #c2e8b8;border-radius:8px;padding:10px 12px;outline:none;" />
+    </div>
+
+    <div style="text-align:left;margin-bottom:24px;">
+      <label style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:6px;">Machine</label>
+      <select id="gate-machine"
+        onkeydown="if(event.key==='Enter')sessionGateConfirm()"
+        style="width:100%;box-sizing:border-box;font-family:'Josefin Slab',serif;font-size:15px;color:#1a2a18;border:1.5px solid #c2e8b8;border-radius:8px;padding:10px 12px;outline:none;background:#fff;cursor:pointer;">
+        <option value="">— Select machine —</option>
+        <option value="30">30</option>
+        <option value="30+">30+</option>
+        <option value="H5">H5</option>
+        <option value="Colex">Colex</option>
+        <option value="Drinkware">Drinkware</option>
+        <option value="Wallets">Wallets</option>
+      </select>
+    </div>
+
+    <div id="gate-error" style="font-family:'Josefin Slab',serif;font-size:11px;color:#e8457a;margin-bottom:12px;min-height:16px;"></div>
+
+    <button onclick="sessionGateConfirm()"
+      style="width:100%;font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#52a040;color:#fff;border:none;border-radius:10px;padding:14px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:background 0.15s;"
+      onmouseover="this.style.background='#3d8030'" onmouseout="this.style.background='#52a040'">
+      Start Session →
+    </button>
+  </div>
+</div>
+
 <!-- TOP BAR -->
 <div id="top-bar">
   <img src="data:image/png;base64,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" alt="Evergreen Studio Production Tracker" style="height:64px;object-fit:contain;" />
   <div style="flex:1;display:flex;align-items:stretch;justify-content:space-evenly;gap:10px;">
+    <!-- Operator (always-visible) -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:#eef8eb;border:1px solid #c2e8b8;border-radius:8px;padding:5px 14px;gap:2px;flex:1;max-width:150px;">
+      <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Operator</span>
+      <input id="global-operator" placeholder="Your name..." style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;background:transparent;border:none;outline:none;text-align:center;width:110px;" />
+    </div>
+    <!-- Machine (always-visible dropdown) -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:#eef8eb;border:1px solid #c2e8b8;border-radius:8px;padding:5px 14px;gap:2px;flex:1;max-width:150px;">
+      <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Machine</span>
+      <select id="global-machine" onchange="selectMachineByName(this.value)" style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;background:transparent;border:none;outline:none;text-align:center;cursor:pointer;width:110px;">
+        <option value="">— Select —</option>
+        <option value="30">30</option>
+        <option value="30+">30+</option>
+        <option value="H5">H5</option>
+        <option value="Colex">Colex</option>
+        <option value="Drinkware">Drinkware</option>
+        <option value="Wallets">Wallets</option>
+      </select>
+    </div>
     <!-- Total Printed counter -->
     <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;background:#fff5f8;border:1px solid #f0c8d8;border-radius:8px;padding:5px 20px;gap:1px;flex:1;max-width:180px;">
       <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#c090a8;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Total Printed</span>
@@ -38,10 +94,7 @@
 
 <!-- MASTER CONTROLS TEMPLATE (moved into active view by JS) -->
 <div id="master-controls" style="display:none;">
-  <div class="top-field" id="ctrl-operator">
-    <span class="top-label">Operator</span>
-    <input class="top-input" id="global-operator" placeholder="Your name..." style="width:130px;" />
-  </div>
+  <div class="top-field" id="ctrl-operator" style="display:none;"></div>
   <div class="top-field" id="ctrl-category">
     <span class="top-label">Piece Category</span>
     <select class="top-select" id="global-category" style="width:130px;"></select>
@@ -67,7 +120,7 @@
 <div id="nav-bar">
   <button class="nav-btn active" id="nav-printing"    onclick="switchView('printing')">🖨 Printing</button>
   <button class="nav-btn"        id="nav-maintenance" onclick="switchView('maintenance')">🔧 Maintenance</button>
-  <button class="nav-btn"        id="nav-waiting"     onclick="switchView('waiting')">⏱ Waiting</button>
+  <button class="nav-btn"        id="nav-colex"       onclick="switchView('colex')">🖨 Colex</button>
   <button class="nav-btn"        id="nav-stamped"     onclick="switchView('stamped')">🪙 Stamped</button>
   <button class="nav-btn"        id="nav-settings"    onclick="switchView('settings')">⚙ Settings</button>
   <button class="nav-btn"        id="nav-orders"      onclick="switchView('orders')">📦 Open Orders</button>
@@ -86,6 +139,16 @@
       <span class="trans-btn-label">New Piece Type</span>
       <span class="trans-btn-timer" id="trans-timer-piecetype">00:00</span>
     </button>
+    <button id="trans-btn-waiting" class="trans-btn" onclick="transitionToggle('waiting')">
+      <span class="trans-btn-icon">⏱</span>
+      <span class="trans-btn-label">Waiting</span>
+      <span class="trans-btn-timer" id="trans-timer-waiting">00:00</span>
+    </button>
+    <button id="trans-btn-purge" class="trans-btn" onclick="transitionToggle('purge')">
+      <span class="trans-btn-icon">💨</span>
+      <span class="trans-btn-label">Purge</span>
+      <span class="trans-btn-timer" id="trans-timer-purge">00:00</span>
+    </button>
   </div>
 </div>
 
@@ -96,21 +159,40 @@
 
   <div id="view-controls-slot-printing" class="view-controls-strip"></div>
 
-  <!-- SCREEN A: Quick Start -->
+  <!-- SCREEN 0: Function select — Time Study vs Tally Count -->
+  <div id="print-function-select" style="display:none;flex-direction:column;align-items:center;padding-top:40px;">
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c04070;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px;">Printing</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:12px;color:#b090a0;margin-bottom:28px;text-align:center;">Choose how you want to track this session.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:560px;">
+      <button onclick="selectPrintFunction('timestudy')"
+        style="background:#fff;border:2px solid #f0c8d8;border-radius:14px;padding:24px 18px;cursor:pointer;text-align:left;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8457a';this.style.background='#fff8fb'" onmouseout="this.style.borderColor='#f0c8d8';this.style.background='#fff'">
+        <div style="font-size:28px;margin-bottom:10px;">⏱</div>
+        <div style="font-family:'Abril Fatface',serif;font-size:20px;color:#1a2a18;margin-bottom:6px;">Time Study</div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#b090a0;line-height:1.5;">Full timer-based run tracking with changeovers, pauses, and lap counts.</div>
+      </button>
+      <button onclick="selectPrintFunction('tally')"
+        style="background:#fff;border:2px solid #f0c8d8;border-radius:14px;padding:24px 18px;cursor:pointer;text-align:left;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8457a';this.style.background='#fff8fb'" onmouseout="this.style.borderColor='#f0c8d8';this.style.background='#fff'">
+        <div style="font-size:28px;margin-bottom:10px;">🔢</div>
+        <div style="font-family:'Abril Fatface',serif;font-size:20px;color:#1a2a18;margin-bottom:6px;">Tally Count</div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#b090a0;line-height:1.5;">Tap to count pieces. Expected time is calculated automatically from your targets.</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN A: Quick Start (Time Study) -->
   <div id="print-mode-select" style="display:none;flex-direction:column;align-items:center;padding-top:32px;">
     <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c04070;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px;">Quick Start</div>
-    <div style="font-family:'Josefin Slab',serif;font-size:12px;color:#b090a0;margin-bottom:28px;text-align:center;">Pick machine &amp; mode — start immediately.<br>Operator and piece type can be filled in while the printer is running.</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:12px;color:#b090a0;margin-bottom:28px;text-align:center;">Pick a mode — start immediately.<br>Piece type can be filled in while the printer is running.</div>
 
     <div style="width:100%;max-width:560px;display:flex;flex-direction:column;gap:20px;">
 
-      <!-- Machine row (mirrored from controls strip for quick visibility) -->
-      <div>
-        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#72a868;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Machine</div>
-        <div id="qs-machine-btns" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <!-- Machine buttons kept for JS sync but hidden — machine is set at session start -->
+      <div style="display:none;" aria-hidden="true">
+        <div id="qs-machine-btns">
           <button class="qs-machine-btn" data-machine="30"        onclick="qsPickMachine(this)">30</button>
           <button class="qs-machine-btn" data-machine="30+"       onclick="qsPickMachine(this)">30+</button>
           <button class="qs-machine-btn" data-machine="H5"        onclick="qsPickMachine(this)">H5</button>
-          <button class="qs-machine-btn" data-machine="Colex"     onclick="qsPickMachine(this)">Colex</button>
+          <button class="qs-machine-btn" data-machine="Colex"     onclick="qsPickMachine(this)"></button>
           <button class="qs-machine-btn" data-machine="Drinkware" onclick="qsPickMachine(this)">Drinkware</button>
           <button class="qs-machine-btn" data-machine="Wallets"   onclick="qsPickMachine(this)">Wallets</button>
         </div>
@@ -154,6 +236,49 @@
         style="width:100%;padding:18px;font-family:'Abril Fatface',serif;font-size:20px;font-weight:700;background:#e8457a;color:#fff;border:none;border-radius:12px;cursor:pointer;letter-spacing:0.03em;box-shadow:0 3px 16px rgba(232,69,122,0.30);transition:all 0.15s;">
         ▶ Start Timer Now
       </button>
+
+    </div>
+  </div>
+
+  <!-- SCREEN A2: Tally Count -->
+  <div id="print-tally-screen" style="display:none;flex-direction:column;align-items:center;padding-top:24px;width:100%;">
+    <div style="width:100%;max-width:860px;">
+
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-family:'Abril Fatface',serif;font-size:20px;color:#1a2a18;">Tally Count</div>
+          <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#b090a0;text-transform:uppercase;letter-spacing:0.1em;">Piece-by-piece tracking</div>
+        </div>
+        <button onclick="goToFunctionSelect()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:7px 16px;border-radius:7px;background:#fff;border:1px solid #f0c8d8;color:#c8457a;cursor:pointer;">← Back</button>
+      </div>
+
+      <!-- Machine selector hidden — machine is set globally at session start -->
+      <div id="tally-machine-row" style="display:none;" aria-hidden="true">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tally-machine-btn machine-btn" data-machine="30"        onclick="tallyPickMachine(this)">30</button>
+          <button class="tally-machine-btn machine-btn" data-machine="30+"       onclick="tallyPickMachine(this)">30+</button>
+          <button class="tally-machine-btn machine-btn" data-machine="H5"        onclick="tallyPickMachine(this)">H5</button>
+          <button class="tally-machine-btn machine-btn" data-machine="Drinkware" onclick="tallyPickMachine(this)">Drinkware</button>
+        </div>
+      </div>
+
+      <!-- Category tabs -->
+      <div style="margin-bottom:16px;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#c04070;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Filter by Category</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="tally-cat-tab active" data-cat="All"          onclick="tallyPickCat(this)">All</button>
+          <button class="tally-cat-tab" data-cat="Coir OC"             onclick="tallyPickCat(this)">Coir OC</button>
+          <button class="tally-cat-tab" data-cat="Coir FC"             onclick="tallyPickCat(this)">Coir FC</button>
+          <button class="tally-cat-tab" data-cat="Non-Coir Mats"       onclick="tallyPickCat(this)">Non-Coir Mats</button>
+          <button class="tally-cat-tab" data-cat="Signs"               onclick="tallyPickCat(this)">Signs</button>
+          <button class="tally-cat-tab" data-cat="Display Pieces"      onclick="tallyPickCat(this)">Display Pieces</button>
+          <button class="tally-cat-tab" data-cat="Misprints"           onclick="tallyPickCat(this)">Misprints</button>
+        </div>
+      </div>
+
+      <!-- Cards area — rendered by JS -->
+      <div id="tally-cards-area"></div>
 
     </div>
   </div>
@@ -472,6 +597,33 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════
+     COLEX VIEW
+══════════════════════════════════════════ -->
+<div class="view" id="view-colex">
+  <div id="view-controls-slot-colex" class="view-controls-strip" style="width:100%;max-width:800px;justify-content:flex-start;"></div>
+
+  <div class="view-header" style="width:100%;max-width:800px;">
+    <div class="view-header-title">Colex</div>
+  </div>
+
+  <!-- Category selector -->
+  <div style="width:100%;max-width:800px;margin-bottom:20px;">
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#b09820;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Category</div>
+    <div id="colex-cat-btns" style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="colex-cat-btn" data-cat="Yard Signs"    onclick="colexSelectCat(this)"><span class="cat-icon">🪧</span>Yard Signs</button>
+      <button class="colex-cat-btn" data-cat="Merchandisers" onclick="colexSelectCat(this)"><span class="cat-icon">🏪</span>Merchandisers</button>
+      <button class="colex-cat-btn" data-cat="Canvas"        onclick="colexSelectCat(this)"><span class="cat-icon">🖼</span>Canvas</button>
+      <button class="colex-cat-btn" data-cat="Custom"        onclick="colexSelectCat(this)"><span class="cat-icon">✦</span>Custom</button>
+    </div>
+  </div>
+
+  <!-- Content area — rendered by JS per category -->
+  <div id="colex-content" style="width:100%;max-width:800px;font-family:'Josefin Slab',serif;font-size:14px;color:#b09820;text-align:center;padding:32px 0;">
+    Select a category above to get started.
+  </div>
+</div>
+
 <!-- ══════════ JOB MODAL ══════════ -->
 <div class="modal-overlay" id="job-modal">
   <div class="modal-box">
@@ -753,19 +905,262 @@
 </div>
 
 <!-- JS files in dependency order -->
-<script src="js/constants.js"></script>
-<script src="js/state.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/oee.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/timers.js"></script>
-<script src="js/maintenance.js"></script>
-<script src="js/reports.js"></script>
-<script src="js/orders.js"></script>
-<script src="js/settings.js"></script>
-<script src="js/printing.js"></script>
-<script src="js/stamped.js"></script>
-<script src="js/app.js"></script>
+<script src="js/constants.js?v=4"></script>
+<script src="js/state.js?v=3"></script>
+<script src="js/utils.js?v=4"></script>
+<script src="js/oee.js?v=4"></script>
+<script src="js/storage.js?v=3"></script>
+<script>
+/* timers.js -- inlined to guarantee load */
+// inChangeover declared in state.js
+
+function resyncAllTimers() {
+  const now = Date.now();
+  if (runRunning && !runPaused && runStartWall) {
+    runSec = Math.floor((now - runStartWall - runPausedMs) / 1000);
+    const el = document.getElementById("run-timer-display");
+    if (el) el.textContent = fmt(runSec);
+  }
+  if (waitRunning && waitStartWall) {
+    waitSec = Math.floor((now - waitStartWall) / 1000);
+    const el = document.getElementById("wait-display");
+    if (el) el.textContent = fmt(waitSec);
+  }
+  if (mechFixRunning && mechFixStartWall) {
+    mechFixSec = Math.floor((now - mechFixStartWall) / 1000);
+    const el = document.getElementById("mech-fix-timer");
+    if (el) el.textContent = fmt(mechFixSec);
+  }
+  if (cleanRunning && cleanStartWall) {
+    cleanSec = Math.floor((now - cleanStartWall) / 1000);
+    const el = document.getElementById("clean-timer-display");
+    if (el) el.textContent = fmt(cleanSec);
+  }
+  if (stRunning && stStartWall) {
+    stSec = Math.floor((now - stStartWall) / 1000);
+    const m = String(Math.floor(stSec / 60)).padStart(2, '0');
+    const s = String(stSec % 60).padStart(2, '0');
+    const el = document.getElementById('st-timer-display');
+    if (el) el.textContent = m + ':' + s;
+  }
+  ['changeover','piecetype','waiting','purge'].forEach(type => {
+    const t = transState[type];
+    if (t && t.active && t.startTime) {
+      t.elapsed = Math.floor((now - t.startTime) / 1000);
+      const timerEl = document.getElementById('trans-timer-' + type);
+      if (timerEl) timerEl.textContent = fmtTrans(t.elapsed);
+    }
+  });
+}
+document.addEventListener("visibilitychange", function() { if (!document.hidden) resyncAllTimers(); });
+document.addEventListener("DOMContentLoaded", function() {
+  const scrollEl = document.getElementById("reports-grid-scroll");
+  const wrapEl   = document.getElementById("reports-grid-scroll-wrap");
+  if (scrollEl && wrapEl) {
+    scrollEl.addEventListener("scroll", function() {
+      const atBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 8;
+      wrapEl.classList.toggle("at-bottom", atBottom);
+    });
+  }
+});
+window.addEventListener("focus", resyncAllTimers);
+window.addEventListener("pageshow", resyncAllTimers);
+
+let transState = {
+  changeover: { active: false, startTime: null, elapsed: 0, interval: null },
+  piecetype:  { active: false, startTime: null, elapsed: 0, interval: null },
+  waiting:    { active: false, startTime: null, elapsed: 0, interval: null },
+  purge:      { active: false, startTime: null, elapsed: 0, interval: null },
+};
+const _TRANS_CONFIG = {
+  changeover: { label: 'Changeover',    color: '#e8457a', detail: 'transition' },
+  piecetype:  { label: 'New Piece Type', color: '#3355cc', detail: 'transition' },
+  waiting:    { label: 'Waiting',        color: '#4466ee', detail: 'waiting'    },
+  purge:      { label: 'Purge',          color: '#e87820', detail: 'purge'      },
+};
+const _TRANS_COLORS = {
+  changeover: { bg: '#e8457a', border: '#c0305a' },
+  piecetype:  { bg: '#3355cc', border: '#2244aa' },
+  waiting:    { bg: '#4466ee', border: '#2244cc' },
+  purge:      { bg: '#e87820', border: '#b85808' },
+};
+
+function fmtTrans(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function transitionToggle(type) {
+  const t = transState[type];
+  if (!t) return;
+  const btn     = document.getElementById('trans-btn-' + type);
+  const timerEl = document.getElementById('trans-timer-' + type);
+  if (!t.active) {
+    Object.keys(transState).forEach(function(k) {
+      if (k !== type && transState[k].active) transitionStop(k, true);
+    });
+    t.active    = true;
+    t.startTime = Date.now();
+    t.elapsed   = 0;
+    if (btn) {
+      btn.classList.add('active-' + type);
+      const c = _TRANS_COLORS[type];
+      if (c) { btn.style.background = c.bg; btn.style.borderColor = c.border; btn.style.color = '#fff'; }
+    }
+    t.interval = setInterval(function() {
+      t.elapsed = Math.floor((Date.now() - t.startTime) / 1000);
+      if (timerEl) timerEl.textContent = fmtTrans(t.elapsed);
+    }, 500);
+  } else {
+    transitionStop(type, false);
+  }
+}
+
+function transitionStop(type, silent) {
+  const t = transState[type];
+  if (!t || !t.active) return;
+  clearInterval(t.interval);
+  t.active = false;
+  const elapsed = Math.floor((Date.now() - t.startTime) / 1000);
+  t.elapsed = elapsed;
+  const btn     = document.getElementById('trans-btn-' + type);
+  const timerEl = document.getElementById('trans-timer-' + type);
+  if (btn) {
+    btn.classList.remove('active-changeover','active-piecetype','active-waiting','active-purge');
+    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+  }
+  if (timerEl) timerEl.textContent = '00:00';
+  if (!silent && elapsed >= 1) {
+    const machine = document.getElementById('global-machine')?.value || document.querySelector(".machine-btn.active")?.dataset.machine || "Unassigned";
+    const cfg = _TRANS_CONFIG[type] || { label: type, color: '#999', detail: '' };
+    const entry = { type: cfg.label, detail: fmtTrans(elapsed) + ' ' + cfg.detail, notes: '', color: cfg.color, time: new Date().toISOString() };
+    if (!machineEvents[machine]) machineEvents[machine] = [];
+    machineEvents[machine].unshift(Object.assign({}, entry, { time: new Date() }));
+    if (window._fb) window._fb.saveMachineEvent(machine, entry);
+    if (type === 'waiting' && window._fb) window._fb.saveWaitEntry(Object.assign({}, entry, { machine: machine }));
+    localSaveMachineEvent(machine, entry);
+    renderReports();
+  }
+}
+
+function stopAllTransitions() {
+  Object.keys(transState).forEach(function(k) {
+    if (transState[k].active) transitionStop(k, true);
+  });
+}
+
+</script>
+<script src="js/maintenance.js?v=3"></script>
+<script src="js/reports.js?v=3"></script>
+<script src="js/orders.js?v=3"></script>
+<script src="js/settings.js?v=3"></script>
+<script src="js/printing.js?v=4"></script>
+<script src="js/stamped.js?v=3"></script>
+<script src="js/colex.js?v=3"></script>
+<script src="js/tally.js?v=6"></script>
+<script src="js/app.js?v=5"></script>
+
+<script>
+// ── SESSION GATE ──
+function sessionGateConfirm() {
+  const nameEl    = document.getElementById('gate-operator');
+  const machineEl = document.getElementById('gate-machine');
+  const errEl     = document.getElementById('gate-error');
+  const name    = nameEl.value.trim();
+  const machine = machineEl.value;
+
+  // Reset validation state
+  nameEl.style.borderColor    = '#c2e8b8';
+  machineEl.style.borderColor = '#c2e8b8';
+  errEl.textContent = '';
+
+  if (!name && !machine) {
+    errEl.textContent = 'Please enter your name and select a machine.';
+    nameEl.style.borderColor    = '#e8457a';
+    machineEl.style.borderColor = '#e8457a';
+    nameEl.focus();
+    return;
+  }
+  if (!name) {
+    errEl.textContent = 'Please enter your name.';
+    nameEl.style.borderColor = '#e8457a';
+    nameEl.focus();
+    return;
+  }
+  if (!machine) {
+    errEl.textContent = 'Please select a machine.';
+    machineEl.style.borderColor = '#e8457a';
+    machineEl.focus();
+    return;
+  }
+
+  // Apply to global controls
+  const opEl = document.getElementById('global-operator');
+  if (opEl) {
+    opEl.value = name;
+    opEl.dispatchEvent(new Event('input')); // syncs f-op in job modal
+  }
+  const ddEl = document.getElementById('global-machine');
+  if (ddEl) ddEl.value = machine;
+  if (typeof selectMachineByName === 'function') selectMachineByName(machine);
+
+  // Fade out and dismiss
+  const gate = document.getElementById('session-gate');
+  gate.style.transition = 'opacity 0.35s';
+  gate.style.opacity    = '0';
+  setTimeout(() => { gate.style.display = 'none'; }, 360);
+}
+
+// Show session gate after Firebase login succeeds
+document.addEventListener('fbReady', function() {
+  const gate = document.getElementById('session-gate');
+  if (!gate) return;
+  gate.style.opacity = '0';
+  gate.style.display = 'flex';
+  requestAnimationFrame(() => {
+    gate.style.transition = 'opacity 0.3s';
+    gate.style.opacity    = '1';
+  });
+  setTimeout(() => {
+    const inp = document.getElementById('gate-operator');
+    if (inp) inp.focus();
+  }, 150);
+});
+
+// ── BUTTON WIRING + DIAGNOSTICS ──
+// Wires transition bar + key buttons via addEventListener as a reliable fallback.
+// Also shows a small status banner so we can see if JS is loading correctly.
+(function() {
+  var banner = document.createElement('div');
+  banner.id  = 'js-status-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a2a18;color:#c2e8b8;font-family:monospace;font-size:11px;padding:4px 10px;z-index:99999;display:flex;gap:16px;flex-wrap:wrap;';
+
+  window.addEventListener('error', function(e) {
+    banner.style.background = '#660000';
+    banner.style.color = '#ffaaaa';
+    banner.textContent = '⚠ JS ERROR: ' + (e.message || 'unknown') + ' — ' + (e.filename || '') + ':' + e.lineno;
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check which functions exist
+    var missing = [];
+    ['transitionToggle','goToReports','switchView','selectMachine','selectMachineByName'].forEach(function(fn) {
+      if (typeof window[fn] !== 'function') missing.push(fn);
+    });
+
+    if (missing.length === 0) {
+      banner.textContent = '✓ JS OK (v3) — all functions loaded';
+      setTimeout(function() { banner.style.display = 'none'; }, 4000);
+    } else {
+      banner.style.background = '#660000';
+      banner.style.color = '#ffaaaa';
+      banner.textContent = '✗ MISSING: ' + missing.join(', ');
+    }
+
+    document.body.appendChild(banner);
+  });
+})();
+</script>
 
 <!-- ══════════════════════════════════════════
      STAMPED VIEW
@@ -917,6 +1312,15 @@
     </div>
 
     <div id="settings-targets-table"></div>
+
+    <!-- Colex Merchandiser Expected Times -->
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#9a7e00;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #e8d870;margin-bottom:8px;">
+      Colex — Merchandiser Expected Times
+    </div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+      Set the expected time per sheet for each merchandiser type. The tally view uses these to calculate total expected time automatically.
+    </div>
+    <div id="settings-colex-merch"></div>
 
     <!-- OEE Ideal Cycle Times -->
     <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#4488aa;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">

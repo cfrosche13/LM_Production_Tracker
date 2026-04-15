@@ -51,6 +51,7 @@ function isInDateRange(dateVal) {
 }
 
 function fmt(s) {
+  s = Math.floor(s || 0);
   return `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 }
 function fmtDate(d) {

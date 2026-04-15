@@ -90,18 +90,19 @@ function startListeners() {
     if (banner) banner.style.display = 'none';
   });
 
-  // Show diagnostic banner after 8s if liveState never fired with data
+  // Show diagnostic banner after 8s only if Firebase liveState path never responded
+  // (empty liveState just means no machines are running right now — that's normal)
   setTimeout(() => {
-    if (!_liveStateReceived || Object.keys(_liveState).length === 0) {
+    if (!_liveStateReceived) {
       const banner = document.getElementById('live-rules-banner');
       if (banner && window._mgTab === 'live') banner.style.display = 'block';
     }
   }, 8000);
-  // Also show banner when switching to live tab if still no data after 8s
+  // Also show banner when switching to live tab if path never responded
   window._showBannerIfNeeded = () => {
     const banner = document.getElementById('live-rules-banner');
     if (!banner) return;
-    banner.style.display = (Object.keys(_liveState).length === 0) ? 'block' : 'none';
+    banner.style.display = !_liveStateReceived ? 'block' : 'none';
   };
 }
 
@@ -127,7 +128,7 @@ function localDateStr(d) {
     String(d.getDate()).padStart(2,"0");
 }
 function fmt(s) {
-  s = Math.max(0, s || 0);
+  s = Math.floor(Math.max(0, s || 0));
   return `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 }
 function fmtTime(d) { return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }

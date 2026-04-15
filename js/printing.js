@@ -8,6 +8,9 @@ function qsPickMachine(btn) {
   document.querySelectorAll(".machine-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.machine === _qsMachine);
   });
+  // Sync the top-bar global dropdown
+  const dd = document.getElementById("global-machine");
+  if (dd) dd.value = _qsMachine || "";
 }
 
 // Two-step mode selection: function first, then color
@@ -335,17 +338,36 @@ function _runResetCoBtn() {
 
 // ── QS machine preselect on init ──
 function qsInitMachine() {
-  // Pre-select whichever machine-btn is already active
-  const activeMachine = document.querySelector(".machine-btn.active");
-  if (activeMachine) {
-    _qsMachine = activeMachine.dataset.machine;
+  // Prefer the global top-bar dropdown if a machine is already chosen
+  const dd = document.getElementById("global-machine");
+  const ddMachine = dd?.value || "";
+
+  if (ddMachine) {
+    _qsMachine = ddMachine;
     document.querySelectorAll(".qs-machine-btn").forEach(b => {
       b.classList.toggle("qs-active", b.dataset.machine === _qsMachine);
     });
+    document.querySelectorAll(".machine-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.machine === _qsMachine);
+    });
   } else {
-    // Default to first
-    const first = document.querySelector(".qs-machine-btn");
-    if (first) { first.classList.add("qs-active"); _qsMachine = first.dataset.machine; }
+    // Fall back: pre-select whichever machine-btn is already active
+    const activeMachine = document.querySelector(".machine-btn.active");
+    if (activeMachine) {
+      _qsMachine = activeMachine.dataset.machine;
+      document.querySelectorAll(".qs-machine-btn").forEach(b => {
+        b.classList.toggle("qs-active", b.dataset.machine === _qsMachine);
+      });
+      if (dd) dd.value = _qsMachine;
+    } else {
+      // Default to first qs button
+      const first = document.querySelector(".qs-machine-btn");
+      if (first) {
+        first.classList.add("qs-active");
+        _qsMachine = first.dataset.machine;
+        if (dd) dd.value = _qsMachine;
+      }
+    }
   }
   // Default mode
   // Reset mode UI

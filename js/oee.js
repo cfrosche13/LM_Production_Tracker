@@ -94,9 +94,9 @@ function calcEfficiency(qtyGood, changeovers, pieceType, mode) {
     // Each lap = one full pass of the table, so laps === tables run
     tables = changeovers || 1; // changeovers field stores lap count in continuous mode
   } else {
-    // Stop/Go: changeovers are the swaps *between* tables
-    // e.g. 3 changeovers = 4 tables (start + 3 swaps)
-    tables = (changeovers || 0) + 1;
+    // Stop/Go: _finishStop() already adds +1 to changeovers for the final table,
+    // so changeovers === total tables worked (not swaps between tables).
+    tables = changeovers || 1;
   }
 
   if (!tables) return null;

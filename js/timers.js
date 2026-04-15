@@ -29,7 +29,7 @@ function resyncAllTimers() {
     const el = document.getElementById('st-timer-display');
     if (el) el.textContent = m + ':' + s;
   }
-  ['changeover','piecetype'].forEach(type => {
+  ['changeover','piecetype','waiting'].forEach(type => {
     const t = transState[type];
     if (t && t.active && t.startTime) {
       t.elapsed = Math.floor((now - t.startTime) / 1000);
@@ -37,6 +37,7 @@ function resyncAllTimers() {
       if (timerEl) timerEl.textContent = fmtTrans(t.elapsed);
     }
   });
+  _resyncPurge();
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) resyncAllTimers(); });
 
@@ -56,7 +57,14 @@ window.addEventListener("pageshow", resyncAllTimers);
 
 let transState = {
   changeover: { active: false, startTime: null, elapsed: 0, interval: null },
-  piecetype:  { active: false, startTime: null, elapsed: 0, interval: null }
+  piecetype:  { active: false, startTime: null, elapsed: 0, interval: null },
+  waiting:    { active: false, startTime: null, elapsed: 0, interval: null },
+};
+
+const _TRANS_CONFIG = {
+  changeover: { label: 'Changeover',    color: '#e8457a', detail: 'transition' },
+  piecetype:  { label: 'New Piece Type', color: '#3355cc', detail: 'transition' },
+  waiting:    { label: 'Waiting',        color: '#4466ee', detail: 'waiting'    },
 };
 
 function fmtTrans(sec) {
@@ -64,24 +72,44 @@ function fmtTrans(sec) {
   return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
 }
 
+const _TRANS_COLORS = {
+  changeover: { bg: '#e8457a', border: '#c0305a' },
+  piecetype:  { bg: '#3355cc', border: '#2244aa' },
+  waiting:    { bg: '#4466ee', border: '#2244cc' },
+};
+
 function transitionToggle(type) {
-  const other = type === 'changeover' ? 'piecetype' : 'changeover';
   const t = transState[type];
-  const btn = document.getElementById('trans-btn-' + type);
+  if (!t) return;
+  const btn     = document.getElementById('trans-btn-' + type);
   const timerEl = document.getElementById('trans-timer-' + type);
 
   if (!t.active) {
-    // Stop the other if running
-    if (transState[other].active) transitionStop(other, true);
+    // Stop every other active transition and purge
+    Object.keys(transState).forEach(k => {
+      if (k !== type && transState[k].active) transitionStop(k, true);
+    });
+    if (purgeRunning) purgeCancel();
 
     // Start this one
-    t.active = true;
+    t.active    = true;
     t.startTime = Date.now();
-    t.elapsed = 0;
-    btn.classList.add(type === 'changeover' ? 'active-changeover' : 'active-piecetype');
-    t.interval = setInterval(() => {
+    t.elapsed   = 0;
+
+    // Apply active state — CSS class + inline style fallback
+    if (btn) {
+      btn.classList.add('active-' + type);
+      const c = _TRANS_COLORS[type];
+      if (c) {
+        btn.style.background   = c.bg;
+        btn.style.borderColor  = c.border;
+        btn.style.color        = '#fff';
+      }
+    }
+
+    t.interval  = setInterval(() => {
       t.elapsed = Math.floor((Date.now() - t.startTime) / 1000);
-      timerEl.textContent = fmtTrans(t.elapsed);
+      if (timerEl) timerEl.textContent = fmtTrans(t.elapsed);
     }, 500);
   } else {
     transitionStop(type, false);
@@ -90,40 +118,168 @@ function transitionToggle(type) {
 
 function transitionStop(type, silent) {
   const t = transState[type];
-  if (!t.active) return;
+  if (!t || !t.active) return;
 
   clearInterval(t.interval);
-  t.active = false;
+  t.active      = false;
   const elapsed = Math.floor((Date.now() - t.startTime) / 1000);
-  t.elapsed = elapsed;
+  t.elapsed     = elapsed;
 
-  const btn = document.getElementById('trans-btn-' + type);
+  const btn     = document.getElementById('trans-btn-' + type);
   const timerEl = document.getElementById('trans-timer-' + type);
-  btn.classList.remove('active-changeover', 'active-piecetype');
-  timerEl.textContent = '00:00';
+  if (btn) {
+    btn.classList.remove('active-changeover', 'active-piecetype', 'active-waiting');
+    btn.style.background  = '';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+  }
+  if (timerEl) timerEl.textContent = '00:00';
 
   if (!silent && elapsed >= 1) {
-    // Log to the active machine's events
     const machine = document.querySelector(".machine-btn.active")?.dataset.machine || "Unassigned";
-    const label = type === 'changeover' ? 'Changeover' : 'New Piece Type';
-    const color = type === 'changeover' ? '#e8457a' : '#3355cc';
-    const entry = {
-      type: label,
-      detail: fmtTrans(elapsed) + ' transition',
-      notes: '',
-      color,
-      time: new Date().toISOString()
+    const cfg     = _TRANS_CONFIG[type] || { label: type, color: '#999', detail: '' };
+    const entry   = {
+      type:   cfg.label,
+      detail: fmtTrans(elapsed) + ' ' + cfg.detail,
+      notes:  '',
+      color:  cfg.color,
+      time:   new Date().toISOString(),
     };
     if (!machineEvents[machine]) machineEvents[machine] = [];
     machineEvents[machine].unshift({ ...entry, time: new Date() });
     if (window._fb) window._fb.saveMachineEvent(machine, entry);
+    if (type === 'waiting' && window._fb) {
+      window._fb.saveWaitEntry({ ...entry, machine });
+    }
     localSaveMachineEvent(machine, entry);
     renderReports();
   }
 }
 
-// Stop active transition timers when a run starts or a view changes
+// Stop all active transitions when a run starts or view changes
 function stopAllTransitions() {
-  if (transState.changeover.active) transitionStop('changeover', true);
-  if (transState.piecetype.active)  transitionStop('piecetype', true);
+  Object.keys(transState).forEach(k => {
+    if (transState[k].active) transitionStop(k, true);
+  });
+  if (purgeRunning) purgeCancel();
+}
+
+// ── PURGE TIMER ──
+const PURGE_DURATION = 60; // seconds
+let purgeRunning   = false;
+let purgeInterval  = null;
+let purgeStartWall = 0;
+
+function fmtPurge(sec) {
+  const s = Math.max(0, sec);
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+
+function purgeToggle() {
+  if (!purgeRunning) {
+    purgeStart();
+  } else {
+    purgeCancel();
+  }
+}
+
+function purgeStart() {
+  purgeRunning   = true;
+  purgeStartWall = Date.now();
+
+  const btn     = document.getElementById("trans-btn-purge");
+  const timerEl = document.getElementById("trans-timer-purge");
+  if (btn) {
+    btn.classList.add("active-purge");
+    btn.style.background  = '#e87820';
+    btn.style.borderColor = '#b85808';
+    btn.style.color       = '#fff';
+  }
+  if (timerEl) timerEl.textContent = fmtPurge(PURGE_DURATION);
+
+  purgeInterval = setInterval(() => {
+    const elapsed    = Math.floor((Date.now() - purgeStartWall) / 1000);
+    const remaining  = PURGE_DURATION - elapsed;
+    const el         = document.getElementById("trans-timer-purge");
+    if (el) el.textContent = fmtPurge(remaining);
+    if (remaining <= 0) purgeComplete();
+  }, 500);
+}
+
+function purgeComplete() {
+  clearInterval(purgeInterval);
+  purgeInterval = null;
+  purgeRunning  = false;
+
+  const btn     = document.getElementById("trans-btn-purge");
+  const timerEl = document.getElementById("trans-timer-purge");
+  if (btn) {
+    btn.classList.remove("active-purge");
+    btn.style.background  = '';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+  }
+  if (timerEl) timerEl.textContent = fmtPurge(PURGE_DURATION);
+
+  // Flash green to signal done
+  if (btn) {
+    btn.style.background  = '#52a040';
+    btn.style.borderColor = '#3a7a2c';
+    btn.style.color       = '#fff';
+    btn.classList.add("purge-done");
+    setTimeout(() => {
+      btn.classList.remove("purge-done");
+      btn.style.background  = '';
+      btn.style.borderColor = '';
+      btn.style.color       = '';
+    }, 2500);
+  }
+
+  _purgeLog("1:00 purge cycle completed", true);
+}
+
+function purgeCancel() {
+  if (!purgeRunning) return;
+  clearInterval(purgeInterval);
+  purgeInterval = null;
+  purgeRunning  = false;
+
+  const elapsed = Math.floor((Date.now() - purgeStartWall) / 1000);
+  const btn     = document.getElementById("trans-btn-purge");
+  const timerEl = document.getElementById("trans-timer-purge");
+  if (btn) {
+    btn.classList.remove("active-purge");
+    btn.style.background  = '';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+  }
+  if (timerEl) timerEl.textContent = fmtPurge(PURGE_DURATION);
+
+  if (elapsed >= 2) _purgeLog(fmtPurge(elapsed) + " (cancelled early)", false);
+}
+
+function _purgeLog(detail, completed) {
+  const machine = document.querySelector(".machine-btn.active")?.dataset.machine || "Unassigned";
+  const entry = {
+    type:   "Purge",
+    detail,
+    notes:  "",
+    color:  "#e87820",
+    time:   new Date().toISOString(),
+  };
+  if (!machineEvents[machine]) machineEvents[machine] = [];
+  machineEvents[machine].unshift({ ...entry, time: new Date() });
+  if (window._fb) window._fb.saveMachineEvent(machine, entry);
+  localSaveMachineEvent(machine, entry);
+  renderReports();
+}
+
+// Resync purge on page visibility restore
+function _resyncPurge() {
+  if (!purgeRunning || !purgeStartWall) return;
+  const elapsed   = Math.floor((Date.now() - purgeStartWall) / 1000);
+  const remaining = PURGE_DURATION - elapsed;
+  const el        = document.getElementById("trans-timer-purge");
+  if (el) el.textContent = fmtPurge(remaining);
+  if (remaining <= 0) purgeComplete();
 }
