@@ -185,6 +185,7 @@ function selectPrintMode(mode) {
   // Start timer — wall-clock based
   runRunning = true;
   runStartWall = Date.now();
+  window._runStartedAt = new Date().toISOString();
   runPausedMs = 0;
   runPauseStartWall = 0;
   runInterval = setInterval(() => {
@@ -589,6 +590,7 @@ function runStop() {
     pieceType: cat && sub ? `${cat} · ${sub}` : "Unspecified",
     machine, op,
     time: new Date(),
+    startTime: window._runStartedAt || null,
   };
 
   // For stop/go: roll up changeover qty tallies into the session
@@ -691,12 +693,14 @@ function runSummaryFinish(qtyGood, qtyBad, notes) {
     pieceType: d.pieceType,
     op: d.op,
     time: d.time.toISOString(),
+    startTime: d.startTime || null,
   });
   // Save to Firebase
   const sessionPayload = {
     mode: d.mode, totalSec: d.totalSec, changeovers: d.changeovers,
     qtyGood: finalGood, qtyBad: finalBad, notes: notes||"",
     pieceType: d.pieceType, op: d.op, time: d.time.toISOString(),
+    startTime: d.startTime || null,
     tableLog: runEntries.filter(e => e.type === "Changeover" || e.type === "Lap" || e.type === "Session End")
       .map(e => ({ type: e.type, elapsed: e.elapsed, qtyGood: e.qtyGood||0, qtyBad: e.qtyBad||0, time: e.time ? new Date(e.time).toISOString() : null }))
       .reverse()

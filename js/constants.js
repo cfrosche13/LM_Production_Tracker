@@ -14,6 +14,8 @@ const PIECE_TYPES = {
   "Signs":         ["16x24","12x12","12x8 Plock","11x6 Plock","6x6 Plock","Leaner","Double Sided Leaner","Mantle Sign","18\" Circle","Yard Sign"],
   "Wallets":       ["Cross Body","Trifold Black","Trifold Brown","Bifold Black","Bifold Brown","Bifold Tumbled Leather","Wristlet Black","Wristlet Brown","Front Pocket Black","Front Pocket Brown","Toiletry Bag","Clock"],
   "Display Pieces": ["Vert. Yard Display","Horz. Yard Display","Leaner Display","Yard Sign Display"],
+  "Roll Media":     ["Small Canvas","Large Canvas"],
+  "Drinkware":      ["Pint Glass"],
 };
 // ═══════════════════════════════════════
 // CLEANING CHECKLISTS
@@ -202,8 +204,8 @@ const COLEX_MERCHANDISERS = [
 ];
 const COLEX_MERCH_TIME_DEFAULTS = { vym: 1800, hym: 1800, plm: 1800, gym: 1800 }; // seconds per sheet
 
-const OEE_MACHINE_MAP = { "30": "30F", "30+": "30F+", "H5": "H5", "Colex": "Colex", "Wallets": "Wallets", "Drinkware": "Drinkware" };
-const OEE_IDEAL_CYCLE_DEFAULTS = { "30": 94, "30+": 42.5, "H5": 32.5, "Colex": 0, "Wallets": 0, "Drinkware": 0 }; // seconds per unit
+const OEE_MACHINE_MAP = { "30": "30F", "30+": "30F+", "H5": "H5", "Colex": "Colex", "Wallets": "Wallets", "Drinkware M1": "Drinkware M1", "Drinkware M2": "Drinkware M2" };
+const OEE_IDEAL_CYCLE_DEFAULTS = { "30": 94, "30+": 42.5, "H5": 32.5, "Colex": 0, "Wallets": 0, "Drinkware M1": 75, "Drinkware M2": 75 }; // seconds per unit
 
 // TABLE CAPACITY DEFAULTS (pieces per table/changeover)
 // These are overridden by Firebase targets if set
@@ -236,18 +238,22 @@ const TABLE_CAPACITY_DEFAULTS = {
   "Display Pieces · Horz. Yard Display": 1,
   "Display Pieces · Leaner Display": 1,
   "Display Pieces · Yard Sign Display": 1,
+  "Roll Media · Small Canvas": 2,
+  "Roll Media · Large Canvas": 1,
+  "Drinkware · Pint Glass": 1,
 };
 
 const MACHINE_COLORS = {
   "30":       "#e8374a",
   "30+":      "#3366cc",
   "H5":       "#f5c800",
-  "Drinkware":"#e8457a",
+  "Drinkware M1":"#e8457a",
+  "Drinkware M2":"#c42060",
   "Wallets":  "#7733aa",
   "Colex":    "#e87820"
 };
 
-const PRINTED_MACHINES = ["30","30+","H5","Drinkware"];
+const PRINTED_MACHINES = ["30","30+","H5","Drinkware M1","Drinkware M2"];
 const STAMPED_MACHINES = ["Wallets"];
 
 const ORDER_PIECE_MAP = {

@@ -9,7 +9,7 @@ let _tallyMisprints     = {};        // key: "Cat · SubType" → count
 let _tallyActive        = false;
 let _tallyAutoSaveTimer = null;
 
-const _TALLY_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces"];
+const _TALLY_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces", "Roll Media", "Drinkware"];
 
 // ── Auto-save ──
 function _tallyScheduleSave() {
@@ -60,6 +60,8 @@ function _tallyAutoSaveNow() {
         pieceType:   pieceKey,
         op,
         time:        d.toISOString(),
+        startTime:   d.toISOString(),
+        endTime:     new Date(d.getTime() + totalSec * 1000).toISOString(),
         totalSec,
         changeovers: 0,
         notes:       "Tally count",
@@ -381,6 +383,20 @@ function tallyInc(key) {
   _tallyCounts[key] = (_tallyCounts[key] || 0) + 1;
   _tallyUpdateCard(key);
   _tallyScheduleSave();
+  // Log this individual tick to Firebase for manager dashboard charting
+  if (window._fb && _tallyMachine && _tallyMachine !== "—") {
+    const d = new Date();
+    const dateStr = d.getFullYear() + "-"
+                  + String(d.getMonth()+1).padStart(2,"0") + "-"
+                  + String(d.getDate()).padStart(2,"0");
+    window._fb.pushTallyEvent(_tallyMachine, dateStr, {
+      pieceType: key,
+      delta:     1,
+      total:     _tallyCounts[key],
+      op:        document.getElementById("global-operator")?.value || "—",
+      time:      d.toISOString(),
+    });
+  }
 }
 function tallyUndo(key) {
   if (!_tallyCounts[key]) return;
@@ -491,6 +507,20 @@ function _tallyOpenAdjustModal(key, isMisprint) {
     } else {
       _tallyCounts[key] = Math.max(0, (_tallyCounts[key] || 0) + typed);
       _tallyUpdateCard(key);
+      // Log the manual adjustment to Firebase for manager dashboard charting
+      if (window._fb && _tallyMachine && _tallyMachine !== "—") {
+        const d = new Date();
+        const dateStr = d.getFullYear() + "-"
+                      + String(d.getMonth()+1).padStart(2,"0") + "-"
+                      + String(d.getDate()).padStart(2,"0");
+        window._fb.pushTallyEvent(_tallyMachine, dateStr, {
+          pieceType: key,
+          delta:     typed,
+          total:     _tallyCounts[key],
+          op:        document.getElementById("global-operator")?.value || "—",
+          time:      d.toISOString(),
+        });
+      }
     }
     _tallyScheduleSave();
     overlay.style.display = "none";

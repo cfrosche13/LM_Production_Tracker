@@ -203,6 +203,10 @@
         saveTallyState:  (dateStr, data) => set(ref(db, `tallyState/${dateStr}`), data),
         // One-time fetch of today's tally snapshot (used on startup to restore counts)
         fetchTallyState: (dateStr)       => get(ref(db, `tallyState/${dateStr}`)).then(snap => snap.val()),
+
+        // Individual tally tick events — written on every increment/adjustment for manager charting
+        pushTallyEvent: (machine, dateStr, event) =>
+          push(ref(db, `tallyEvents/${machine}/${dateStr}`), event),
       };
       window._fbReady = true;
       document.dispatchEvent(new Event("fbReady"));

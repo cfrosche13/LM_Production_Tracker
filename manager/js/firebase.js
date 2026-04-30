@@ -59,11 +59,14 @@ let _openOrders = null;
 let _shiftLog   = {}; // { "YYYY-MM-DD": [ {op, event, time}, ... ] }
 let _liveState  = {}; // { machine: { startWall, pausedMs, paused, pauseStartWall, mode, op, pieceType } }
 let _liveStateReceived = false; // set true once Firebase liveState path responds
+let _tallyEvents = {}; // { machine: { dateStr: [ {pieceType, delta, total, op, time} ] } }
 
 // ── Listeners ──
 function startListeners() {
   // Tick live timers every second once authenticated
   setInterval(renderLiveTimers, 1000);
+  // Refresh machine grid every 60s so pace numbers stay current
+  setInterval(() => { if (window._mgTab === "overview") renderMachineGrid(); }, 60000);
   onValue(ref(db, "sessions"),   snap => { _sessions   = parseSessionsSnap(snap.val() || {}); render(); });
   onValue(ref(db, "maintLog"),   snap => { _maint      = parseLog(snap.val() || {}); render(); });
   onValue(ref(db, "waitLog"),    snap => { _wait       = parseLog(snap.val() || {}); render(); });
@@ -88,6 +91,21 @@ function startListeners() {
     _liveStateReceived = true;
     const banner = document.getElementById('live-rules-banner');
     if (banner) banner.style.display = 'none';
+  });
+
+  onValue(ref(db, "tallyEvents"), snap => {
+    const raw = snap.val() || {};
+    _tallyEvents = {};
+    Object.entries(raw).forEach(([machine, dates]) => {
+      _tallyEvents[machine] = {};
+      Object.entries(dates).forEach(([dateStr, events]) => {
+        _tallyEvents[machine][dateStr] = Object.values(events)
+          .filter(Boolean)
+          .map(e => ({ ...e, time: e.time ? new Date(e.time) : new Date() }))
+          .sort((a, b) => a.time - b.time);
+      });
+    });
+    if (window._drillMachine && window._ddTab === "tally") renderDrilldown();
   });
 
   // Show diagnostic banner after 8s only if Firebase liveState path never responded
@@ -176,7 +194,7 @@ window.closeMachineManager = function() {
 };
 
 function renderMachineManagerModal() {
-  const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware"];
+  const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2"];
   const allMachines = [...new Set([...MACHINES, ...Object.keys(_sessions)])];
   const list = document.getElementById("machine-manager-list");
   if (!list) return;
@@ -236,34 +254,84 @@ function updateLastSync() {
 // SUMMARY BAR
 // ─────────────────────────────────────────
 function renderSummaryBar() {
-  let totalGood=0, totalBad=0, totalSec=0, activeMachines=new Set();
+  let totalGood=0, totalBad=0, totalSec=0;
+  const rangedMachines = new Set();
   Object.entries(_sessions).forEach(([m, sessions]) => {
     sessions.filter(s=>inRange(s.time)).forEach(s => {
       totalGood += s.qtyGood||0;
       totalBad  += s.qtyBad||0;
       totalSec  += s.totalSec||0;
-      activeMachines.add(m);
+      rangedMachines.add(m);
     });
   });
+
   const maintToday   = _maint.filter(e=>inRange(e.time));
-  const downNow      = _maint.some(e=>e.type==="Machine Down" && inRange(e.time));
   const totalWaitSec = _wait.filter(e=>inRange(e.time)).reduce((s,e)=>s+(e.duration||0),0);
   const liveCount    = Object.keys(_liveState).length;
+
+  // On Pace: always uses today regardless of date range
+  const todayStr = localDateStr(new Date());
+  const todayMachines = Object.keys(_sessions).filter(m =>
+    (_sessions[m]||[]).some(s => localDateStr(s.time) === todayStr)
+  );
+  const machinesWithTargets = todayMachines.filter(m => {
+    const p = calcMachinePace(m);
+    return p && p.ratio !== null;
+  });
+  const onPaceCount = machinesWithTargets.filter(m => {
+    const p = calcMachinePace(m);
+    return p && p.ratio >= 90;
+  }).length;
+  const totalWithTargets = machinesWithTargets.length;
+
+  const paceEl   = document.getElementById("sum-pace");
+  const paceCard = document.getElementById("sum-pace-card");
+  if (paceEl) {
+    paceEl.textContent = totalWithTargets > 0 ? `${onPaceCount} / ${totalWithTargets}` : "—";
+    let paceColor = "#52a040";
+    if (totalWithTargets > 0) {
+      if (onPaceCount === totalWithTargets)        paceColor = "#228844";
+      else if (onPaceCount >= totalWithTargets / 2) paceColor = "#cc8800";
+      else                                          paceColor = "#cc3333";
+    }
+    paceEl.style.color = paceColor;
+    if (paceCard) { paceCard.style.borderColor = paceColor + "55"; }
+  }
+
+  // Machine currently down? Any Machine Down today with no subsequent Operator Fix
+  const machineDownNow = (() => {
+    const machines = [...new Set(maintToday.map(e=>e.machine).filter(Boolean))];
+    return machines.some(m => {
+      const evts = maintToday.filter(e=>e.machine===m).sort((a,b)=>a.time-b.time);
+      let lastDown=null, lastFix=null;
+      evts.forEach(e => {
+        if (e.type==="Machine Down") lastDown = e.time;
+        if (e.type==="Operator Fix") lastFix  = e.time;
+      });
+      return lastDown && (!lastFix || lastFix < lastDown);
+    });
+  })();
 
   document.getElementById("sum-good").textContent    = totalGood.toLocaleString();
   document.getElementById("sum-bad").textContent     = totalBad.toLocaleString();
   document.getElementById("sum-runtime").textContent = fmt(totalSec);
-  document.getElementById("sum-machines").textContent= activeMachines.size;
-  document.getElementById("sum-maint").textContent   = maintToday.length;
   document.getElementById("sum-wait").textContent    = fmt(totalWaitSec);
 
-  const downBadge = document.getElementById("sum-down-badge");
-  if (downBadge) downBadge.style.display = downNow ? "inline-block" : "none";
+  const maintValEl = document.getElementById("sum-maint");
+  if (maintValEl) {
+    maintValEl.textContent  = maintToday.length;
+    maintValEl.style.color  = machineDownNow ? "#cc3333" : "#e87820";
+    const maintCard = maintValEl.closest(".sum-card");
+    if (maintCard) {
+      maintCard.style.borderColor = machineDownNow ? "#f0b8b8" : "";
+      maintCard.style.background  = machineDownNow ? "#fff5f5" : "";
+    }
+  }
 
   // Live running pill on the Live tab button
   const livePill = document.getElementById("live-tab-pill");
   if (livePill) {
-    const idleCount = getMachinesTodaySet ? [...getMachinesTodaySet()].filter(m => !_liveState[m]).length : 0;
+    const idleCount = getMachinesTodaySet ? [...getMachinesTodaySet()].filter(m=>!_liveState[m]).length : 0;
     const total = liveCount + idleCount;
     livePill.textContent = total;
     livePill.style.display = total > 0 ? "inline-flex" : "none";
@@ -275,58 +343,107 @@ function renderSummaryBar() {
 // MACHINE GRID
 // ─────────────────────────────────────────
 function renderMachineGrid() {
-  const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware"];
+  const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2"];
   const grid = document.getElementById("machine-grid");
   if (!grid) return;
   grid.innerHTML = "";
 
+  const todayStr = localDateStr(new Date());
+  const now      = Date.now();
   const allMachines = [...new Set([...MACHINES, ...Object.keys(_sessions)])];
   updateManageBtnBadge();
 
   allMachines.forEach(machine => {
-    // Skip hidden machines
     if (window._hiddenMachines.has(machine)) return;
 
-    const sessions = (_sessions[machine]||[]).filter(s=>inRange(s.time));
-    const hasMaint  = _maint.some(e=>(e.machine||"")==machine && inRange(e.time));
+    // Cards always show today — this is a shift health view
+    const sessions = (_sessions[machine]||[]).filter(s => localDateStr(s.time) === todayStr);
+    const hasMaint  = _maint.some(e => {
+      if ((e.machine||"") !== machine) return false;
+      const d = e.time instanceof Date ? e.time : new Date(e.time);
+      return localDateStr(d) === todayStr;
+    });
     if (!sessions.length && !hasMaint) return;
 
-    const qtyGood    = sessions.reduce((s,r)=>s+(r.qtyGood||0),0);
-    const qtyBad     = sessions.reduce((s,r)=>s+(r.qtyBad||0),0);
-    const totalSec   = sessions.reduce((s,r)=>s+(r.totalSec||0),0);
-    const changeovers= sessions.reduce((s,r)=>s+(r.changeovers||0),0);
+    const qtyGood  = sessions.reduce((s,r) => s + (r.qtyGood  || 0), 0);
+    const qtyBad   = sessions.reduce((s,r) => s + (r.qtyBad   || 0), 0);
+    const totalSec = sessions.reduce((s,r) => s + (r.totalSec || 0), 0);
 
-    const maintEntries = _maint.filter(e=>(e.machine||"Unassigned")===machine && inRange(e.time));
-    const isDown = maintEntries.some(e=>e.type==="Machine Down");
-    const hasFix = maintEntries.some(e=>e.type==="Operator Fix");
-    const isLive = !!_liveState[machine];
+    // ── Mode badge ──
+    const isLive    = !!_liveState[machine];
+    const lastSess  = sessions[0]; // sorted desc
+    const isTally   = lastSess && lastSess.mode === "tally";
+    let modeBadge;
+    if (isLive) {
+      modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#228844;color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;animation:live-pulse 2s ease-in-out infinite;">▶ LIVE</span>`;
+    } else if (isTally) {
+      modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#336688;color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;">📊 TALLY</span>`;
+    } else {
+      modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#e0e4e8;color:#888;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;">⏸ IDLE</span>`;
+    }
 
-    const operators  = [...new Set(sessions.map(s=>s.op).filter(Boolean))];
-    const pieceTypes = [...new Set(sessions.map(s=>s.pieceType).filter(Boolean))];
+    // ── Last logged time ──
+    let lastLoggedStr = "—";
+    if (sessions.length) {
+      const lastTime = sessions[0].time instanceof Date ? sessions[0].time : new Date(sessions[0].time);
+      const minAgo   = Math.round((now - lastTime.getTime()) / 60000);
+      lastLoggedStr  = minAgo < 1 ? "just now" : minAgo + " min ago";
+    }
+
+    // ── Pace indicator ──
+    const pace = calcMachinePace(machine);
+    let paceHTML;
+    if (!pace || pace.expectedGood === null) {
+      paceHTML = `<div style="font-family:'Josefin Slab',serif;font-size:10px;color:#b0b8c8;font-style:italic;margin-bottom:10px;padding:6px 2px;">No pace target set</div>`;
+    } else {
+      const pct      = Math.min(100, pace.ratio);
+      const barColor = pct >= 90 ? "#228844" : pct >= 65 ? "#cc8800" : "#cc3333";
+      const bgColor  = pct >= 90 ? "#eef8eb" : pct >= 65 ? "#fffbf0" : "#fff5f5";
+      const bdrColor = pct >= 90 ? "#b8e0b0" : pct >= 65 ? "#f0d080" : "#f0b8b8";
+      paceHTML = `
+        <div style="background:${bgColor};border:1px solid ${bdrColor};border-radius:8px;padding:8px 10px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">
+            <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#90a8b8;text-transform:uppercase;letter-spacing:0.08em;">Pace vs Expected</span>
+            <span style="font-family:'Abril Fatface',serif;font-size:20px;color:${barColor};">${pct}%</span>
+          </div>
+          <div style="background:#d8e4d8;border-radius:99px;height:6px;overflow:hidden;margin-bottom:5px;">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width 0.5s;"></div>
+          </div>
+          <div style="font-family:'Josefin Slab',serif;font-size:9px;color:#90a8a0;">
+            ${pace.actualGood.toLocaleString()} actual &nbsp;/&nbsp; ${pace.expectedGood.toLocaleString()} expected
+          </div>
+        </div>`;
+    }
+
+    // ── Current piece type (most recent session) ──
+    const currentPiece = lastSess && lastSess.pieceType
+      ? `<div style="margin-bottom:7px;"><span style="font-family:'Josefin Slab',serif;font-size:10px;color:#52a040;background:#eef8eb;border:1px solid #b8e0b0;border-radius:4px;padding:2px 8px;">${lastSess.pieceType}</span></div>`
+      : "";
+
+    // ── Operators ──
+    const operators = [...new Set(sessions.map(s=>s.op).filter(Boolean))];
+
     const isSelected = window._drillMachine === machine;
-
     const card = document.createElement("div");
     card.className = "machine-card" + (isSelected ? " selected" : "");
 
-    let statusBadge = "";
-    if (isLive)      statusBadge += `<span class="badge badge-live">▶ LIVE</span> `;
-    if (isDown)      statusBadge += `<span class="badge badge-down">⬇ DOWN</span>`;
-    else if (hasFix) statusBadge += `<span class="badge badge-fix">⚙ Fix</span>`;
-
     card.innerHTML = `
-      <div class="mc-header">
+      <div class="mc-header" style="align-items:flex-start;">
         <div class="mc-name">${machine}</div>
-        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">${statusBadge}<span class="mc-sessions">${sessions.length} run${sessions.length!==1?"s":""}</span></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          ${modeBadge}
+          <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#b0b8c8;">Last logged ${lastLoggedStr}</span>
+        </div>
       </div>
+      ${paceHTML}
       <div class="mc-stats">
-        <div class="mc-stat"><div class="mc-stat-val" style="color:#e8457a;">${qtyGood.toLocaleString()}</div><div class="mc-stat-lbl">Good</div></div>
-        <div class="mc-stat"><div class="mc-stat-val" style="color:#cc3333;">${qtyBad.toLocaleString()}</div><div class="mc-stat-lbl">Bad</div></div>
-        <div class="mc-stat"><div class="mc-stat-val" style="color:#336688;font-size:14px;">${fmt(totalSec)}</div><div class="mc-stat-lbl">Run Time</div></div>
-        <div class="mc-stat"><div class="mc-stat-val" style="color:#888;">${changeovers}</div><div class="mc-stat-lbl">C/O</div></div>
+        <div class="mc-stat"><div class="mc-stat-val" style="color:#e8457a;">${qtyGood.toLocaleString()}</div><div class="mc-stat-lbl">✓ Good</div></div>
+        <div class="mc-stat"><div class="mc-stat-val" style="color:#cc3333;">${qtyBad.toLocaleString()}</div><div class="mc-stat-lbl">✗ Bad</div></div>
+        <div class="mc-stat"><div class="mc-stat-val" style="color:#336688;font-size:13px;">${fmt(totalSec)}</div><div class="mc-stat-lbl">Run Time</div></div>
+        <div class="mc-stat"><div class="mc-stat-val" style="color:#888;">${sessions.length}</div><div class="mc-stat-lbl">Sessions</div></div>
       </div>
-      ${operators.length  ? `<div class="mc-tags">${operators.map(o=>`<span class="mc-tag op-tag">${o}</span>`).join("")}</div>` : ""}
-      ${pieceTypes.length ? `<div class="mc-tags">${pieceTypes.map(p=>`<span class="mc-tag">${p}</span>`).join("")}</div>` : ""}
-      <div class="mc-footer">Tap for detail ▸</div>
+      ${currentPiece}
+      ${operators.length ? `<div class="mc-tags">${operators.map(o=>`<span class="mc-tag op-tag">${o}</span>`).join("")}</div>` : ""}
     `;
     card.onclick = () => {
       window._drillMachine = (window._drillMachine === machine) ? null : machine;
@@ -337,7 +454,7 @@ function renderMachineGrid() {
   });
 
   if (!grid.children.length) {
-    grid.innerHTML = `<div style="font-family:'Josefin Slab',serif;font-size:13px;color:#90b888;padding:32px;text-align:center;">No production data for this date range.</div>`;
+    grid.innerHTML = `<div style="font-family:'Josefin Slab',serif;font-size:13px;color:#90b888;padding:32px;text-align:center;">No production data today.</div>`;
   }
 }
 
@@ -668,7 +785,7 @@ function renderDrilldown() {
   document.getElementById("dd-title").textContent = machine;
 
   const tab = window._ddTab || "sessions";
-  ["sessions","maint","wait","hourly"].forEach(t => {
+  ["sessions","maint","wait","hourly","tally"].forEach(t => {
     const btn = document.getElementById("dd-tab-"+t);
     const pnl = document.getElementById("dd-pnl-"+t);
     if (btn) btn.classList.toggle("active", t===tab);
@@ -679,6 +796,7 @@ function renderDrilldown() {
   if (tab==="maint")      renderDDMaint(machine);
   if (tab==="wait")       renderDDWait(machine);
   if (tab==="hourly")     renderDDHourly(machine);
+  if (tab==="tally")      renderDDTally(machine);
 }
 
 function renderDDSessions(machine) {
@@ -770,6 +888,7 @@ function renderDDWait(machine) {
 // HOURLY PRODUCTION CHART
 // ─────────────────────────────────────────
 let _hourlyChart = null;
+let _tallyChart  = null;
 
 function renderDDHourly(machine) {
   const el = document.getElementById("dd-pnl-hourly");
@@ -792,12 +911,29 @@ function renderDDHourly(machine) {
   const hourWaitMap  = {}; // { "08": minutes }
 
   sessions.forEach(s => {
-    const h = String(s.time.getHours()).padStart(2,"0");
-    const pt = s.pieceType || "Unknown";
-    allHourSet.add(h);
+    const pt  = s.pieceType || "Unknown";
     pieceTypeSet.add(pt);
-    if (!hourPieceMap[h]) hourPieceMap[h] = {};
-    hourPieceMap[h][pt] = (hourPieceMap[h][pt]||0) + (s.qtyGood||0);
+
+    const sessStart = s.startTime ? new Date(s.startTime).getTime()
+                    : new Date(s.time).getTime() - ((s.totalSec || 0) * 1000);
+    const sessEnd   = s.endTime   ? new Date(s.endTime).getTime()
+                    : new Date(s.time).getTime();
+    const spanMs    = Math.max(sessEnd - sessStart, 1);
+    const qty       = s.qtyGood || 0;
+
+    let cursor = sessStart;
+    while (cursor < sessEnd) {
+      const hStart  = new Date(cursor);
+      hStart.setMinutes(0, 0, 0, 0);
+      const hEnd    = hStart.getTime() + 3600000;
+      const sliceMs = Math.min(hEnd, sessEnd) - cursor;
+      const sliceQty = Math.round((sliceMs / spanMs) * qty);
+      const h = String(new Date(cursor).getHours()).padStart(2, "0");
+      allHourSet.add(h);
+      if (!hourPieceMap[h]) hourPieceMap[h] = {};
+      hourPieceMap[h][pt] = (hourPieceMap[h][pt] || 0) + sliceQty;
+      cursor = hEnd;
+    }
   });
 
   // Maint events — bucket by hour, accumulate minutes
@@ -873,8 +1009,9 @@ function renderDDHourly(machine) {
     });
   }
 
-  // Destroy old chart if any
+  // Destroy old charts if any
   if (_hourlyChart) { _hourlyChart.destroy(); _hourlyChart = null; }
+  if (_tallyChart)  { _tallyChart.destroy();  _tallyChart  = null; }
 
   el.innerHTML = `
     <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#90b888;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
@@ -949,6 +1086,126 @@ function renderDDHourly(machine) {
             text: "Minutes",
             font: { family: "'Josefin Slab', serif", size: 9 },
             color: "#aaa",
+          }
+        }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+// TALLY ACTIVITY CHART
+// ─────────────────────────────────────────
+function renderDDTally(machine) {
+  const el = document.getElementById("dd-pnl-tally");
+  if (!el) return;
+
+  const todayStr = localDateStr(new Date());
+  const events = (_tallyEvents[machine]?.[todayStr] || [])
+    .filter(e => e.delta > 0); // only positive increments
+
+  if (!events.length) {
+    el.innerHTML = `<div class="dd-empty">No tally activity today for ${machine}.</div>`;
+    return;
+  }
+
+  // Bucket into 30-minute windows
+  const buckets = {}; // { "08:00": { pieceType: count } }
+  const pieceTypeSet = new Set();
+
+  events.forEach(e => {
+    const d = e.time instanceof Date ? e.time : new Date(e.time);
+    const h = d.getHours();
+    const m = d.getMinutes() < 30 ? 0 : 30;
+    const key = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+    const pt  = e.pieceType || "Unknown";
+    pieceTypeSet.add(pt);
+    if (!buckets[key]) buckets[key] = {};
+    buckets[key][pt] = (buckets[key][pt] || 0) + (e.delta || 1);
+  });
+
+  const windows    = Object.keys(buckets).sort();
+  const pieceTypes = [...pieceTypeSet];
+  const PALETTE    = ["#e8457a","#52a040","#3366cc","#e87820","#7733aa","#228844","#4466ee"];
+
+  const fmtWindow = key => {
+    const [h, m] = key.split(":").map(Number);
+    const ampm = h < 12 ? "am" : "pm";
+    const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return h12 + (m === 30 ? ":30" : "") + ampm;
+  };
+
+  // Summary line
+  const totalTicks = events.reduce((s, e) => s + (e.delta || 1), 0);
+  const firstTick  = events[0].time;
+  const lastTick   = events[events.length - 1].time;
+  const spanMin    = Math.round((lastTick - firstTick) / 60000);
+
+  // Destroy old chart
+  if (window._tallyChart) { window._tallyChart.destroy(); window._tallyChart = null; }
+
+  el.innerHTML = `
+    <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#90b888;margin-bottom:10px;display:flex;gap:16px;flex-wrap:wrap;">
+      <span>${totalTicks} pieces ticked today</span>
+      <span style="color:#b0b0b0;">·</span>
+      <span>Active ${spanMin} min</span>
+      <span style="color:#b0b0b0;">·</span>
+      <span>Last tick ${fmtTime(lastTick)}</span>
+    </div>
+    <div style="position:relative;height:220px;">
+      <canvas id="dd-tally-canvas"></canvas>
+    </div>
+  `;
+
+  const ctx = document.getElementById("dd-tally-canvas").getContext("2d");
+  const datasets = pieceTypes.map((pt, i) => ({
+    label: pt,
+    data: windows.map(w => buckets[w][pt] || 0),
+    backgroundColor: PALETTE[i % PALETTE.length] + "d0",
+    borderColor:     PALETTE[i % PALETTE.length],
+    borderWidth: 1,
+    borderRadius: 3,
+    stack: "tally",
+  }));
+
+  window._tallyChart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: windows.map(fmtWindow), datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            font: { family: "'Josefin Slab', serif", size: 10 },
+            color: "#555", boxWidth: 12, padding: 10,
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: item => item.raw > 0 ? ` ${item.dataset.label}: ${item.raw} pcs` : null,
+          },
+          bodyFont:  { family: "'Josefin Slab', serif", size: 11 },
+          titleFont: { family: "'Josefin Slab', serif", size: 12, weight: "bold" },
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { family: "'Josefin Slab', serif", size: 10 }, color: "#90b888" }
+        },
+        y: {
+          stacked: true,
+          grid: { color: "#e8f5e4" },
+          ticks: { font: { family: "'Josefin Slab', serif", size: 10 }, color: "#90b888" },
+          title: {
+            display: true,
+            text: "Pieces ticked",
+            font: { family: "'Josefin Slab', serif", size: 9 },
+            color: "#90b888",
           }
         }
       }
@@ -1045,6 +1302,49 @@ function effColor(pct) {
   if (pct>=70) return "#668800";
   if (pct>=50) return "#aa7700";
   return "#cc3333";
+}
+
+// ─────────────────────────────────────────
+// PACE CALCULATION
+// ─────────────────────────────────────────
+function calcMachinePace(machine) {
+  const todayStr = localDateStr(new Date());
+  const sessions = (_sessions[machine] || []).filter(s => localDateStr(s.time) === todayStr);
+  if (!sessions.length) return null;
+
+  // Shift start = earliest session start today
+  const shiftStartMs = Math.min(...sessions.map(s => {
+    return s.startTime
+      ? new Date(s.startTime).getTime()
+      : new Date(s.time).getTime() - ((s.totalSec || 0) * 1000);
+  }));
+  const hoursWorked = (Date.now() - shiftStartMs) / 3600000;
+  if (hoursWorked <= 0) return null;
+
+  // Total good today
+  const actualGood = sessions.reduce((s, r) => s + (r.qtyGood || 0), 0);
+
+  // Expected: PPH weighted by proportion of today's output per piece type
+  const byType = {};
+  sessions.forEach(s => {
+    const pt = s.pieceType || "";
+    byType[pt] = (byType[pt] || 0) + (s.qtyGood || 0);
+  });
+
+  let expectedGood = 0;
+  let hasPPH = false;
+  Object.entries(byType).forEach(([pt, qty]) => {
+    const pph = (_targets[pt] && _targets[pt].pph) || 0;
+    if (pph > 0) {
+      expectedGood += pph * hoursWorked * (qty / (actualGood || 1));
+      hasPPH = true;
+    }
+  });
+
+  if (!hasPPH) return { actualGood, expectedGood: null, ratio: null, hoursWorked };
+  expectedGood = Math.round(expectedGood);
+  const ratio  = Math.round((actualGood / (expectedGood || 1)) * 100);
+  return { actualGood, expectedGood, ratio, hoursWorked };
 }
 
 // ─────────────────────────────────────────

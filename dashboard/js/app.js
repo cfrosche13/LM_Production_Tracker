@@ -15,11 +15,11 @@ const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
 // ── CONSTANTS ──
-const MACHINES       = ["30","30+","H5","Colex","Wallets","Drinkware"];
-const PF_MACHINES    = ["30","30+","H5","Drinkware"];
+const MACHINES       = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2"];
+const PF_MACHINES    = ["30","30+","H5","Drinkware M1","Drinkware M2"];
 const STAMPED_MACHINES = ["Wallets"];
-const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware":"#a8ddb8" };
-const OEE_IDEAL_CYCLE_DEFAULTS = { "30":94, "30+":42.5, "H5":32.5, "Colex":0, "Wallets":0, "Drinkware":0 };
+const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware M1":"#a8ddb8","Drinkware M2":"#85c99e" };
+const OEE_IDEAL_CYCLE_DEFAULTS = { "30":94, "30+":42.5, "H5":32.5, "Colex":0, "Wallets":0, "Drinkware M1":0, "Drinkware M2":0 };
 const CHART_HOURS_START = 6;
 const CHART_HOURS_END   = 21; // 6am to 9pm
 
@@ -207,7 +207,7 @@ function renderOrdersSidebar() {
 
   if (machEl) {
     machEl.innerHTML = "";
-    const order = ["30","30+","H5","Colex","Wallets","Drinkware","Windchimes","Other"];
+    const order = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2","Windchimes","Other"];
     order.forEach(m => {
       const qty = byMachine[m];
       if (!qty) return;

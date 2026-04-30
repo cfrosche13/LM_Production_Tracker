@@ -35,7 +35,7 @@ let runEntries = [];
 let runChangeoverCount = 0;
 
 // Machine production reports: { machineName: [ {mode, totalSec, changeovers, qty, time} ] }
-const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware"];
+const MACHINES = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2"];
 let machineReports = {};
 let machineEvents  = {}; // per-machine maintenance & waiting events
 let reportEditMode = new Set(); // machines currently in edit mode

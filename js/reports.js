@@ -610,10 +610,23 @@ function openCardDetail(machine) {
   // Build hourly buckets: { hour: { pieceType: qty } }
   const hourBuckets = {};
   sessions.forEach(s => {
-    const h = new Date(s.time).getHours();
-    if (!hourBuckets[h]) hourBuckets[h] = {};
-    const pt = s.pieceType || "Unknown";
-    hourBuckets[h][pt] = (hourBuckets[h][pt] || 0) + (s.qtyGood || 0);
+    const sessStart = s.startTime ? new Date(s.startTime).getTime() : new Date(s.time).getTime();
+    const sessEnd   = s.endTime   ? new Date(s.endTime).getTime()   : sessStart + ((s.totalSec || 0) * 1000);
+    const spanMs    = Math.max(sessEnd - sessStart, 1);
+    const qty       = s.qtyGood || 0;
+    const pt        = s.pieceType || "Unknown";
+    let cursor = sessStart;
+    while (cursor < sessEnd) {
+      const hStart = new Date(cursor);
+      hStart.setMinutes(0, 0, 0);
+      const hEnd     = hStart.getTime() + 3600000;
+      const sliceMs  = Math.min(hEnd, sessEnd) - cursor;
+      const sliceQty = Math.round((sliceMs / spanMs) * qty);
+      const h = new Date(cursor).getHours();
+      if (!hourBuckets[h]) hourBuckets[h] = {};
+      hourBuckets[h][pt] = (hourBuckets[h][pt] || 0) + sliceQty;
+      cursor = hEnd;
+    }
   });
 
   // Active hours: all hours that have data
@@ -1096,8 +1109,20 @@ function renderHourlyChart(sessionsPerMachine) {
   machines.forEach(m => {
     hourlyData[m] = new Array(24).fill(0);
     sessionsPerMachine[m].forEach(s => {
-      const h = new Date(s.time).getHours();
-      hourlyData[m][h] += (s.qtyGood || 0);
+      const sessStart = s.startTime ? new Date(s.startTime).getTime() : new Date(s.time).getTime();
+      const sessEnd   = s.endTime   ? new Date(s.endTime).getTime()   : sessStart + ((s.totalSec || 0) * 1000);
+      const spanMs    = Math.max(sessEnd - sessStart, 1);
+      const qty       = s.qtyGood || 0;
+      let cursor = sessStart;
+      while (cursor < sessEnd) {
+        const hStart = new Date(cursor);
+        hStart.setMinutes(0, 0, 0);
+        const hEnd     = hStart.getTime() + 3600000;
+        const sliceMs  = Math.min(hEnd, sessEnd) - cursor;
+        const h        = new Date(cursor).getHours();
+        hourlyData[m][h] += Math.round((sliceMs / spanMs) * qty);
+        cursor = hEnd;
+      }
     });
   });
 

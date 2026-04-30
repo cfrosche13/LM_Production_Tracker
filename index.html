@@ -36,7 +36,8 @@
         <option value="30+">30+</option>
         <option value="H5">H5</option>
         <option value="Colex">Colex</option>
-        <option value="Drinkware">Drinkware</option>
+        <option value="Drinkware M1">Drinkware M1</option>
+        <option value="Drinkware M2">Drinkware M2</option>
         <option value="Wallets">Wallets</option>
       </select>
     </div>
@@ -47,6 +48,12 @@
       style="width:100%;font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;background:#52a040;color:#fff;border:none;border-radius:10px;padding:14px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:background 0.15s;"
       onmouseover="this.style.background='#3d8030'" onmouseout="this.style.background='#52a040'">
       Start Session →
+    </button>
+
+    <button onclick="sessionGateAdmin()"
+      style="width:100%;margin-top:10px;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:transparent;color:#90a888;border:1.5px solid #c2e8b8;border-radius:10px;padding:10px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.15s;"
+      onmouseover="this.style.background='#eef8eb';this.style.color='#52a040'" onmouseout="this.style.background='transparent';this.style.color='#90a888'">
+      Enter as Admin
     </button>
   </div>
 </div>
@@ -69,7 +76,8 @@
         <option value="30+">30+</option>
         <option value="H5">H5</option>
         <option value="Colex">Colex</option>
-        <option value="Drinkware">Drinkware</option>
+        <option value="Drinkware M1">Drinkware M1</option>
+        <option value="Drinkware M2">Drinkware M2</option>
         <option value="Wallets">Wallets</option>
       </select>
     </div>
@@ -110,7 +118,8 @@
       <button class="machine-btn" data-machine="30+"       onclick="selectMachine(this)">30+</button>
       <button class="machine-btn" data-machine="H5"        onclick="selectMachine(this)">H5</button>
       <button class="machine-btn" data-machine="Colex"     onclick="selectMachine(this)">Colex</button>
-      <button class="machine-btn" data-machine="Drinkware" onclick="selectMachine(this)">Drinkware</button>
+      <button class="machine-btn" data-machine="Drinkware M1" onclick="selectMachine(this)">Drinkware M1</button>
+      <button class="machine-btn" data-machine="Drinkware M2" onclick="selectMachine(this)">Drinkware M2</button>
       <button class="machine-btn" data-machine="Wallets"   onclick="selectMachine(this)">Wallets</button>
     </div>
   </div>
@@ -193,7 +202,8 @@
           <button class="qs-machine-btn" data-machine="30+"       onclick="qsPickMachine(this)">30+</button>
           <button class="qs-machine-btn" data-machine="H5"        onclick="qsPickMachine(this)">H5</button>
           <button class="qs-machine-btn" data-machine="Colex"     onclick="qsPickMachine(this)"></button>
-          <button class="qs-machine-btn" data-machine="Drinkware" onclick="qsPickMachine(this)">Drinkware</button>
+          <button class="qs-machine-btn" data-machine="Drinkware M1" onclick="qsPickMachine(this)">Drinkware M1</button>
+          <button class="qs-machine-btn" data-machine="Drinkware M2" onclick="qsPickMachine(this)">Drinkware M2</button>
           <button class="qs-machine-btn" data-machine="Wallets"   onclick="qsPickMachine(this)">Wallets</button>
         </div>
       </div>
@@ -259,7 +269,8 @@
           <button class="tally-machine-btn machine-btn" data-machine="30"        onclick="tallyPickMachine(this)">30</button>
           <button class="tally-machine-btn machine-btn" data-machine="30+"       onclick="tallyPickMachine(this)">30+</button>
           <button class="tally-machine-btn machine-btn" data-machine="H5"        onclick="tallyPickMachine(this)">H5</button>
-          <button class="tally-machine-btn machine-btn" data-machine="Drinkware" onclick="tallyPickMachine(this)">Drinkware</button>
+          <button class="tally-machine-btn machine-btn" data-machine="Drinkware M1" onclick="tallyPickMachine(this)">Drinkware M1</button>
+          <button class="tally-machine-btn machine-btn" data-machine="Drinkware M2" onclick="tallyPickMachine(this)">Drinkware M2</button>
         </div>
       </div>
 
@@ -721,7 +732,8 @@
           <option value="30+">30+</option>
           <option value="H5">H5</option>
           <option value="Colex">Colex</option>
-          <option value="Drinkware">Drinkware</option>
+          <option value="Drinkware M1">Drinkware M1</option>
+          <option value="Drinkware M2">Drinkware M2</option>
           <option value="Wallets">Wallets</option>
         </select>
       </div>
@@ -905,8 +917,8 @@
 </div>
 
 <!-- JS files in dependency order -->
-<script src="js/constants.js?v=4"></script>
-<script src="js/state.js?v=3"></script>
+<script src="js/constants.js?v=5"></script>
+<script src="js/state.js?v=4"></script>
 <script src="js/utils.js?v=4"></script>
 <script src="js/oee.js?v=4"></script>
 <script src="js/storage.js?v=3"></script>
@@ -1051,14 +1063,14 @@ function stopAllTransitions() {
 
 </script>
 <script src="js/maintenance.js?v=3"></script>
-<script src="js/reports.js?v=3"></script>
+<script src="js/reports.js?v=4"></script>
 <script src="js/orders.js?v=3"></script>
 <script src="js/settings.js?v=3"></script>
-<script src="js/printing.js?v=4"></script>
+<script src="js/printing.js?v=5"></script>
 <script src="js/stamped.js?v=3"></script>
 <script src="js/colex.js?v=3"></script>
-<script src="js/tally.js?v=6"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/tally.js?v=7"></script>
+<script src="js/app.js?v=6"></script>
 
 <script>
 // ── SESSION GATE ──
@@ -1105,6 +1117,20 @@ function sessionGateConfirm() {
   if (typeof selectMachineByName === 'function') selectMachineByName(machine);
 
   // Fade out and dismiss
+  const gate = document.getElementById('session-gate');
+  gate.style.transition = 'opacity 0.35s';
+  gate.style.opacity    = '0';
+  setTimeout(() => { gate.style.display = 'none'; }, 360);
+}
+
+function sessionGateAdmin() {
+  // Set operator name to Admin, skip machine selection entirely
+  const opEl = document.getElementById('global-operator');
+  if (opEl) {
+    opEl.value = 'Admin';
+    opEl.dispatchEvent(new Event('input'));
+  }
+  // Fade out and dismiss — no machine applied
   const gate = document.getElementById('session-gate');
   gate.style.transition = 'opacity 0.35s';
   gate.style.opacity    = '0';

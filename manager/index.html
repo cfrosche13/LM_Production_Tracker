@@ -69,10 +69,9 @@
       <div class="sum-val" style="color:#336688;font-size:20px;" id="sum-runtime">—</div>
       <div class="sum-lbl">Total Run Time</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-val" style="color:#52a040;" id="sum-machines">—</div>
-      <div class="sum-lbl">Active Machines</div>
-      <div id="sum-down-badge">⬇ DOWN</div>
+    <div class="sum-card" id="sum-pace-card">
+      <div class="sum-val" style="color:#52a040;" id="sum-pace">—</div>
+      <div class="sum-lbl">On Pace</div>
     </div>
     <div class="sum-card">
       <div class="sum-val" style="color:#e87820;" id="sum-maint">—</div>
@@ -110,11 +109,13 @@
             <button class="dd-tab"        id="dd-tab-maint"      onclick="ddSwitchTab('maint')">Maintenance</button>
             <button class="dd-tab"        id="dd-tab-wait"       onclick="ddSwitchTab('wait')">Waiting</button>
             <button class="dd-tab"        id="dd-tab-hourly"     onclick="ddSwitchTab('hourly')">&#128202; Hourly</button>
+            <button class="dd-tab"        id="dd-tab-tally"      onclick="ddSwitchTab('tally')">📲 Tally Activity</button>
           </div>
           <div id="dd-pnl-sessions"></div>
           <div id="dd-pnl-maint"      style="display:none;"></div>
           <div id="dd-pnl-wait"       style="display:none;"></div>
           <div id="dd-pnl-hourly"     style="display:none;padding:16px 0 4px;"></div>
+          <div id="dd-pnl-tally"      style="display:none;padding:16px 0 4px;"></div>
         </div>
       </div>
 
