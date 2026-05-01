@@ -10,11 +10,11 @@ const STATUS_COLORS = {
 };
 const PIECE_TYPES = {
   "Coir":          ["28x16 OC","28x16 FC","30x18 OC","30x18 FC","36x24 OC","36x24 FC","60x24 OC","60x24 FC","Flocked"],
-  "Non-Coir Mats": ["AF Large","AF Small","PVC","Drying Mat"],
+  "Non-Coir Mats": ["AF Large","AF Small","PVC"],
   "Signs":         ["16x24","12x12","12x8 Plock","11x6 Plock","6x6 Plock","Leaner","Double Sided Leaner","Mantle Sign","18\" Circle","Yard Sign"],
   "Wallets":       ["Cross Body","Trifold Black","Trifold Brown","Bifold Black","Bifold Brown","Bifold Tumbled Leather","Wristlet Black","Wristlet Brown","Front Pocket Black","Front Pocket Brown","Toiletry Bag","Clock"],
   "Display Pieces": ["Vert. Yard Display","Horz. Yard Display","Leaner Display","Yard Sign Display"],
-  "Roll Media":     ["Small Canvas","Large Canvas"],
+  "Roll Media":     ["Small Canvas","Large Canvas","Drying Mat"],
   "Drinkware":      ["Pint Glass"],
 };
 // ═══════════════════════════════════════
@@ -223,7 +223,6 @@ const TABLE_CAPACITY_DEFAULTS = {
   "Non-Coir Mats · AF Large": 5,
   "Non-Coir Mats · AF Small": 6,
   "Non-Coir Mats · PVC": 8,
-  "Non-Coir Mats · Drying Mat": 8,
   "Signs · 16x24": 3,
   "Signs · 12x12": 6,
   "Signs · 12x8 Plock": 27,
@@ -238,6 +237,7 @@ const TABLE_CAPACITY_DEFAULTS = {
   "Display Pieces · Horz. Yard Display": 1,
   "Display Pieces · Leaner Display": 1,
   "Display Pieces · Yard Sign Display": 1,
+  "Roll Media · Drying Mat": 8,
   "Roll Media · Small Canvas": 2,
   "Roll Media · Large Canvas": 1,
   "Drinkware · Pint Glass": 1,
