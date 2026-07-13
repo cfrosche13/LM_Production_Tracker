@@ -16,6 +16,43 @@
   const db   = getDatabase(app);
   const auth = getAuth(app);
 
+  // ── Offline / connectivity banner ──
+  let _fbBannerTimer = null;
+
+  function _fbShowBanner() {
+    let b = document.getElementById("fb-offline-banner");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "fb-offline-banner";
+      b.style.cssText = [
+        "position:fixed;top:0;left:0;right:0;z-index:99999;",
+        "background:#cc3333;color:#fff;text-align:center;",
+        "font-family:'Libre Franklin',sans-serif;font-size:13px;font-weight:600;",
+        "padding:10px 16px;letter-spacing:0.01em;",
+        "box-shadow:0 2px 8px rgba(0,0,0,0.3);",
+      ].join("");
+      b.textContent = "⚠  No internet connection — tally counts are saved to this device and will sync when reconnected";
+      document.body.appendChild(b);
+    }
+    b.style.display = "block";
+  }
+
+  onValue(ref(db, ".info/connected"), snap => {
+    const online = snap.val() === true;
+    window._fbOnline = online;
+    if (online) {
+      clearTimeout(_fbBannerTimer);
+      _fbBannerTimer = null;
+      const b = document.getElementById("fb-offline-banner");
+      if (b) b.style.display = "none";
+      document.dispatchEvent(new Event("fbReconnected"));
+    } else {
+      // Wait 4 s before showing banner — avoids a flash on initial page load
+      clearTimeout(_fbBannerTimer);
+      _fbBannerTimer = setTimeout(_fbShowBanner, 4000);
+    }
+  });
+
   // ── Shared passcode config ──
   // The team logs in with just a passcode. Under the hood we map it to
   // a single Firebase account: team@printtrack.internal
@@ -82,73 +119,41 @@
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
   }
 
-  // Write an end-of-day entry for the currently selected machine.
-  // Called from the End Day button in the top bar.
-  function handleEndDay() {
-    const machine = document.querySelector(".machine-btn.active")?.dataset.machine
-                 || window._qsMachine
-                 || "";
-    if (!machine) {
-      alert("Select a machine first, then tap End Day.");
-      return;
+  function handleOperatorLogout() {
+    if (typeof window.tallyOperatorLogout === 'function') {
+      window.tallyOperatorLogout();
     }
-    const op    = document.getElementById("global-operator")?.value.trim() || "—";
-    const entry = { machine, op, event: "end", time: new Date().toISOString() };
-    if (window._fb) window._fb.saveShiftEntry(shiftDateStr(), entry);
-
-    // Visual feedback on the button
     const btn = document.getElementById("pt-shift-end");
     if (btn) {
-      btn.textContent = "✓ " + machine + " ended";
-      btn.style.background  = "#fff5f5";
-      btn.style.color       = "#cc3333";
+      btn.textContent = "✓ Logged out";
       btn.disabled = true;
-      // Re-enable after 3s so they can end another machine
       setTimeout(() => {
-        if (btn) {
-          btn.textContent = "⏹ End Day";
-          btn.style.background  = "#fff";
-          btn.style.color       = "#cc3333";
-          btn.disabled = false;
-        }
-      }, 3000);
+        if (btn) { btn.textContent = "→ Operator Log Out"; btn.disabled = false; }
+      }, 2000);
     }
   }
 
   function addSignOutButton() {
-    if (document.getElementById("pt-signout-btn")) return;
+    if (document.getElementById("pt-shift-end")) return;
     const topBar = document.getElementById("top-bar");
     if (!topBar) return;
 
-    // ── End Day button ──
     const shiftGroup = document.createElement("div");
     shiftGroup.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;";
 
     const endBtn = document.createElement("button");
     endBtn.id = "pt-shift-end";
-    endBtn.textContent = "⏹ End Day";
-    endBtn.title = "End the day for the currently selected machine";
+    endBtn.textContent = "→ Operator Log Out";
+    endBtn.title = "Log out current operator and reset tally counter";
     endBtn.style.cssText = `
       display:inline-flex;align-items:center;gap:5px;
       padding:5px 13px;font-size:12px;font-family:'Libre Franklin',sans-serif;font-weight:600;
-      background:#fff;color:#cc3333;border:1.5px solid #f0b8b8;border-radius:6px;cursor:pointer;
+      background:#fff;color:#2e8b57;border:1.5px solid #b8d8c0;border-radius:6px;cursor:pointer;
     `;
-    endBtn.onclick = handleEndDay;
+    endBtn.onclick = handleOperatorLogout;
     shiftGroup.appendChild(endBtn);
 
-    // ── Lock button ──
-    const lockBtn = document.createElement("button");
-    lockBtn.id = "pt-signout-btn";
-    lockBtn.textContent = "Lock";
-    lockBtn.title = "Lock PrintTrack";
-    lockBtn.style.cssText = `
-      padding:5px 13px;font-size:12px;font-family:'Libre Franklin',sans-serif;
-      background:#fff;border:1.5px solid #c2e8b8;border-radius:6px;cursor:pointer;color:#1a2a18;
-    `;
-    lockBtn.onclick = () => signOut(auth);
-
     topBar.appendChild(shiftGroup);
-    topBar.appendChild(lockBtn);
   }
 
   // ── Auth state ──
@@ -204,9 +209,31 @@
         // One-time fetch of today's tally snapshot (used on startup to restore counts)
         fetchTallyState: (dateStr)       => get(ref(db, `tallyState/${dateStr}`)).then(snap => snap.val()),
 
+        // Tally 2.0 snapshot — keyed by machine + date so multiple computers never collide
+        setTally2State:   (machine, dateStr, data) => set(ref(db, `tally2State/${machine}/${dateStr}`), data),
+        fetchTally2State: (machine, dateStr)       => get(ref(db, `tally2State/${machine}/${dateStr}`)).then(snap => snap.val()),
+
         // Individual tally tick events — written on every increment/adjustment for manager charting
         pushTallyEvent: (machine, dateStr, event) =>
           push(ref(db, `tallyEvents/${machine}/${dateStr}`), event),
+
+        // ── Inventory ──
+        saveInkLot:           (lot)                             => push(ref(db, "inventory/inkLots"), lot),
+        setInkLot:            (key, lot)                        => set(ref(db, `inventory/inkLots/${key}`), lot),
+        updateInkLot:         (key, data)                       => set(ref(db, `inventory/inkLots/${key}`), data),
+        listenInkLots:        (cb)                              => onValue(ref(db, "inventory/inkLots"),       snap => cb(snap.val() || {})),
+        fetchInkLots:         ()                                => get(ref(db, "inventory/inkLots")).then(s => s.val() || {}),
+        saveMaintStock:       (machine, productId, data)        => set(ref(db, `inventory/maintStock/${machine}/${productId}`), data),
+        listenMaintStock:     (cb)                              => onValue(ref(db, "inventory/maintStock"),    snap => cb(snap.val() || {})),
+        fetchMaintStock:      ()                                => get(ref(db, "inventory/maintStock")).then(s => s.val() || {}),
+        savePartsStock:       (machine, productId, data)        => set(ref(db, `inventory/partsStock/${machine}/${productId}`), data),
+        listenPartsStock:     (cb)                              => onValue(ref(db, "inventory/partsStock"),    snap => cb(snap.val() || {})),
+        fetchPartsStock:      ()                                => get(ref(db, "inventory/partsStock")).then(s => s.val() || {}),
+        saveInvTransaction:   (tx)                              => push(ref(db, "inventory/transactions"), tx),
+        listenInvTransactions:(cb)                              => onValue(ref(db, "inventory/transactions"),  snap => cb(snap.val() || {})),
+        saveInvProduct:       (category, machine, productId, data) => set(ref(db, `inventory/catalog/${machine}/${category}/${productId}`), data),
+        listenInvCatalog:     (cb)                              => onValue(ref(db, "inventory/catalog"),       snap => cb(snap.val() || {})),
+
       };
       window._fbReady = true;
       document.dispatchEvent(new Event("fbReady"));

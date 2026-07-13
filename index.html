@@ -630,7 +630,9 @@
       <button id="inv-subtab-ink"  onclick="invSelectCategory('ink')"
         style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #b8e0b8;border-right:none;border-radius:6px 0 0 6px;background:#52a040;color:#fff;cursor:pointer;">🖨 Ink</button>
       <button id="inv-subtab-maint" onclick="invSelectCategory('maint')"
-        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #f0d8a0;border-radius:0 6px 6px 0;background:#f8f0e0;color:#7a4400;cursor:pointer;">🔧 Maintenance</button>
+        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #f0d8a0;border-right:none;border-radius:0;background:#f8f0e0;color:#7a4400;cursor:pointer;">🔧 Maintenance</button>
+      <button id="inv-subtab-parts" onclick="invSelectCategory('parts')"
+        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #c8d8f0;border-radius:0 6px 6px 0;background:#eef2f8;color:#2a4468;cursor:pointer;">🔩 Spare Parts</button>
     </div>
 
     <!-- Seed banner (admin only, H5 only, one-time) -->
@@ -752,6 +754,42 @@
   </div>
 </div>
 
+<!-- ══════════ RECEIVE SPARE PART MODAL ══════════ -->
+<div class="modal-overlay" id="inv-receive-parts-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title">Receive Spare Part</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#888;margin-bottom:14px;">Machine: <strong id="rpts-machine-display"></strong></div>
+    <div class="modal-form">
+      <div class="mf full"><label>Part</label><select id="rpts-product"></select></div>
+      <div class="mf"><label>Quantity Received</label><input id="rpts-qty" type="number" min="1" placeholder="0" /></div>
+      <div class="mf full"><label>Operator</label><input id="rpts-operator" placeholder="Name" /></div>
+      <div class="mf full"><label>Notes (optional)</label><textarea id="rpts-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('inv-receive-parts-modal')">Cancel</button>
+      <button class="btn-save" onclick="submitReceiveParts()">✓ Log Receipt</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ USE SPARE PART MODAL ══════════ -->
+<div class="modal-overlay" id="inv-use-parts-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title">Use Spare Part</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#888;margin-bottom:14px;">Machine: <strong id="upts-machine-display"></strong></div>
+    <div class="modal-form">
+      <div class="mf full"><label>Part</label><select id="upts-product"></select></div>
+      <div class="mf"><label>Quantity Used</label><input id="upts-qty" type="number" min="1" placeholder="0" /></div>
+      <div class="mf full"><label>Operator</label><input id="upts-operator" placeholder="Name" /></div>
+      <div class="mf full"><label>Notes (optional)</label><textarea id="upts-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('inv-use-parts-modal')">Cancel</button>
+      <button class="btn-save" onclick="submitUseParts()">✓ Log Usage</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ ADMIN: EDIT PRODUCT MODAL ══════════ -->
 <div class="modal-overlay" id="inv-edit-product-modal">
   <div class="modal-box" style="max-width:380px;">
@@ -762,6 +800,7 @@
     <div class="modal-form">
       <div class="mf full"><label>Product Name</label><input id="eprod-name" placeholder="Name" /></div>
       <div class="mf full"><label>Part / Order Code</label><input id="eprod-partcode" placeholder="e.g. 45206773" /></div>
+      <div class="mf full"><label>Location</label><input id="eprod-location" placeholder="e.g. 30/1" /></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('inv-edit-product-modal')">Cancel</button>
@@ -779,6 +818,7 @@
     <div class="modal-form">
       <div class="mf full"><label>Product Name</label><input id="aprod-name" placeholder="e.g. Cyan" /></div>
       <div class="mf full"><label>Part / Order Code</label><input id="aprod-partcode" placeholder="e.g. 45206770 (optional)" /></div>
+      <div class="mf full"><label>Location</label><input id="aprod-location" placeholder="e.g. 30/1 (optional)" /></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('inv-add-product-modal')">Cancel</button>
@@ -1143,7 +1183,7 @@
 </div>
 
 <!-- JS files in dependency order -->
-<script src="js/constants.js?v=5"></script>
+<script src="js/constants.js?v=6"></script>
 <script src="js/state.js?v=4"></script>
 <script src="js/utils.js?v=4"></script>
 <script src="js/oee.js?v=4"></script>
@@ -1289,7 +1329,7 @@ function stopAllTransitions() {
 
 </script>
 <script src="js/maintenance.js?v=3"></script>
-<script src="js/inventory.js?v=13"></script>
+<script src="js/inventory.js?v=15"></script>
 <script src="js/reports.js?v=4"></script>
 <script src="js/orders.js?v=3"></script>
 <script src="js/settings.js?v=3"></script>
