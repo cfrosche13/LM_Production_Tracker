@@ -196,7 +196,7 @@ function renderCategoryPicker() {
       <button onclick="invSelectCategory('ink')"
         style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 20px;background:#f0faf0;border:2px solid #b8e0b8;border-radius:12px;cursor:pointer;text-align:left;">
         <div>
-          <div style="font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;color:#1a4a2a;">🖨 Ink Inventory</div>
+          <div style="font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;color:#1a4a2a;">🖨️ Ink Inventory</div>
           <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#5a8a5a;margin-top:4px;">${inkLotCount} lot${inkLotCount!==1?'s':''} · ${inkProducts.length} color${inkProducts.length!==1?'s':''}</div>
         </div>
         ${_invBadge(inkTotal)}
@@ -219,7 +219,7 @@ function renderInkProductList() {
   if (!el) return;
   const products = _invGetInkProducts(machine);
 
-  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a8c32;padding-bottom:6px;border-bottom:2px solid #c2e8b8;">🖨 Ink — ${esc(machine)}</div>`;
+  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a8c32;padding-bottom:6px;border-bottom:2px solid #c2e8b8;">🖨️ Ink — ${esc(machine)}</div>`;
 
   if (!products.length) {
     html += `<div class="inv-empty">No ink products configured for this machine.</div>`;
@@ -457,7 +457,7 @@ function renderPartsSection(machine) {
 
   if (!products.length) {
     html += `<div class="inv-empty">No spare parts configured for this machine.</div>`;
-    if (_invAdminMode) html += `<button class="inv-add-product-btn" onclick="openAddProductModal('parts','${esc(machine)}')">+ Add Spare Part</button>`;
+    html += `<button class="inv-add-product-btn" onclick="openAddProductModal('parts','${esc(machine)}')">+ Add Spare Part</button>`;
     el.innerHTML = html;
     return;
   }
@@ -466,7 +466,7 @@ function renderPartsSection(machine) {
   products.forEach(prod => { html += _invPartsRow(prod, machine, false); });
   html += `</div>`;
 
-  if (_invAdminMode) html += `<button class="inv-add-product-btn" onclick="openAddProductModal('parts','${esc(machine)}')">+ Add Spare Part</button>`;
+  html += `<button class="inv-add-product-btn" onclick="openAddProductModal('parts','${esc(machine)}')">+ Add Spare Part</button>`;
   el.innerHTML = html;
 }
 
