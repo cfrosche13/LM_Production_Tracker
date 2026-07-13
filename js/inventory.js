@@ -18,6 +18,11 @@ let _invPartsSearch = "";   // current Spare Parts search query (part number or 
 
 const INV_MACHINES = ["30","30+","H5","Colex","Drinkware"];
 
+// Line-drawn SVG icons (not emoji) so rendering is identical across all browsers/fonts.
+const INV_ICON_INK   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;"><rect x="6" y="3" width="12" height="5"></rect><rect x="3" y="8" width="18" height="8" rx="1"></rect><rect x="6" y="16" width="12" height="5"></rect></svg>`;
+const INV_ICON_MAINT  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;flex-shrink:0;"><line x1="6.4" y1="6.4" x2="17.6" y2="17.6"></line><circle cx="6.4" cy="6.4" r="3"></circle><circle cx="17.6" cy="17.6" r="3"></circle></svg>`;
+const INV_ICON_PARTS  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;"><polygon points="12,2 20,7 20,17 12,22 4,17 4,7"></polygon><circle cx="12" cy="12" r="4"></circle></svg>`;
+
 // ─── Panel open / close ──────────────────────────────
 function openInventoryPanel() {
   document.getElementById("maint-panel-actions").style.display   = "none";
@@ -219,7 +224,7 @@ function renderInkProductList() {
   if (!el) return;
   const products = _invGetInkProducts(machine);
 
-  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a8c32;padding-bottom:6px;border-bottom:2px solid #c2e8b8;">🖨️ Ink — ${esc(machine)}</div>`;
+  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a8c32;padding-bottom:6px;border-bottom:2px solid #c2e8b8;">${INV_ICON_INK} Ink — ${esc(machine)}</div>`;
 
   if (!products.length) {
     html += `<div class="inv-empty">No ink products configured for this machine.</div>`;
@@ -323,7 +328,7 @@ function renderMaintSection(machine) {
   if (!el) return;
   const products = _invGetMaintProducts(machine);
 
-  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#e87820;padding-bottom:6px;border-bottom:2px solid #f0d8b8;">🔧 Maintenance — ${esc(machine)}</div>`;
+  let html = `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#e87820;padding-bottom:6px;border-bottom:2px solid #f0d8b8;">${INV_ICON_MAINT} Maintenance — ${esc(machine)}</div>`;
 
   if (!products.length) {
     html += `<div class="inv-empty">No maintenance products configured for this machine.</div>`;
@@ -399,7 +404,7 @@ function _invConditionBadge(condition, machine, productId) {
   };
   const s = styles[condition] || styles.New;
   return `<button onclick="invCyclePartsCondition('${esc(machine)}','${esc(productId)}')" title="Click to change condition"
-    style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;border:1.5px solid ${s.border};background:${s.bg};color:${s.color};cursor:pointer;white-space:nowrap;">${esc(condition)}</button>`;
+    style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;padding:3px 0;width:78px;flex-shrink:0;text-align:center;border-radius:12px;border:1.5px solid ${s.border};background:${s.bg};color:${s.color};cursor:pointer;white-space:nowrap;">${esc(condition)}</button>`;
 }
 
 function invCyclePartsCondition(machine, productId) {
@@ -473,7 +478,7 @@ function renderPartsSection(machine) {
     });
 
     let html = _invPartsSearchBoxHtml();
-    html += `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a5a8c;padding-bottom:6px;border-bottom:2px solid #c8d8f0;">🔩 Spare Parts — ${matches.length} match${matches.length!==1?'es':''}</div>`;
+    html += `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a5a8c;padding-bottom:6px;border-bottom:2px solid #c8d8f0;">${INV_ICON_PARTS} Spare Parts — ${matches.length} match${matches.length!==1?'es':''}</div>`;
 
     if (!matches.length) {
       html += `<div class="inv-empty">No spare parts match "${esc(_invPartsSearch)}".</div>`;
@@ -492,7 +497,7 @@ function renderPartsSection(machine) {
   const products = _invGetPartsProducts(machine);
 
   let html = _invPartsSearchBoxHtml();
-  html += `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a5a8c;padding-bottom:6px;border-bottom:2px solid #c8d8f0;">🔩 Spare Parts — ${esc(machine)}</div>`;
+  html += `<div style="margin-bottom:10px;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3a5a8c;padding-bottom:6px;border-bottom:2px solid #c8d8f0;">${INV_ICON_PARTS} Spare Parts — ${esc(machine)}</div>`;
 
   if (!products.length) {
     html += `<div class="inv-empty">No spare parts configured for this machine.</div>`;

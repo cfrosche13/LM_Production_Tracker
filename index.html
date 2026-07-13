@@ -629,11 +629,17 @@
     <!-- Ink / Maintenance sub-tabs -->
     <div style="display:flex;gap:0;padding:0 16px 10px;">
       <button id="inv-subtab-ink"  onclick="invSelectCategory('ink')"
-        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #b8e0b8;border-right:none;border-radius:6px 0 0 6px;background:#52a040;color:#fff;cursor:pointer;">🖨️ Ink</button>
+        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #b8e0b8;border-right:none;border-radius:6px 0 0 6px;background:#52a040;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="flex-shrink:0;"><rect x="6" y="3" width="12" height="5"></rect><rect x="3" y="8" width="18" height="8" rx="1"></rect><rect x="6" y="16" width="12" height="5"></rect></svg>
+        Ink</button>
       <button id="inv-subtab-maint" onclick="invSelectCategory('maint')"
-        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #f0d8a0;border-right:none;border-radius:0;background:#f8f0e0;color:#7a4400;cursor:pointer;">🔧 Maintenance</button>
+        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #f0d8a0;border-right:none;border-radius:0;background:#f8f0e0;color:#7a4400;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><line x1="6.4" y1="6.4" x2="17.6" y2="17.6"></line><circle cx="6.4" cy="6.4" r="3"></circle><circle cx="17.6" cy="17.6" r="3"></circle></svg>
+        Maintenance</button>
       <button id="inv-subtab-parts" onclick="invSelectCategory('parts')"
-        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #c8d8f0;border-radius:0 6px 6px 0;background:#eef2f8;color:#2a4468;cursor:pointer;">🔩 Spare Parts</button>
+        style="flex:1;padding:7px 0;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;border:1.5px solid #c8d8f0;border-radius:0 6px 6px 0;background:#eef2f8;color:#2a4468;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="12,2 20,7 20,17 12,22 4,17 4,7"></polygon><circle cx="12" cy="12" r="4"></circle></svg>
+        Spare Parts</button>
     </div>
 
     <!-- Seed banner (admin only, H5 only, one-time) -->
@@ -1330,7 +1336,7 @@ function stopAllTransitions() {
 
 </script>
 <script src="js/maintenance.js?v=4"></script>
-<script src="js/inventory.js?v=17"></script>
+<script src="js/inventory.js?v=18"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
 <script src="js/settings.js?v=3"></script>
