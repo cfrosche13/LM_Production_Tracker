@@ -550,7 +550,7 @@ function renderCards(td) {
         </div>
       </div>
 
-      ${hasMechDown ? `<div class="down-badge">⚠ Machine Down Today</div>` : ""}
+      ${hasMechDown ? `<div class="down-badge">⚠️ Machine Down Today</div>` : ""}
     `;
     grid.appendChild(card);
   });

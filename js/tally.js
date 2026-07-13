@@ -2,12 +2,21 @@
 // TALLY COUNT MODE
 // ═══════════════════════════════════════
 
-let _tallyMachine       = "";
-let _tallyCat           = "";        // "" = show all categories
-let _tallyCounts        = {};        // key: "Cat · SubType" → count
-let _tallyMisprints     = {};        // key: "Cat · SubType" → count
-let _tallyActive        = false;
-let _tallyAutoSaveTimer = null;
+let _tallyMachine        = "";
+let _tallyActiveOps      = [];   // operators confirmed at login (array, supports teams)
+let _tallyLoginFn        = "";   // 'tally' or 'tally2' — where to go after login
+let _tallyIsSwitching    = false; // true when login comes from Switch Operator (not fresh entry)
+let _tally2Active        = false; // true while Tally 2.0 screen is the active screen
+let _tallyCat            = "";        // "" = show all categories
+let _tallyCounts         = {};        // key: "Cat · SubType" → count
+let _tallyMisprints      = {};        // key: "Cat · SubType" → count
+let _tallyStartTimes     = {};        // key: "Cat · SubType" → ISO string of first tap for the day
+let _tallySavedCounts    = {};        // counts committed to Firebase (for delta calculation)
+let _tallySavedMisprints = {};
+let _tallySessionKeys    = [];        // Firebase keys written this session (for reset cleanup)
+let _tallyMigrated       = {};        // tracks which piece types have had old cumulative records removed
+let _tallyActive         = false;
+let _tallyAutoSaveTimer  = null;
 
 const _TALLY_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces", "Roll Media", "Drinkware"];
 
@@ -31,49 +40,71 @@ function _tallyAutoSaveNow() {
                || "";
   const op = document.getElementById("global-operator")?.value || "—";
 
+  // Always save to localStorage so counts survive a page refresh while offline
+  try {
+    localStorage.setItem("pt_tally_draft_" + dateStr, JSON.stringify({
+      machine:    machine || "—",
+      counts:     { ..._tallyCounts },
+      misprints:  { ..._tallyMisprints },
+      startTimes: { ..._tallyStartTimes },
+      savedAt:    d.toISOString(),
+    }));
+  } catch(e) {}
+
   // Save the raw snapshot (existing behaviour)
   window._fb.saveTallyState(dateStr, {
-    machine:   machine || "—",
-    counts:    { ..._tallyCounts },
-    misprints: { ..._tallyMisprints },
-    savedAt:   d.toISOString(),
+    machine:    machine || "—",
+    counts:     { ..._tallyCounts },
+    misprints:  { ..._tallyMisprints },
+    startTimes: { ..._tallyStartTimes },
+    savedAt:    d.toISOString(),
   });
 
-  // Also write each piece type as a session record under sessions/{machine}
-  // so tally counts appear in production reports alongside time-study sessions.
-  // We use a deterministic key (tally_{date}_{safeKey}) so each save overwrites
-  // the same record instead of creating duplicates.
+  // Write delta session records — only the pieces added since the last save,
+  // stamped with the current time. This prevents the hourly chart from
+  // shifting as the day progresses (the old cumulative approach caused that).
   if (machine && machine !== "—") {
     Object.keys(_tallyCounts).forEach(pieceKey => {
       const count    = _tallyCounts[pieceKey]    || 0;
       const misprint = _tallyMisprints[pieceKey] || 0;
       if (count === 0 && misprint === 0) return;
 
-      const pph      = (typeof getTarget === "function") ? (getTarget(pieceKey, "pph") || 0) : 0;
-      const totalSec = pph > 0 ? count * (3600 / pph) : 0;
-      const fbKey    = "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_");
+      const delta         = count    - (_tallySavedCounts[pieceKey]    || 0);
+      const misprintDelta = misprint - (_tallySavedMisprints[pieceKey] || 0);
+      if (delta <= 0 && misprintDelta <= 0) return;
 
+      // One-time: remove the old cumulative record for this piece type
+      if (!_tallyMigrated[pieceKey]) {
+        window._fb.deleteTallySession(machine, "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_"));
+        _tallyMigrated[pieceKey] = true;
+      }
+
+      const fbKey = "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_") + "_" + d.getTime();
       window._fb.setTallySession(machine, fbKey, {
         mode:        "tally",
-        qtyGood:     count,
-        qtyBad:      misprint,
+        qtyGood:     Math.max(0, delta),
+        qtyBad:      Math.max(0, misprintDelta),
         pieceType:   pieceKey,
         op,
         time:        d.toISOString(),
         startTime:   d.toISOString(),
-        endTime:     new Date(d.getTime() + totalSec * 1000).toISOString(),
-        totalSec,
+        totalSec:    60,
         changeovers: 0,
         notes:       "Tally count",
       });
+
+      _tallySessionKeys.push(fbKey);
+      _tallySavedCounts[pieceKey]    = count;
+      _tallySavedMisprints[pieceKey] = misprint;
     });
   }
 
-  // Flash the status indicator
+  // Flash the status indicator — show "Saved locally" when Firebase is offline
   const el = document.getElementById("tc-autosave-status");
   if (el) {
-    el.textContent = "✓ Saved";
-    el.style.color = "#52a040";
+    const offline = window._fbOnline === false;
+    el.textContent = offline ? "💾 Saved locally" : "✓ Saved";
+    el.style.color = offline ? "#cc8800" : "#52a040";
     clearTimeout(el._fadeTimer);
     el._fadeTimer = setTimeout(() => {
       if (el) { el.textContent = ""; }
@@ -83,36 +114,158 @@ function _tallyAutoSaveNow() {
 
 // ── Entry point ──
 function selectPrintFunction(fn) {
-  const funcSelect  = document.getElementById("print-function-select");
-  const modeSelect  = document.getElementById("print-mode-select");
-  const tallyScreen = document.getElementById("print-tally-screen");
+  const funcSelect    = document.getElementById("print-function-select");
+  const modeSelect    = document.getElementById("print-mode-select");
+  const tallyScreen   = document.getElementById("print-tally-screen");
+  const tally2Screen  = document.getElementById("print-tally2-screen");
+  [funcSelect, modeSelect, tallyScreen, tally2Screen].forEach(el => { if (el) el.style.display = "none"; });
   if (fn === "timestudy") {
-    funcSelect.style.display  = "none";
-    tallyScreen.style.display = "none";
-    modeSelect.style.display  = "flex";
+    modeSelect.style.display = "flex";
     qsInitMachine();
   } else {
-    funcSelect.style.display  = "none";
-    modeSelect.style.display  = "none";
-    _tallyActive = true;
-    tallyRender();
-    tallyScreen.style.display = "flex";
+    _tallyShowLoginOverlay(fn);
   }
 }
 
+function _tallyShowLoginOverlay(fn) {
+  _tallyLoginFn = fn;
+  const overlay = document.getElementById('tally-login-overlay');
+  if (!overlay) return;
+
+  // Build operator checkboxes
+  const opsContainer = document.getElementById('tally-login-ops');
+  opsContainer.innerHTML = '';
+  const ops = (window._targets && window._targets['__operators']) || [];
+  if (!ops.length) {
+    opsContainer.innerHTML = '<div style="font-family:\'Josefin Slab\',serif;font-size:11px;color:#90a8b8;padding:6px 0;">No operators set up yet — add them in Settings.</div>';
+  } else {
+    ops.forEach(name => {
+      const row = document.createElement('label');
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid #e8f0e8;";
+      const cb = document.createElement('input');
+      cb.type  = 'checkbox';
+      cb.value = name;
+      cb.style.cssText = "width:18px;height:18px;accent-color:#2e8b57;cursor:pointer;flex-shrink:0;";
+      if (_tallyActiveOps.includes(name)) cb.checked = true;
+      const lbl = document.createElement('span');
+      lbl.style.cssText = "font-family:'Josefin Slab',serif;font-size:14px;color:#1a2e1c;";
+      lbl.textContent = name;
+      row.appendChild(cb);
+      row.appendChild(lbl);
+      opsContainer.appendChild(row);
+    });
+  }
+
+  // Populate machine dropdown (no Wallets)
+  const mSel = document.getElementById('tally-login-machine');
+  mSel.innerHTML = '<option value="">— Select machine —</option>';
+  (MACHINES || []).filter(m => m !== 'Wallets').forEach(m => {
+    const o = document.createElement('option');
+    o.value = o.textContent = m;
+    mSel.appendChild(o);
+  });
+  if (_tallyMachine) mSel.value = _tallyMachine;
+
+  document.getElementById('tally-login-error').textContent = '';
+  overlay.style.display = 'flex';
+}
+
+function tallyLoginConfirm() {
+  const checked = Array.from(document.querySelectorAll('#tally-login-ops input[type="checkbox"]:checked')).map(cb => cb.value);
+  const machine = document.getElementById('tally-login-machine').value;
+  if (!checked.length || !machine) {
+    document.getElementById('tally-login-error').textContent = !checked.length
+      ? 'Please select at least one operator.'
+      : 'Please select a machine.';
+    return;
+  }
+  _tallyActiveOps = checked;
+  _tallyMachine   = machine;
+  // Sync to global dropdowns so session records and counters work correctly
+  const gop = document.getElementById('global-operator');
+  if (gop) gop.value = checked.join(' & ');
+  selectMachineByName(machine);
+  document.getElementById('tally-login-overlay').style.display = 'none';
+  _tallyUpdateLoginBadge();
+  if (_tallyLoginFn === 'tally2') {
+    document.getElementById('print-tally2-screen').style.display = 'flex';
+    _tally2Active = true;
+    if (typeof t2Init === 'function') t2Init(_tallyIsSwitching);
+    _tallyIsSwitching = false;
+  } else {
+    _tallyActive = true;
+    tallyRender();
+    document.getElementById('print-tally-screen').style.display = 'flex';
+  }
+}
+
+function tallyLoginSwitch() {
+  _tallyIsSwitching = true;
+  _tallyShowLoginOverlay(_tallyLoginFn || 'tally2');
+}
+
+// Called from the Operator Log Out button in the top bar
+function tallyOperatorLogout() {
+  _tallyActiveOps = [];
+  _tallyUpdateLoginBadge();
+  if (_tally2Active) {
+    // Still on the tally screen — show login for the next operator
+    // tallyLoginConfirm will call t2Init(true) which resets counts + writes empty snapshot
+    _tallyIsSwitching = true;
+    _tallyShowLoginOverlay('tally2');
+  } else {
+    // Not on the tally screen — reset counts directly
+    if (typeof t2Init === 'function') t2Init(true);
+  }
+  if (typeof updateTopCounters === 'function') updateTopCounters();
+}
+
+function _tallyUpdateLoginBadge() {
+  ['tc-active-user', 'tc2-active-user'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (_tallyActiveOps.length && _tallyMachine) {
+      el.textContent = _tallyActiveOps.join(' & ') + '  ·  ' + _tallyMachine;
+      el.style.display = 'inline-block';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
 function goToFunctionSelect() {
-  document.getElementById("print-function-select").style.display = "flex";
-  document.getElementById("print-mode-select").style.display     = "none";
-  document.getElementById("print-tally-screen").style.display    = "none";
-  document.getElementById("print-run-screen").style.display      = "none";
-  document.getElementById("print-jobs-screen").style.display     = "none";
-  _tallyActive = false;
+  document.getElementById("print-function-select").style.display  = "flex";
+  document.getElementById("print-mode-select").style.display      = "none";
+  document.getElementById("print-tally-screen").style.display     = "none";
+  document.getElementById("print-tally2-screen").style.display    = "none";
+  document.getElementById("print-run-screen").style.display       = "none";
+  document.getElementById("print-jobs-screen").style.display      = "none";
+  const overlay = document.getElementById('tally-login-overlay');
+  if (overlay) overlay.style.display = 'none';
+  _tallyActive  = false;
+  _tally2Active = false;
 }
 
 // ── Render tally screen shell ──
+function _tallyUpdateMachineBadge() {
+  const badge = document.getElementById("tc-machine-badge");
+  if (!badge) return;
+  const machine = document.getElementById("global-machine")?.value || _tallyMachine || "";
+  const MACHINE_COLORS = window.MACHINE_COLORS || {};
+  if (!machine || machine === "—") {
+    badge.textContent = "⚠️ No machine selected — tap the Machine dropdown above";
+    badge.style.cssText = "margin-top:8px;font-family:'Josefin Slab',serif;font-size:13px;font-weight:700;padding:5px 14px;border-radius:20px;display:inline-block;background:#fff3cd;color:#856404;border:2px solid #ffc107;";
+  } else {
+    const color = MACHINE_COLORS[machine] || "#52a040";
+    badge.textContent = "Logging for: " + machine;
+    badge.style.cssText = "margin-top:8px;font-family:'Josefin Slab',serif;font-size:13px;font-weight:700;padding:5px 14px;border-radius:20px;display:inline-block;background:#fff;border:2px solid " + color + ";color:" + color + ";";
+  }
+}
+
 function tallyRender() {
   const screen = document.getElementById("print-tally-screen");
   if (!screen) return;
+  _tallyUpdateMachineBadge();
   // Sync machine buttons
   document.querySelectorAll(".tally-machine-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.machine === _tallyMachine)
@@ -213,7 +366,7 @@ function _tallyRenderCatSection(area, displayCat) {
 // ── Piece card ──
 function _tallyMakePieceCard(key, sub) {
   const count    = _tallyCounts[key] || 0;
-  const pph      = getTarget(key, "pph") || 0;
+  const pph      = getTarget(key, "pph", _tallyMachine) || 0;
   const secEa    = pph > 0 ? 3600 / pph : 0;
   const totalSec = count * secEa;
   const esc      = CSS.escape(key);
@@ -380,9 +533,13 @@ function _tallyMakeMisprintPieceCard(key, sub) {
 
 // ── Count manipulation ──
 function tallyInc(key) {
+  if (!_tallyCounts[key] && !_tallyStartTimes[key]) {
+    _tallyStartTimes[key] = new Date().toISOString();
+  }
   _tallyCounts[key] = (_tallyCounts[key] || 0) + 1;
   _tallyUpdateCard(key);
   _tallyScheduleSave();
+  updateTopCounters();
   // Log this individual tick to Firebase for manager dashboard charting
   if (window._fb && _tallyMachine && _tallyMachine !== "—") {
     const d = new Date();
@@ -401,11 +558,17 @@ function tallyInc(key) {
 function tallyUndo(key) {
   if (!_tallyCounts[key]) return;
   _tallyCounts[key]--;
+  if (_tallyCounts[key] === 0) delete _tallyStartTimes[key];
   _tallyUpdateCard(key);
   _tallyScheduleSave();
+  updateTopCounters();
 }
 function tallySetCount(key, rawVal) {
-  _tallyCounts[key] = Math.max(0, parseInt(rawVal) || 0);
+  const newCount = Math.max(0, parseInt(rawVal) || 0);
+  if (newCount > 0 && !_tallyStartTimes[key]) {
+    _tallyStartTimes[key] = new Date().toISOString();
+  }
+  _tallyCounts[key] = newCount;
   _tallyUpdateTimeOnly(key);
   _tallyScheduleSave();
 }
@@ -505,7 +668,11 @@ function _tallyOpenAdjustModal(key, isMisprint) {
       const el = document.getElementById("tc-mp-" + CSS.escape("mp-" + key));
       if (el) el.textContent = _tallyMisprints[key];
     } else {
-      _tallyCounts[key] = Math.max(0, (_tallyCounts[key] || 0) + typed);
+      const newCount = Math.max(0, (_tallyCounts[key] || 0) + typed);
+      if (newCount > 0 && !_tallyStartTimes[key]) {
+        _tallyStartTimes[key] = new Date().toISOString();
+      }
+      _tallyCounts[key] = newCount;
       _tallyUpdateCard(key);
       // Log the manual adjustment to Firebase for manager dashboard charting
       if (window._fb && _tallyMachine && _tallyMachine !== "—") {
@@ -523,6 +690,7 @@ function _tallyOpenAdjustModal(key, isMisprint) {
       }
     }
     _tallyScheduleSave();
+    updateTopCounters();
     overlay.style.display = "none";
   }
 
@@ -534,7 +702,7 @@ function _tallyOpenAdjustModal(key, isMisprint) {
 }
 function _tallyUpdateTimeOnly(key) {
   const count    = _tallyCounts[key] || 0;
-  const pph      = getTarget(key, "pph") || 0;
+  const pph      = getTarget(key, "pph", _tallyMachine) || 0;
   const totalSec = count * (pph > 0 ? 3600 / pph : 0);
   const el = document.getElementById("tc-timeval-" + CSS.escape(key));
   if (el) el.textContent = fmt(totalSec);
@@ -546,10 +714,14 @@ function _tallyRenderFooter(area) {
   footer.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;padding-bottom:24px;";
   footer.innerHTML = `
     <span id="tc-autosave-status" style="font-family:'Josefin Slab',serif;font-size:11px;color:#52a040;min-width:60px;"></span>
-    <button onclick="tallyReset()" style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;padding:9px 20px;border-radius:8px;background:#fff;border:1px solid #f0c8d8;color:#c8457a;cursor:pointer;">↺ Reset All</button>
   `;
   area.appendChild(footer);
 }
+
+// When Firebase reconnects, flush any counts tallied while offline
+document.addEventListener("fbReconnected", () => {
+  if (Object.keys(_tallyCounts).length > 0) _tallyAutoSaveNow();
+});
 
 // ── Reset ──
 function tallyReset() {
@@ -563,16 +735,23 @@ function tallyReset() {
     const dateStr = d.getFullYear() + "-"
                   + String(d.getMonth() + 1).padStart(2, "0") + "-"
                   + String(d.getDate()).padStart(2, "0");
+    // Delete all delta records written this session
+    _tallySessionKeys.forEach(key => window._fb.deleteTallySession(machine, key));
+    // Also try to delete any old-format cumulative records that may still exist
     Object.keys(_tallyCounts).forEach(pieceKey => {
       if ((_tallyCounts[pieceKey] || 0) > 0 || (_tallyMisprints[pieceKey] || 0) > 0) {
-        const fbKey = "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_");
-        window._fb.deleteTallySession(machine, fbKey);
+        window._fb.deleteTallySession(machine, "tally_" + dateStr + "_" + pieceKey.replace(/[^a-zA-Z0-9]/g, "_"));
       }
     });
   }
 
-  _tallyCounts    = {};
-  _tallyMisprints = {};
+  _tallyCounts         = {};
+  _tallyMisprints      = {};
+  _tallyStartTimes     = {};
+  _tallySavedCounts    = {};
+  _tallySavedMisprints = {};
+  _tallySessionKeys    = [];
+  _tallyMigrated       = {};
   tallyRenderCards();
   _tallyAutoSaveNow();  // immediately clear the Firebase snapshot
 }

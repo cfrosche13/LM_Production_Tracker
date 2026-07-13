@@ -60,7 +60,7 @@ function colexYardSignsRender(container) {
       <div style="display:flex;gap:10px;justify-content:center;margin-bottom:28px;">
         <button id="cys-start-btn" onclick="colexYSStart()"
           style="display:${_colexYSRunning ? 'none' : 'flex'};align-items:center;gap:8px;padding:12px 28px;border-radius:10px;background:#c8a800;border:2px solid #9a7e00;color:#fff;font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.06em;">
-          ▶ ${_colexYSSec > 0 ? 'Resume' : 'Start'}
+          ▶️ ${_colexYSSec > 0 ? 'Resume' : 'Start'}
         </button>
         <button id="cys-stop-btn" onclick="colexYSStop()"
           style="display:${_colexYSRunning ? 'flex' : 'none'};align-items:center;gap:8px;padding:12px 28px;border-radius:10px;background:#cc3333;border:2px solid #992222;color:#fff;font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.06em;">

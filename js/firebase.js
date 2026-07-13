@@ -31,7 +31,7 @@
         "padding:10px 16px;letter-spacing:0.01em;",
         "box-shadow:0 2px 8px rgba(0,0,0,0.3);",
       ].join("");
-      b.textContent = "⚠  No internet connection — tally counts are saved to this device and will sync when reconnected";
+      b.textContent = "⚠️  No internet connection — tally counts are saved to this device and will sync when reconnected";
       document.body.appendChild(b);
     }
     b.style.display = "block";

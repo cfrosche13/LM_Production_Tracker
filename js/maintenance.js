@@ -26,7 +26,7 @@ function mechChoose(choice) {
         <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#336633;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">Fix #${mechFixCount} — Time to Repair</div>
         <div id="mech-fix-timer" style="font-family:'Abril Fatface',serif;font-size:52px;color:#228833;line-height:1;">00:00:00</div>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
-          <button onclick="mechFixStart()" id="mech-fix-start-btn" style="padding:8px 18px;background:#f0fff4;border:1px solid #88dd99;border-radius:6px;color:#228833;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;cursor:pointer;display:none;">▶ Start</button>
+          <button onclick="mechFixStart()" id="mech-fix-start-btn" style="padding:8px 18px;background:#f0fff4;border:1px solid #88dd99;border-radius:6px;color:#228833;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;cursor:pointer;display:none;">▶️ Start</button>
           <button onclick="mechFixStop()"  id="mech-fix-stop-btn"  style="padding:8px 18px;background:#fff0f0;border:1px solid #ffaaaa;border-radius:6px;color:#cc3333;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;cursor:pointer;">■ Stop</button>
           <button onclick="mechFixReset()" style="padding:8px 18px;background:#fff;border:1px solid #f0d0dc;border-radius:6px;color:#c090a8;font-family:'Josefin Slab',serif;font-size:12px;cursor:pointer;">↺ Reset</button>
         </div>
@@ -49,7 +49,7 @@ function mechChoose(choice) {
     if (cleanRunning) cleanStop();
     body.innerHTML = `
       <div style="background:#1a0808;border:1px solid #5a1a1a;border-radius:6px;padding:11px 14px;margin-bottom:14px;font-family:'Josefin Slab',serif;font-size:12px;color:#ff5555;">
-        ⚠ Machine is going DOWN — all timers stopped.
+        ⚠️ Machine is going DOWN — all timers stopped.
       </div>
       <div class="mf full"><label>Notes</label><textarea id="mech-down-notes" placeholder="Describe the issue..."></textarea></div>
       <div class="mf full" style="margin-top:8px;"><label>Service Call Number</label><input id="mech-svc" placeholder="e.g. SVC-20260304" /></div>
@@ -476,9 +476,9 @@ function renderMaintReports() {
     nameRow.innerHTML = `
       <div style="font-family:'Abril Fatface',serif;font-size:18px;color:#1a1a2e;letter-spacing:0.02em;">${machine}</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        ${hasDown ? `<span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;background:#ff4444;color:#fff;border-radius:4px;padding:3px 8px;letter-spacing:0.05em;">⚠ MACHINE DOWN</span>` : ""}
-        ${mechEntries.length && !hasDown ? `<span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;background:#fff0e0;color:#e87820;border:1px solid #f0c080;border-radius:4px;padding:3px 8px;letter-spacing:0.05em;">⚙ ${mechEntries.length} Fix${mechEntries.length>1?'es':''}</span>` : ""}
-        <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#aaa;">▶ Details</span>
+        ${hasDown ? `<span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;background:#ff4444;color:#fff;border-radius:4px;padding:3px 8px;letter-spacing:0.05em;">⚠️ MACHINE DOWN</span>` : ""}
+        ${mechEntries.length && !hasDown ? `<span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;background:#fff0e0;color:#e87820;border:1px solid #f0c080;border-radius:4px;padding:3px 8px;letter-spacing:0.05em;">⚙️ ${mechEntries.length} Fix${mechEntries.length>1?'es':''}</span>` : ""}
+        <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#aaa;">▶️ Details</span>
       </div>`;
     card.appendChild(nameRow);
 
@@ -536,7 +536,7 @@ function openMaintMachineDetail(machine) {
     const _lastDU2 = _downOrUp2.length ? _downOrUp2.reduce((a,b) => new Date(a.time) > new Date(b.time) ? a : b) : null;
     const hasDown = _lastDU2?.type === "Machine Down";
     html += `<div style="background:${hasDown?'#fff5f5':'#fff8f0'};border:1px solid ${hasDown?'#ffaaaa':'#f0c080'};border-radius:8px;padding:14px 16px;margin-bottom:16px;">
-      <div style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${hasDown?'#cc2222':'#e87820'};margin-bottom:10px;">${hasDown?'⚠ Mechanical Issues':'⚙ Operator Fixes'}</div>`;
+      <div style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${hasDown?'#cc2222':'#e87820'};margin-bottom:10px;">${hasDown?'⚠️ Mechanical Issues':'⚙️ Operator Fixes'}</div>`;
     mechEntries.forEach(e => {
       html += `<div style="padding:8px 0;border-bottom:1px solid #f5e8d8;display:flex;flex-direction:column;gap:2px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">

@@ -296,7 +296,7 @@ function runDetailsSyncCtx() {
     pieceCtx.style.background = (cat && sub) ? "#eef8eb" : "#fff5f8";
   }
   if (statusEl) {
-    statusEl.textContent = complete ? "✓ complete" : "⚠ fill in while printing";
+    statusEl.textContent = complete ? "✓ complete" : "⚠️ fill in while printing";
     statusEl.style.color = complete ? "#228844" : "#e8457a";
   }
 }

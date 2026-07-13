@@ -65,7 +65,7 @@ async function fetchOpenOrders() {
   setTimeout(() => { if (btn) btn.textContent = "↺ Refresh"; }, 4000);
   // Show a helpful message on the orders tab
   const lastUpd = document.getElementById("orders-last-updated");
-  if (lastUpd) lastUpd.textContent = "Auto-fetch blocked — please use ⬆ Upload File";
+  if (lastUpd) lastUpd.textContent = "Auto-fetch blocked — please use ⬆️ Upload File";
 }
 
 

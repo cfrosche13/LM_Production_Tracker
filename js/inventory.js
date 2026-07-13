@@ -168,7 +168,7 @@ function renderInventory() {
     const fbAge = _invFbReadyTime ? (Date.now() - _invFbReadyTime) : 0;
     if (_invAdminMode && fn && !hasLots && atTop && fbAge > 5000) {
       seedWrap.style.display = "";
-      if (seedBtn) { seedBtn.onclick = window[fn]; seedBtn.textContent = `⬆ Load ${_invMachine} Data`; }
+      if (seedBtn) { seedBtn.onclick = window[fn]; seedBtn.textContent = `⬆️ Load ${_invMachine} Data`; }
       if (seedMsg) seedMsg.textContent = `No ${_invMachine} inventory found — load current stock from screenshots?`;
     } else {
       seedWrap.style.display = "none";
@@ -279,7 +279,7 @@ function renderInkProductDetail(productId) {
         <div style="flex:1;min-width:0;">
           <div style="font-family:'Josefin Slab',serif;font-size:16px;font-weight:700;color:#1a2e1c;">${esc(prod.name)}</div>
           <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#88aa88;margin-top:2px;">
-            ${prod.partCode ? `Part #: ${esc(prod.partCode)}` : `<span style="color:#e87820;">⚠ Part # needed</span>`}
+            ${prod.partCode ? `Part #: ${esc(prod.partCode)}` : `<span style="color:#e87820;">⚠️ Part # needed</span>`}
           </div>
         </div>
         ${_invBadge(total)}
@@ -305,7 +305,7 @@ function renderInkProductDetail(productId) {
           <span style="font-family:'Josefin Slab',serif;font-size:12px;color:${depleted?'#aaa':'#2a4a2a'};flex:1;min-width:80px;">Lot: <strong>${esc(lot.lotNumber)}</strong></span>
           <span style="font-family:'Josefin Slab',serif;font-size:11px;color:${expWarn?'#cc5500':(depleted?'#bbb':'#5a7a5a')};">Exp: ${expStr}</span>
           <span style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:${depleted?'#ccc':'#1a6a1a'};">${lot.qtyRemaining} left</span>
-          ${_invAdminMode ? `<button class="inv-btn inv-btn-admin" onclick="openAdjustLotModal('${lot.key}')">↕ Adjust</button>` : ''}
+          ${_invAdminMode ? `<button class="inv-btn inv-btn-admin" onclick="openAdjustLotModal('${lot.key}')">↕️ Adjust</button>` : ''}
         </div>
       `;
     });
@@ -341,7 +341,7 @@ function renderMaintSection(machine) {
           <div style="flex:1;min-width:0;">
             <div style="font-family:'Josefin Slab',serif;font-size:14px;font-weight:700;color:#1a2e1c;">${esc(prod.name)}</div>
             <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#88aa88;margin-top:1px;">
-              ${prod.partCode ? `Part #: ${esc(prod.partCode)}` : `<span style="color:#e87820;">⚠ Part # needed</span>`}
+              ${prod.partCode ? `Part #: ${esc(prod.partCode)}` : `<span style="color:#e87820;">⚠️ Part # needed</span>`}
             </div>
           </div>
           ${_invBadge(qty)}
@@ -389,8 +389,46 @@ function invPartsClearSearch() {
   renderPartsSection(_invMachine);
 }
 
+const INV_PARTS_CONDITIONS = ["New", "Defective", "Repaired"];
+
+function _invConditionBadge(condition, machine, productId) {
+  const styles = {
+    New:       { color:"#1a7a2a", bg:"#f0fff4", border:"#1a7a2a" },
+    Defective: { color:"#cc2222", bg:"#fff0f0", border:"#cc2222" },
+    Repaired:  { color:"#2a4468", bg:"#eef2f8", border:"#3a5a8c" },
+  };
+  const s = styles[condition] || styles.New;
+  return `<button onclick="invCyclePartsCondition('${esc(machine)}','${esc(productId)}')" title="Click to change condition"
+    style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;border:1.5px solid ${s.border};background:${s.bg};color:${s.color};cursor:pointer;white-space:nowrap;">${esc(condition)}</button>`;
+}
+
+function invCyclePartsCondition(machine, productId) {
+  const rec     = (_partsStock[machine]||{})[productId] || {};
+  const prod    = _invGetPartsProducts(machine).find(p => p.id === productId);
+  const current = rec.condition || "New";
+  const next    = INV_PARTS_CONDITIONS[(INV_PARTS_CONDITIONS.indexOf(current) + 1) % INV_PARTS_CONDITIONS.length];
+
+  const updated = {
+    productName: prod?.name || rec.productName || "",
+    partCode:    prod?.partCode || rec.partCode || "",
+    location:    prod?.location || rec.location || "",
+    qtyInStock:  rec.qtyInStock || 0,
+    condition:   next,
+  };
+  if (!_partsStock[machine]) _partsStock[machine] = {};
+  _partsStock[machine][productId] = updated;
+  if (window._fb) window._fb.savePartsStock(machine, productId, updated);
+
+  const tx = { type:"condition_change", machine, category:"parts", productId, productName:updated.productName, partCode:updated.partCode||"", location:updated.location||"", qty:0, op: document.getElementById("global-operator")?.value || "—", timestamp:new Date().toISOString(), notes:`Condition changed to ${next}` };
+  if (window._fb) window._fb.saveInvTransaction(tx);
+
+  renderInventory();
+}
+
 function _invPartsRow(prod, machine, showMachineBadge) {
-  const qty = ((_partsStock[machine]||{})[prod.id]?.qtyInStock || 0);
+  const rec       = (_partsStock[machine]||{})[prod.id];
+  const qty       = rec?.qtyInStock || 0;
+  const condition = rec?.condition || "New";
   const nameLine = showMachineBadge
     ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
          <span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#3a5a8c;color:#fff;">${esc(machine)}</span>
@@ -403,10 +441,11 @@ function _invPartsRow(prod, machine, showMachineBadge) {
         <div style="flex:1;min-width:0;">
           ${nameLine}
           <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#88aa88;margin-top:2px;">
-            ${prod.location ? `📍 ${esc(prod.location)}` : `<span style="color:#e87820;">⚠ Location needed</span>`}
-            ${prod.partCode ? ` · Part #: ${esc(prod.partCode)}` : ` · <span style="color:#e87820;">⚠ Part # needed</span>`}
+            ${prod.location ? `📍 ${esc(prod.location)}` : `<span style="color:#e87820;">⚠️ Location needed</span>`}
+            ${prod.partCode ? ` · Part #: ${esc(prod.partCode)}` : ` · <span style="color:#e87820;">⚠️ Part # needed</span>`}
           </div>
         </div>
+        ${_invConditionBadge(condition, machine, prod.id)}
         ${_invBadge(qty)}
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="inv-btn inv-btn-receive" onclick="invPartsActionSwitch('${esc(machine)}');openReceivePartsModal('${esc(prod.id)}')">+ Receive</button>
@@ -766,9 +805,13 @@ function submitReceiveParts() {
   const now = new Date().toISOString();
 
   if (!_partsStock[machine])             _partsStock[machine] = {};
-  if (!_partsStock[machine][productId])  _partsStock[machine][productId] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:0 };
+  if (!_partsStock[machine][productId])  _partsStock[machine][productId] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:0, condition:"New" };
   _partsStock[machine][productId].qtyInStock = (_partsStock[machine][productId].qtyInStock || 0) + qty;
-  if (window._fb) window._fb.savePartsStock(machine, productId, { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:_partsStock[machine][productId].qtyInStock });
+  if (window._fb) window._fb.savePartsStock(machine, productId, {
+    productName: prod.name, partCode: prod.partCode||"", location: prod.location||"",
+    qtyInStock: _partsStock[machine][productId].qtyInStock,
+    condition: _partsStock[machine][productId].condition || "New",
+  });
 
   const tx = { type:"receive_parts", machine, category:"parts", productId, productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qty, op, timestamp:now, notes };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -816,7 +859,8 @@ function submitUseParts() {
   _partsStock[machine][productId].qtyInStock = inStock - qty;
   if (window._fb) window._fb.savePartsStock(machine, productId, {
     productName: prod?.name || "", partCode: prod?.partCode || "", location: prod?.location || "",
-    qtyInStock: _partsStock[machine][productId].qtyInStock
+    qtyInStock: _partsStock[machine][productId].qtyInStock,
+    condition: _partsStock[machine][productId].condition || "New",
   });
 
   const tx = { type:"use_parts", machine, category:"parts", productId, productName:prod?.name||"", partCode:prod?.partCode||"", location:prod?.location||"", qty, op, timestamp:now, notes };
@@ -1201,7 +1245,7 @@ function seed30PartsInventory(auto) {
   PARTS_INVENTORY_PRODUCTS["30"].forEach(prod => {
     const qty = partsQty[prod.id] || 0;
     if (!_partsStock["30"]) _partsStock["30"] = {};
-    _partsStock["30"][prod.id] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:qty };
+    _partsStock["30"][prod.id] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:qty, condition:"New" };
     window._fb.savePartsStock("30", prod.id, _partsStock["30"][prod.id]);
     if (qty > 0) {
       const tx = { type:"receive_parts", machine:"30", category:"parts", productId:prod.id, productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qty, op, timestamp:now, notes:"Initial inventory seed" };
@@ -1231,7 +1275,7 @@ function seed30PlusPartsInventory(auto) {
   PARTS_INVENTORY_PRODUCTS["30+"].forEach(prod => {
     const qty = partsQty[prod.id] || 0;
     if (!_partsStock["30+"]) _partsStock["30+"] = {};
-    _partsStock["30+"][prod.id] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:qty };
+    _partsStock["30+"][prod.id] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:qty, condition:"New" };
     window._fb.savePartsStock("30+", prod.id, _partsStock["30+"][prod.id]);
     if (qty > 0) {
       const tx = { type:"receive_parts", machine:"30+", category:"parts", productId:prod.id, productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qty, op, timestamp:now, notes:"Initial inventory seed" };
@@ -1272,18 +1316,18 @@ function exportInventoryExcel() {
   XLSX.utils.book_append_sheet(wb, ws2, "Maintenance Stock");
 
   // Sheet 3 — Current Spare Parts Stock
-  const partsRows = [["Machine","Location","Description","Part Number","Qty In Stock"]];
+  const partsRows = [["Machine","Location","Description","Part Number","Condition","Qty In Stock"]];
   Object.entries(_partsStock).sort(([a],[b]) => a.localeCompare(b)).forEach(([machine, prods]) => {
     Object.values(prods).sort((a,b) => (a.location||"").localeCompare(b.location||"")).forEach(data => {
-      partsRows.push([machine, data.location||"", data.productName||"", data.partCode||"", data.qtyInStock||0]);
+      partsRows.push([machine, data.location||"", data.productName||"", data.partCode||"", data.condition||"New", data.qtyInStock||0]);
     });
   });
   const ws3 = XLSX.utils.aoa_to_sheet(partsRows);
-  ws3["!cols"] = [10,10,30,14,12].map(w => ({ wch:w }));
+  ws3["!cols"] = [10,10,30,14,12,12].map(w => ({ wch:w }));
   XLSX.utils.book_append_sheet(wb, ws3, "Spare Parts Stock");
 
   // Sheet 4 — Full Transaction History
-  const TYPE_LABELS = { receive_ink:"Receive Ink", use_ink:"Use Ink", receive_maint:"Receive Supply", use_maint:"Use Supply", receive_parts:"Receive Part", use_parts:"Use Part", admin_adjust:"Admin Adjust" };
+  const TYPE_LABELS = { receive_ink:"Receive Ink", use_ink:"Use Ink", receive_maint:"Receive Supply", use_maint:"Use Supply", receive_parts:"Receive Part", use_parts:"Use Part", condition_change:"Condition Change", admin_adjust:"Admin Adjust" };
   const txRows = [["Date","Time","Type","Machine","Category","Product","Part Code","Lot Number","Exp Date","Qty","Operator","Notes"]];
   Object.values(_invTxs)
     .sort((a,b) => new Date(a.timestamp||0) - new Date(b.timestamp||0))

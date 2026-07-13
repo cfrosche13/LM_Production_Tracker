@@ -375,7 +375,7 @@ function renderMachineGrid() {
     const isTally   = lastSess && lastSess.mode === "tally";
     let modeBadge;
     if (isLive) {
-      modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#228844;color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;animation:live-pulse 2s ease-in-out infinite;">▶ LIVE</span>`;
+      modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#228844;color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;animation:live-pulse 2s ease-in-out infinite;">▶️ LIVE</span>`;
     } else if (isTally) {
       modeBadge = `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;background:#336688;color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:0.04em;">📊 TALLY</span>`;
     } else {
@@ -564,7 +564,7 @@ function renderLiveTimers() {
     if (!wrap.querySelector('.live-card, .idle-card')) {
       wrap.innerHTML = `
         <div id="live-empty-state" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;gap:14px;">
-          <div style="font-size:48px;">⏱</div>
+          <div style="font-size:48px;">⏱️</div>
           <div style="font-family:'Abril Fatface',serif;font-size:22px;color:#b8d0b8;">No machines running</div>
           <div style="font-family:'Josefin Slab',serif;font-size:12px;color:#90b888;text-align:center;">
             When an operator starts a print run, their live timer will appear here.<br>
@@ -617,7 +617,7 @@ function renderLiveTimers() {
       }
       const statusEl = card.querySelector(".lt-status");
       if (statusEl) {
-        statusEl.textContent = state.paused ? "⏸ PAUSED" : "▶ RUNNING";
+        statusEl.textContent = state.paused ? "⏸ PAUSED" : "▶️ RUNNING";
         statusEl.style.color = runColor;
         statusEl.style.background = runBg;
         statusEl.style.borderColor = runBorder;
@@ -644,7 +644,7 @@ function renderLiveTimers() {
             <div class="lt-machine">${machine}</div>
             <div class="lt-mode" style="color:${modeColor};border-color:${modeColor}40;background:${modeColor}10;">${modeLabel}</div>
           </div>
-          <div class="lt-status" style="color:${runColor};background:${runBg};border:1px solid ${runBorder};">▶ RUNNING</div>
+          <div class="lt-status" style="color:${runColor};background:${runBg};border:1px solid ${runBorder};">▶️ RUNNING</div>
         </div>
         <div class="lt-timer" style="color:${runColor};">${fmt(elapsedSec)}</div>
         <div class="lt-timer-label">Elapsed time</div>
@@ -982,7 +982,7 @@ function renderDDHourly(machine) {
   const hasMaint = Object.keys(hourMaintMap).length > 0;
   if (hasMaint) {
     datasets.push({
-      label: "⬇ Maintenance",
+      label: "⬇️ Maintenance",
       data: hours.map(h => hourMaintMap[h] || 0),
       backgroundColor: "#ff440088",
       borderColor: "#ff2200",

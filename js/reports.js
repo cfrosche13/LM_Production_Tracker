@@ -80,7 +80,7 @@ function renderOEEPanel() {
           </div>
           <span style="font-family:'Abril Fatface',serif;font-size:14px;color:${dc.text};min-width:42px;text-align:right;">${o.oee}%</span>
           <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#b0b8c8;min-width:100px;">A:${o.availability}% P:${o.performance}% Q:${o.quality}%</span>
-          ${o.downEvents ? `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;color:#cc2222;background:#fff5f5;border:1px solid #f0b8b8;border-radius:4px;padding:2px 6px;">⬇ Down</span>` : ""}
+          ${o.downEvents ? `<span style="font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;color:#cc2222;background:#fff5f5;border:1px solid #f0b8b8;border-radius:4px;padding:2px 6px;">⬇️ Down</span>` : ""}
         `;
         tableWrap.appendChild(row);
       });
@@ -298,6 +298,8 @@ function renderReports() {
     const totalChangeovers = sessions.reduce((s, r) => s + r.changeovers, 0);
     const totalGood = sessions.reduce((s, r) => s + (r.qtyGood || 0), 0);
     const totalBad  = sessions.reduce((s, r) => s + (r.qtyBad  || 0), 0);
+    const shift1Good = sessions.filter(s => getShift(s.time) === 1).reduce((s, r) => s + (r.qtyGood || 0), 0);
+    const shift2Good = sessions.filter(s => getShift(s.time) === 2).reduce((s, r) => s + (r.qtyGood || 0), 0);
     const editing = reportEditMode.has(machine);
 
     const card = document.createElement("div");
@@ -338,21 +340,19 @@ function renderReports() {
       </div>
       <div class="report-metrics">
         <div class="report-metric">
-          <span class="report-metric-label">Total Run Time</span>
-          <span class="report-metric-value" style="font-size:22px;">${fmt(totalSec)}</span>
+          <span class="report-metric-label">Qty Good</span>
+          <span class="report-metric-value" style="color:#228844;">${totalGood}</span>
         </div>
-        <div class="report-metric">
-          <span class="report-metric-label">Total Tables</span>
-          <span class="report-metric-value">${totalChangeovers}</span>
-        </div>
-        <div style="display:flex;gap:12px;">
-          <div class="report-metric" style="flex:1;">
-            <span class="report-metric-label">Qty Good</span>
-            <span class="report-metric-value" style="color:#228844;">${totalGood}</span>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;background:#e8f4fb;border:1px solid #9ac8e0;border-radius:6px;padding:4px 6px;">
+            <span style="font-family:'Josefin Slab',serif;font-size:8px;color:#336688;text-transform:uppercase;letter-spacing:0.08em;">Shift 1</span>
+            <span style="font-family:'Abril Fatface',serif;font-size:18px;color:#224466;line-height:1.1;">${shift1Good}</span>
+            <span style="font-family:'Josefin Slab',serif;font-size:7px;color:#7a9ab8;">7a – 3:30p</span>
           </div>
-          <div class="report-metric" style="flex:1;">
-            <span class="report-metric-label">Qty Bad</span>
-            <span class="report-metric-value" style="color:#cc3333;">${totalBad}</span>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;background:#f5f0ff;border:1px solid #c8b8ee;border-radius:6px;padding:4px 6px;">
+            <span style="font-family:'Josefin Slab',serif;font-size:8px;color:#7733aa;text-transform:uppercase;letter-spacing:0.08em;">Shift 2</span>
+            <span style="font-family:'Abril Fatface',serif;font-size:18px;color:#551188;line-height:1.1;">${shift2Good}</span>
+            <span style="font-family:'Josefin Slab',serif;font-size:7px;color:#b090d0;">3:30p – 11:30p</span>
           </div>
         </div>
       </div>
@@ -632,6 +632,16 @@ function openCardDetail(machine) {
   // Active hours: all hours that have data
   const activeHours = Object.keys(hourBuckets).map(Number).sort((a,b)=>a-b);
 
+  // Maintenance events mapped to hours for chart overlay
+  const maintEvents = events.filter(e => e.category === 'maintenance');
+  const eventsByHour = {};
+  maintEvents.forEach(e => {
+    const t = e.time instanceof Date ? e.time : new Date(e.time);
+    const h = t.getHours();
+    if (!eventsByHour[h]) eventsByHour[h] = [];
+    eventsByHour[h].push(e);
+  });
+
   // Build body HTML
   const body = document.getElementById("cdm-body");
   body.innerHTML = "";
@@ -686,6 +696,17 @@ function openCardDetail(machine) {
   canvas.style.cssText = "width:100%;display:block;";
   canvasWrap.appendChild(canvas);
   chartPanel.appendChild(canvasWrap);
+
+  // Maintenance event dot legend below chart
+  if (maintEvents.length > 0) {
+    const maintLegend = document.createElement("div");
+    maintLegend.style.cssText = "display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;";
+    const hasDown  = maintEvents.some(e => e.type === 'Machine Down');
+    const hasMaint = maintEvents.some(e => e.type !== 'Machine Down');
+    if (hasDown)  maintLegend.innerHTML += `<div style="display:flex;align-items:center;gap:5px;font-family:'Josefin Slab',serif;font-size:9px;color:#ff5555;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5555;flex-shrink:0;"></span>Machine Down</div>`;
+    if (hasMaint) maintLegend.innerHTML += `<div style="display:flex;align-items:center;gap:5px;font-family:'Josefin Slab',serif;font-size:9px;color:#e87820;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e87820;flex-shrink:0;"></span>Maintenance</div>`;
+    chartPanel.appendChild(maintLegend);
+  }
 
   topRow.appendChild(totalsPanel);
   topRow.appendChild(chartPanel);
@@ -767,13 +788,39 @@ function openCardDetail(machine) {
     body.appendChild(section);
   }
 
+  // ── MAINTENANCE & DOWN EVENTS LIST ──
+  if (maintEvents.length > 0) {
+    const evSection = document.createElement("div");
+    evSection.style.cssText = "margin-top:16px;";
+    const evHeader = document.createElement("div");
+    evHeader.style.cssText = "font-family:'Josefin Slab',serif;font-size:10px;color:#c090a8;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #fde0ea;";
+    evHeader.textContent = "Maintenance & Events";
+    evSection.appendChild(evHeader);
+    const bgForType = t => t === 'Machine Down' ? '#fff5f5' : (t === 'Machine Back Up' || t === 'Operator Fix') ? '#f5fff8' : '#f5f8ff';
+    [...maintEvents].sort((a, b) => new Date(a.time) - new Date(b.time)).forEach(e => {
+      const t = e.time instanceof Date ? e.time : new Date(e.time);
+      const timeStr = t.toLocaleTimeString("en-US", {hour:"numeric", minute:"2-digit"});
+      const row = document.createElement("div");
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:4px;background:${bgForType(e.type)};border:1px solid ${e.color}33;`;
+      row.innerHTML = `
+        <div style="width:8px;height:8px;border-radius:50%;background:${e.color};flex-shrink:0;"></div>
+        <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#b090c8;min-width:55px;flex-shrink:0;">${timeStr}</span>
+        <span style="font-family:'Josefin Slab',serif;font-size:11px;color:${e.color};font-weight:700;flex-shrink:0;">${e.type}</span>
+        ${e.detail ? `<span style="font-family:'Josefin Slab',serif;font-size:10px;color:#a090b0;">${e.detail}</span>` : ''}
+      `;
+      evSection.appendChild(row);
+    });
+    body.appendChild(evSection);
+  }
+
   openModal("card-detail-modal");
 
   // Draw chart after modal is visible
   requestAnimationFrame(() => {
     const dpr = window.devicePixelRatio || 1;
     const cssW = canvas.parentElement.offsetWidth;
-    const PAD_L = 36, PAD_B = 28, PAD_T = 8, PAD_R = 8;
+    const hasMaintDots = activeHours.some(h => eventsByHour[h]?.length);
+    const PAD_L = 36, PAD_B = hasMaintDots ? 44 : 28, PAD_T = 8, PAD_R = 8;
     const CHART_H = 180;
     const cssH = CHART_H + PAD_T + PAD_B;
     const nHours = Math.max(activeHours.length, 1);
@@ -851,6 +898,23 @@ function openCardDetail(machine) {
       ctx.textAlign = "center";
       const ampm = h===0?"12a":h<12?h+"a":h===12?"12p":(h-12)+"p";
       ctx.fillText(ampm, groupX + BAR_W/2, PAD_T + CHART_H + 14);
+
+      // Maintenance/down event dots below hour label
+      if (hasMaintDots && eventsByHour[h]?.length) {
+        const hEvts = eventsByHour[h];
+        const hDown  = hEvts.some(e => e.type === 'Machine Down');
+        const hMaint = hEvts.some(e => e.type !== 'Machine Down');
+        const dotY = PAD_T + CHART_H + 30;
+        if (hDown && hMaint) {
+          ctx.fillStyle = '#ff5555';
+          ctx.beginPath(); ctx.arc(groupX + BAR_W/2 - 5, dotY, 3.5, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#e87820';
+          ctx.beginPath(); ctx.arc(groupX + BAR_W/2 + 5, dotY, 3.5, 0, Math.PI*2); ctx.fill();
+        } else {
+          ctx.fillStyle = hDown ? '#ff5555' : '#e87820';
+          ctx.beginPath(); ctx.arc(groupX + BAR_W/2, dotY, 3.5, 0, Math.PI*2); ctx.fill();
+        }
+      }
     });
 
     // Axes
@@ -989,63 +1053,70 @@ function toggleReportEdit(machine) {
 function exportReportsToExcel() {
   const wb = XLSX.utils.book_new();
   const today = new Date().toLocaleDateString();
+  const aoaOpts = { cellDates: true };
 
   // ── Sheet 1: Sessions ──
-  const sessionRows = [["Machine","Run #","Mode","Piece Category","Piece Type","Operator","Duration","Qty Good","Qty Bad","Notes","Date","Time"]];
+  const sessionRows = [["Machine","Run #","Mode","Piece Category","Piece Type","Operator","Duration","Qty Good","Qty Bad","Notes","Date/Time","Time"]];
   Object.entries(machineReports).forEach(([machine, sessions]) => {
     sessions.filter(s => isInDateRange(s.time)).forEach((s, i) => {
       const d = s.time ? new Date(s.time) : null;
-      sessionRows.push([machine, i+1, s.mode||"", s.pieceCategory||"", s.pieceType||"", s.op||"", fmt(s.totalSec), s.qtyGood||0, s.qtyBad||0, s.notes||"", d ? d.toLocaleDateString() : "", d ? d.toLocaleTimeString() : ""]);
+      sessionRows.push([machine, i+1, s.mode||"", s.pieceCategory||"", s.pieceType||"", s.op||"", fmt(s.totalSec), s.qtyGood||0, s.qtyBad||0, s.notes||"", d||"", timeVal(d)]);
     });
   });
-  const ws1 = XLSX.utils.aoa_to_sheet(sessionRows);
-  ws1['!cols'] = [14,8,16,16,14,12,12,10,10,28,14,12].map(w=>({wch:w}));
+  const ws1 = XLSX.utils.aoa_to_sheet(sessionRows, aoaOpts);
+  ws1['!cols'] = [14,8,16,16,14,12,12,10,10,28,20,14].map(w=>({wch:w}));
   styleHeaderRow(ws1, sessionRows[0].length);
+  applyDateTimeFmt(ws1, 10, sessionRows.length - 1);
+  applyTimeFmt(ws1, 11, sessionRows.length - 1);
   XLSX.utils.book_append_sheet(wb, ws1, "Sessions");
 
   // ── Sheet 2: Events ──
-  const eventRows = [["Machine","Type","Detail","Notes","Date","Time"]];
+  const eventRows = [["Machine","Type","Detail","Notes","Date/Time","Time"]];
   Object.entries(machineEvents).forEach(([machine, events]) => {
     events.filter(e => isInDateRange(e.time)).forEach(e => {
       const d = e.time ? new Date(e.time) : null;
-      eventRows.push([machine, e.type||"", e.detail||"", e.notes||"", d ? d.toLocaleDateString() : "", d ? d.toLocaleTimeString() : ""]);
+      eventRows.push([machine, e.type||"", e.detail||"", e.notes||"", d||"", timeVal(d)]);
     });
   });
-  const ws2 = XLSX.utils.aoa_to_sheet(eventRows);
-  ws2['!cols'] = [14,18,24,30,14,12].map(w=>({wch:w}));
+  const ws2 = XLSX.utils.aoa_to_sheet(eventRows, aoaOpts);
+  ws2['!cols'] = [14,18,24,30,20,14].map(w=>({wch:w}));
   styleHeaderRow(ws2, eventRows[0].length);
+  applyDateTimeFmt(ws2, 4, eventRows.length - 1);
+  applyTimeFmt(ws2, 5, eventRows.length - 1);
   XLSX.utils.book_append_sheet(wb, ws2, "Events");
 
   // ── Sheet 3: Maintenance Log ──
-  const maintRows = [["Type","Detail","Notes","Operator","Machine","Date","Time"]];
+  const maintRows = [["Type","Detail","Notes","Operator","Machine","Date/Time","Time"]];
   maintLog.filter(e => isInDateRange(e.time)).forEach(e => {
     const d = e.time ? new Date(e.time) : null;
-    maintRows.push([e.type||"", e.detail||"", e.notes||"", e.op||"", e.machine||"", d ? d.toLocaleDateString() : "", d ? d.toLocaleTimeString() : ""]);
+    maintRows.push([e.type||"", e.detail||"", e.notes||"", e.op||"", e.machine||"", d||"", timeVal(d)]);
   });
-  const ws3 = XLSX.utils.aoa_to_sheet(maintRows);
-  ws3['!cols'] = [18,24,30,12,14,14,12].map(w=>({wch:w}));
+  const ws3 = XLSX.utils.aoa_to_sheet(maintRows, aoaOpts);
+  ws3['!cols'] = [18,24,30,12,14,20,14].map(w=>({wch:w}));
   styleHeaderRow(ws3, maintRows[0].length);
+  applyDateTimeFmt(ws3, 5, maintRows.length - 1);
+  applyTimeFmt(ws3, 6, maintRows.length - 1);
   XLSX.utils.book_append_sheet(wb, ws3, "Maintenance");
 
   // ── Sheet 4: Waiting Log ──
-  const waitRows = [["Duration","Operator","Machine","Notes","Date","Time"]];
+  const waitRows = [["Duration","Operator","Machine","Notes","Date/Time","Time"]];
   waitLog.filter(e => isInDateRange(e.time)).forEach(e => {
     const d = e.time ? new Date(e.time) : null;
-    waitRows.push([fmt(e.duration), e.op||"", e.machine||"", e.notes||"", d ? d.toLocaleDateString() : "", d ? d.toLocaleTimeString() : ""]);
+    waitRows.push([fmt(e.duration), e.op||"", e.machine||"", e.notes||"", d||"", timeVal(d)]);
   });
-  const ws4 = XLSX.utils.aoa_to_sheet(waitRows);
-  ws4['!cols'] = [12,12,14,30,14,12].map(w=>({wch:w}));
+  const ws4 = XLSX.utils.aoa_to_sheet(waitRows, aoaOpts);
+  ws4['!cols'] = [12,12,14,30,20,14].map(w=>({wch:w}));
   styleHeaderRow(ws4, waitRows[0].length);
+  applyDateTimeFmt(ws4, 4, waitRows.length - 1);
+  applyTimeFmt(ws4, 5, waitRows.length - 1);
   XLSX.utils.book_append_sheet(wb, ws4, "Waiting");
 
   // ── Sheet 5: Per-Table Breakdown ──
-  const tableRows = [["Machine","Session #","Mode","Piece Type","Operator","Table #","Table Type","Qty Good","Qty Bad","Elapsed at Table","Table Time","Date","Time"]];
+  const tableRows = [["Machine","Session #","Mode","Piece Type","Operator","Table #","Table Type","Qty Good","Qty Bad","Elapsed at Table","Table Time","Date/Time","Time"]];
   Object.entries(machineReports).forEach(([machine, sessions]) => {
     sessions.filter(s => isInDateRange(s.time)).forEach((s, si) => {
       const tableLog = s.tableLog || [];
       const d = s.time ? new Date(s.time) : null;
-      const dateStr = d ? d.toLocaleDateString() : "";
-      const timeStr = d ? d.toLocaleTimeString() : "";
       if (tableLog.length === 0) {
         // No per-table data — fallback to session totals divided by tables
         const tables = s.changeovers || 1;
@@ -1053,7 +1124,7 @@ function exportReportsToExcel() {
         const avgBad  = Math.round((s.qtyBad||0)  / tables);
         const avgSec  = Math.round((s.totalSec||0) / tables);
         for (let t = 0; t < tables; t++) {
-          tableRows.push([machine, si+1, s.mode||"", s.pieceType||"", s.op||"", t+1, "Table", avgGood, avgBad, fmt((t+1)*avgSec), fmt(avgSec), dateStr, timeStr]);
+          tableRows.push([machine, si+1, s.mode||"", s.pieceType||"", s.op||"", t+1, "Table", avgGood, avgBad, fmt((t+1)*avgSec), fmt(avgSec), d||"", timeVal(d)]);
         }
       } else {
         // Each tableLog entry (Changeover, Session End) now carries its own qtyGood/qtyBad
@@ -1067,19 +1138,40 @@ function exportReportsToExcel() {
             ti+1, entry.type,
             entry.qtyGood||0, entry.qtyBad||0,
             fmt(entry.elapsed), fmt(tableTime),
-            dateStr, timeStr
+            d||"", timeVal(d)
           ]);
           prevElapsed = entry.elapsed;
         });
       }
     });
   });
-  const ws5 = XLSX.utils.aoa_to_sheet(tableRows);
-  ws5['!cols'] = [14,10,16,18,12,9,14,10,10,16,12,14,12].map(w=>({wch:w}));
+  const ws5 = XLSX.utils.aoa_to_sheet(tableRows, aoaOpts);
+  ws5['!cols'] = [14,10,16,18,12,9,14,10,10,16,12,20,14].map(w=>({wch:w}));
   styleHeaderRow(ws5, tableRows[0].length);
+  applyDateTimeFmt(ws5, 11, tableRows.length - 1);
+  applyTimeFmt(ws5, 12, tableRows.length - 1);
   XLSX.utils.book_append_sheet(wb, ws5, "Per-Table Breakdown");
 
   XLSX.writeFile(wb, `production-report-${today.replace(/\//g,'-')}.xlsx`);
+}
+
+function applyDateTimeFmt(ws, colIdx, numDataRows) {
+  for (let r = 1; r <= numDataRows; r++) {
+    const addr = XLSX.utils.encode_cell({ r, c: colIdx });
+    if (ws[addr]) ws[addr].z = "m/d/yyyy h:mm AM/PM";
+  }
+}
+
+function applyTimeFmt(ws, colIdx, numDataRows) {
+  for (let r = 1; r <= numDataRows; r++) {
+    const addr = XLSX.utils.encode_cell({ r, c: colIdx });
+    if (ws[addr]) { ws[addr].t = 'n'; ws[addr].z = "h:mm AM/PM"; }
+  }
+}
+
+function timeVal(d) {
+  if (!d) return 0;
+  return (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()) / 86400;
 }
 
 function styleHeaderRow(ws, numCols) {
