@@ -966,6 +966,11 @@ function openAddProductModal(category, machine) {
     locField.value = "";
     locField.closest(".mf").style.display = category === "parts" ? "" : "none";
   }
+  const lotField = document.getElementById("aprod-lot");
+  const expField = document.getElementById("aprod-exp");
+  const qtyField = document.getElementById("aprod-qty");
+  [lotField, expField, qtyField].forEach(f => { if (f) f.value = ""; });
+  [lotField, expField, qtyField].forEach(f => { if (f) f.closest(".mf").style.display = category === "ink" ? "" : "none"; });
   openModal("inv-add-product-modal");
 }
 
@@ -977,6 +982,15 @@ function submitAddProduct() {
   const location = document.getElementById("aprod-location")?.value.trim() || "";
   if (!name) { alert("Product name is required."); return; }
 
+  let lotNum = "", expDate = "", qty = 0;
+  if (category === "ink") {
+    lotNum  = document.getElementById("aprod-lot").value.trim();
+    expDate = document.getElementById("aprod-exp").value;
+    qty     = parseInt(document.getElementById("aprod-qty").value) || 0;
+    if (!lotNum)  { alert("Please enter a lot number."); return; }
+    if (qty <= 0) { alert("Please enter a quantity greater than 0."); return; }
+  }
+
   const id = [category, machine.replace(/\+/g,"p"), name.replace(/\s+/g,"_").toLowerCase(), Date.now()].join("_");
   const data = category === "parts" ? { name, partCode, location } : { name, partCode };
   const newProd = { id, ...data };
@@ -985,6 +999,17 @@ function submitAddProduct() {
   else if (category === "parts") _invCatalogAdds[machine].parts.push(newProd);
   else                           _invCatalogAdds[machine].maint.push(newProd);
   if (window._fb) _invFbGuard(window._fb.saveInvProduct(category, machine, id, data), name || "Add Product");
+
+  if (category === "ink") {
+    const now = new Date().toISOString();
+    const op  = document.getElementById("global-operator")?.value || "—";
+    const newLot = { machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qtyReceived:qty, qtyRemaining:qty, receivedAt:now, receivedBy:op };
+    const tmpKey = "_new_" + now;
+    _inkLots[tmpKey] = newLot;
+    if (window._fb) _invFbGuard(window._fb.saveInkLot(newLot), name || "Add Ink Product");
+    const tx = { type:"receive_ink", machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qty, op, timestamp:now, notes:"Added with new product", action:"new_lot" };
+    if (window._fb) window._fb.saveInvTransaction(tx);
+  }
 
   closeModal("inv-add-product-modal");
   renderInventory();

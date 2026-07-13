@@ -826,6 +826,9 @@
       <div class="mf full"><label>Product Name</label><input id="aprod-name" placeholder="e.g. Cyan" /></div>
       <div class="mf full"><label>Part / Order Code</label><input id="aprod-partcode" placeholder="e.g. 45206770 (optional)" /></div>
       <div class="mf full"><label>Location</label><input id="aprod-location" placeholder="e.g. 30/1 (optional)" /></div>
+      <div class="mf full"><label>Lot Number</label><input id="aprod-lot" placeholder="Enter lot number from container" /></div>
+      <div class="mf"><label>Expiration Date</label><input id="aprod-exp" type="date" /></div>
+      <div class="mf"><label>Quantity Received</label><input id="aprod-qty" type="number" min="1" placeholder="0" /></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('inv-add-product-modal')">Cancel</button>
@@ -1336,7 +1339,7 @@ function stopAllTransitions() {
 
 </script>
 <script src="js/maintenance.js?v=4"></script>
-<script src="js/inventory.js?v=21"></script>
+<script src="js/inventory.js?v=22"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
 <script src="js/settings.js?v=4"></script>
