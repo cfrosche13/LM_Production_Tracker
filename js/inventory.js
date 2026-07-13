@@ -1088,6 +1088,7 @@ document.addEventListener("fbReady", () => {
       _autoPartsSeedChecked = true;
       if (!Object.keys(_partsStock["30"]  || {}).length) seed30PartsInventory(true);
       if (!Object.keys(_partsStock["30+"] || {}).length) seed30PlusPartsInventory(true);
+      if (!Object.keys(_partsStock["H5"]  || {}).length) seedH5PartsInventory(true);
     }
     if (document.getElementById("maint-panel-inventory")?.style.display !== "none") renderInventory();
   });
@@ -1356,6 +1357,54 @@ function seed30PlusPartsInventory(auto) {
   });
 
   if (!auto) { alert("30+ spare parts inventory seeded successfully!"); renderInventory(); }
+}
+
+// ─── Seed initial H5 spare parts inventory ───────────
+function seedH5PartsInventory(auto) {
+  if (!window._fb) { if (!auto) alert("Not connected to Firebase. Please log in first."); return; }
+
+  const now = new Date().toISOString();
+  const op  = "Initial Seed";
+
+  const partsData = {
+    "h5pt_valveonoff":             { qty:1, condition:"New" },
+    "h5pt_regulatorfilter":        { qty:1, condition:"New" },
+    "h5pt_mediacontactsensorfru":  { qty:1, condition:"New" },
+    "h5pt_cablemediaheightcapio":  { qty:1, condition:"New" },
+    "h5pt_pcbarangerboardcool":    { qty:1, condition:"New" },
+    "h5pt_cablecartridgem5bdspwr": { qty:1, condition:"New" },
+    "h5pt_cablecommrj45x2":        { qty:1, condition:"New" },
+    "h5pt_cablecat7covers":        { qty:1, condition:"New" },
+    "h5pt_staticeliminator":       { qty:1, condition:"New" },
+    "h5pt_ssd960gb":               { qty:1, condition:"New" },
+    "h5pt_ssd192tb":               { qty:1, condition:"New" },
+    "h5pt_staticelectrodeprobe":   { qty:2, condition:"New" },
+    "h5pt_collisiondetection_old": { qty:0, condition:"Repaired" },
+    "h5pt_collisiondetection_new": { qty:1, condition:"New" },
+    "h5pt_cablecat6acovers":       { qty:5, condition:"New" },
+    "h5pt_cablecarrbdport2ctrg3":  { qty:1, condition:"New" },
+    "h5pt_mediacontactsensor_h53": { qty:1, condition:"New" },
+    "h5pt_cablemediaheight_h53":   { qty:1, condition:"New" },
+    "h5pt_cablecartridgem5_h53":   { qty:1, condition:"New" },
+    "h5pt_cableautolevellaser3":   { qty:1, condition:"New" },
+    "h5pt_cableautolevellaser4":   { qty:1, condition:"New" },
+    "h5pt_pcbamckinleyprecharger": { qty:1, condition:"New" },
+    "h5pt_printheadgen5":          { qty:2, condition:"New" },
+    "h5pt_pcbarangerboard_h54":    { qty:6, condition:"New" },
+  };
+
+  PARTS_INVENTORY_PRODUCTS["H5"].forEach(prod => {
+    const entry = partsData[prod.id] || { qty:0, condition:"New" };
+    if (!_partsStock["H5"]) _partsStock["H5"] = {};
+    _partsStock["H5"][prod.id] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:entry.qty, condition:entry.condition };
+    window._fb.savePartsStock("H5", prod.id, _partsStock["H5"][prod.id]);
+    if (entry.qty > 0) {
+      const tx = { type:"receive_parts", machine:"H5", category:"parts", productId:prod.id, productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qty:entry.qty, op, timestamp:now, notes:"Initial inventory seed" };
+      window._fb.saveInvTransaction(tx);
+    }
+  });
+
+  if (!auto) { alert("H5 spare parts inventory seeded successfully!"); renderInventory(); }
 }
 
 // ─── Export to Excel ─────────────────────────────────
