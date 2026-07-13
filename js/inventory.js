@@ -332,7 +332,7 @@ function renderMaintSection(machine) {
 
   if (!products.length) {
     html += `<div class="inv-empty">No maintenance products configured for this machine.</div>`;
-    if (_invAdminMode) html += `<button class="inv-add-product-btn" onclick="openAddProductModal('maint','${esc(machine)}')">+ Add Maintenance Product</button>`;
+    html += `<button class="inv-add-product-btn" onclick="openAddProductModal('maint','${esc(machine)}')">+ Add Maintenance Product</button>`;
     el.innerHTML = html;
     return;
   }
@@ -361,7 +361,7 @@ function renderMaintSection(machine) {
   });
   html += `</div>`;
 
-  if (_invAdminMode) html += `<button class="inv-add-product-btn" onclick="openAddProductModal('maint','${esc(machine)}')">+ Add Maintenance Product</button>`;
+  html += `<button class="inv-add-product-btn" onclick="openAddProductModal('maint','${esc(machine)}')">+ Add Maintenance Product</button>`;
   el.innerHTML = html;
 }
 
