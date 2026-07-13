@@ -15,13 +15,27 @@ let _partsStock     = {};   // { machine: { productId: { productName, partCode, 
 let _invTxs         = {};   // { fbKey: transaction }
 let _invCatalogAdds = {};   // { machine: { ink: [], maint: [], parts: [] } } — admin-added products
 let _invPartsSearch = "";   // current Spare Parts search query (part number or keyword, searches all machines)
+let _invDeletedProducts = {}; // { machine: { category: { productId: true } } } — soft-deleted products (hidden, not erased)
 
 const INV_MACHINES = ["30","30+","H5","Colex","Drinkware"];
+
+// Wraps a Firebase write promise so a failed save is never silent (no connection,
+// permission error, etc.) — without this, the UI looks saved but nothing persists.
+function _invFbGuard(promise, label) {
+  if (promise && typeof promise.catch === "function") {
+    promise.catch(err => {
+      console.error("Inventory save failed:", label, err);
+      alert(`⚠️ "${label}" did not save — check your internet connection and try again. If this keeps happening, the item may need to be re-entered.`);
+    });
+  }
+  return promise;
+}
 
 // Line-drawn SVG icons (not emoji) so rendering is identical across all browsers/fonts.
 const INV_ICON_INK   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;"><rect x="6" y="3" width="12" height="5"></rect><rect x="3" y="8" width="18" height="8" rx="1"></rect><rect x="6" y="16" width="12" height="5"></rect></svg>`;
 const INV_ICON_MAINT  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;flex-shrink:0;"><line x1="6.4" y1="6.4" x2="17.6" y2="17.6"></line><circle cx="6.4" cy="6.4" r="3"></circle><circle cx="17.6" cy="17.6" r="3"></circle></svg>`;
 const INV_ICON_PARTS  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;"><polygon points="12,2 20,7 20,17 12,22 4,17 4,7"></polygon><circle cx="12" cy="12" r="4"></circle></svg>`;
+const INV_ICON_TRASH  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;flex-shrink:0;"><line x1="4" y1="6" x2="20" y2="6"></line><path d="M6 6 L7 20 A2 2 0 0 0 9 22 L15 22 A2 2 0 0 0 17 20 L18 6"></path><line x1="10" y1="10" x2="10" y2="17"></line><line x1="14" y1="10" x2="14" y2="17"></line><path d="M9 6 V4 A1 1 0 0 1 10 3 H14 A1 1 0 0 1 15 4 V6"></path></svg>`;
 
 // ─── Panel open / close ──────────────────────────────
 function openInventoryPanel() {
@@ -31,12 +45,13 @@ function openInventoryPanel() {
 
   // Always fetch fresh data directly from Firebase when the panel opens
   if (window._fb) {
-    Promise.all([window._fb.fetchInkLots(), window._fb.fetchMaintStock(), window._fb.fetchPartsStock()])
-      .then(([inkData, maintData, partsData]) => {
+    Promise.all([window._fb.fetchInkLots(), window._fb.fetchMaintStock(), window._fb.fetchPartsStock(), window._fb.fetchDeletedProducts()])
+      .then(([inkData, maintData, partsData, deletedData]) => {
         _inkLots = {};
         Object.entries(inkData).forEach(([k, v]) => { if (v && v.machine) _inkLots[k] = v; });
         _maintStock = maintData || {};
         _partsStock = partsData || {};
+        _invDeletedProducts = deletedData || {};
         if (!_invFbReadyTime) _invFbReadyTime = Date.now();
         // Silently seed any machine that has no lot data — no button click required
         if (!Object.values(_inkLots).some(l => l.machine === "30"))  seed30Inventory(true);
@@ -83,13 +98,17 @@ function invPartsActionSwitch(machine) {
 }
 
 // ─── Product lists (constants + admin additions) ─────
+function _invIsDeleted(machine, category, productId) {
+  return !!(_invDeletedProducts[machine]?.[category]?.[productId]);
+}
+
 function _invGetInkProducts(machine) {
   const overrides = window._invProductOverrides || {};
   const base = (INK_INVENTORY_PRODUCTS[machine] || []).map(p => {
     const o = overrides[p.id];
     return o ? { ...p, ...o } : p;
   });
-  return [...base, ...(_invCatalogAdds[machine]?.ink || [])];
+  return [...base, ...(_invCatalogAdds[machine]?.ink || [])].filter(p => !_invIsDeleted(machine, "ink", p.id));
 }
 
 function _invGetMaintProducts(machine) {
@@ -98,7 +117,7 @@ function _invGetMaintProducts(machine) {
     const o = overrides[p.id];
     return o ? { ...p, ...o } : p;
   });
-  return [...base, ...(_invCatalogAdds[machine]?.maint || [])];
+  return [...base, ...(_invCatalogAdds[machine]?.maint || [])].filter(p => !_invIsDeleted(machine, "maint", p.id));
 }
 
 function _invGetPartsProducts(machine) {
@@ -107,7 +126,7 @@ function _invGetPartsProducts(machine) {
     const o = overrides[p.id];
     return o ? { ...p, ...o } : p;
   });
-  return [...base, ...(_invCatalogAdds[machine]?.parts || [])];
+  return [...base, ...(_invCatalogAdds[machine]?.parts || [])].filter(p => !_invIsDeleted(machine, "parts", p.id));
 }
 
 // ─── Lot helpers ─────────────────────────────────────
@@ -355,6 +374,7 @@ function renderMaintSection(machine) {
             <button class="inv-btn inv-btn-use" onclick="openUseMaintModal('${esc(prod.id)}')" ${qty===0?'disabled':''}>− Use</button>
           </div>
           ${_invAdminMode ? `<button class="inv-btn inv-btn-admin" onclick="openEditProductModal('maint','${esc(prod.id)}','${esc(machine)}')">✎ Edit</button>` : ''}
+          ${_invAdminMode ? `<button class="inv-btn" style="color:#cc2222;border-color:#e8b0b0;" onclick="deleteProductPrompt('maint','${esc(prod.id)}','${esc(machine)}')">${INV_ICON_TRASH} Remove</button>` : ''}
         </div>
       </div>
     `;
@@ -422,7 +442,7 @@ function invCyclePartsCondition(machine, productId) {
   };
   if (!_partsStock[machine]) _partsStock[machine] = {};
   _partsStock[machine][productId] = updated;
-  if (window._fb) window._fb.savePartsStock(machine, productId, updated);
+  if (window._fb) _invFbGuard(window._fb.savePartsStock(machine, productId, updated), updated.productName || "Condition update");
 
   const tx = { type:"condition_change", machine, category:"parts", productId, productName:updated.productName, partCode:updated.partCode||"", location:updated.location||"", qty:0, op: document.getElementById("global-operator")?.value || "—", timestamp:new Date().toISOString(), notes:`Condition changed to ${next}` };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -457,6 +477,7 @@ function _invPartsRow(prod, machine, showMachineBadge) {
           <button class="inv-btn inv-btn-use" onclick="invPartsActionSwitch('${esc(machine)}');openUsePartsModal('${esc(prod.id)}')" ${qty===0?'disabled':''}>− Use</button>
         </div>
         ${_invAdminMode ? `<button class="inv-btn inv-btn-admin" onclick="invPartsActionSwitch('${esc(machine)}');openEditProductModal('parts','${esc(prod.id)}','${esc(machine)}')">✎ Edit</button>` : ''}
+        ${_invAdminMode ? `<button class="inv-btn" style="color:#cc2222;border-color:#e8b0b0;" onclick="invPartsActionSwitch('${esc(machine)}');deleteProductPrompt('parts','${esc(prod.id)}','${esc(machine)}')">${INV_ICON_TRASH} Remove</button>` : ''}
       </div>
     </div>
   `;
@@ -591,14 +612,14 @@ function submitReceiveInk() {
     const lot     = _inkLots[existingKey];
     const updated = { ...lot, qtyRemaining: (lot.qtyRemaining || 0) + qty, qtyReceived: (lot.qtyReceived || 0) + qty };
     _inkLots[existingKey] = updated;
-    if (window._fb) window._fb.updateInkLot(existingKey, updated);
+    if (window._fb) _invFbGuard(window._fb.updateInkLot(existingKey, updated), prod.name || "Receive Ink");
     const tx = { type:"receive_ink", machine, category:"ink", productId, productName:prod.name, partCode:prod.partCode||"", lotNumber:lotNum, expDate:lot.expDate||"", qty, op, timestamp:now, notes, action:"add_to_existing_lot" };
     if (window._fb) window._fb.saveInvTransaction(tx);
   } else {
     const newLot = { machine, category:"ink", productId, productName:prod.name, partCode:prod.partCode||"", lotNumber:lotNum, expDate, qtyReceived:qty, qtyRemaining:qty, receivedAt:now, receivedBy:op };
     const tmpKey = "_new_" + now;
     _inkLots[tmpKey] = newLot;
-    if (window._fb) window._fb.saveInkLot(newLot);
+    if (window._fb) _invFbGuard(window._fb.saveInkLot(newLot), prod.name || "Receive Ink");
     const tx = { type:"receive_ink", machine, category:"ink", productId, productName:prod.name, partCode:prod.partCode||"", lotNumber:lotNum, expDate, qty, op, timestamp:now, notes, action:"new_lot" };
     if (window._fb) window._fb.saveInvTransaction(tx);
   }
@@ -677,7 +698,7 @@ function submitUseInk() {
   usages.forEach(({ key, lot, qty }) => {
     const updated = { ...lot, qtyRemaining: lot.qtyRemaining - qty };
     _inkLots[key] = updated;
-    if (window._fb) window._fb.updateInkLot(key, updated);
+    if (window._fb) _invFbGuard(window._fb.updateInkLot(key, updated), prod?.name || "Use Ink");
     const tx = { type:"use_ink", machine, category:"ink", productId, productName:prod?.name||"", partCode:prod?.partCode||"", lotNumber:lot.lotNumber, expDate:lot.expDate||"", qty, op:"—", timestamp:now, notes:"" };
     if (window._fb) window._fb.saveInvTransaction(tx);
   });
@@ -720,7 +741,7 @@ function submitReceiveMaint() {
   if (!_maintStock[machine])             _maintStock[machine] = {};
   if (!_maintStock[machine][productId])  _maintStock[machine][productId] = { productName:prod.name, partCode:prod.partCode||"", qtyInStock:0 };
   _maintStock[machine][productId].qtyInStock = (_maintStock[machine][productId].qtyInStock || 0) + qty;
-  if (window._fb) window._fb.saveMaintStock(machine, productId, { productName:prod.name, partCode:prod.partCode||"", qtyInStock:_maintStock[machine][productId].qtyInStock });
+  if (window._fb) _invFbGuard(window._fb.saveMaintStock(machine, productId, { productName:prod.name, partCode:prod.partCode||"", qtyInStock:_maintStock[machine][productId].qtyInStock }), prod.name || "Receive Supply");
 
   const tx = { type:"receive_maint", machine, category:"maintenance", productId, productName:prod.name, partCode:prod.partCode||"", qty, op, timestamp:now, notes };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -766,10 +787,10 @@ function submitUseMaint() {
   const now  = new Date().toISOString();
 
   _maintStock[machine][productId].qtyInStock = inStock - qty;
-  if (window._fb) window._fb.saveMaintStock(machine, productId, {
+  if (window._fb) _invFbGuard(window._fb.saveMaintStock(machine, productId, {
     productName: prod?.name || "", partCode: prod?.partCode || "",
     qtyInStock: _maintStock[machine][productId].qtyInStock
-  });
+  }), prod?.name || "Use Supply");
 
   const tx = { type:"use_maint", machine, category:"maintenance", productId, productName:prod?.name||"", partCode:prod?.partCode||"", qty, op, timestamp:now, notes };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -812,11 +833,11 @@ function submitReceiveParts() {
   if (!_partsStock[machine])             _partsStock[machine] = {};
   if (!_partsStock[machine][productId])  _partsStock[machine][productId] = { productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qtyInStock:0, condition:"New" };
   _partsStock[machine][productId].qtyInStock = (_partsStock[machine][productId].qtyInStock || 0) + qty;
-  if (window._fb) window._fb.savePartsStock(machine, productId, {
+  if (window._fb) _invFbGuard(window._fb.savePartsStock(machine, productId, {
     productName: prod.name, partCode: prod.partCode||"", location: prod.location||"",
     qtyInStock: _partsStock[machine][productId].qtyInStock,
     condition: _partsStock[machine][productId].condition || "New",
-  });
+  }), prod.name || "Receive Part");
 
   const tx = { type:"receive_parts", machine, category:"parts", productId, productName:prod.name, partCode:prod.partCode||"", location:prod.location||"", qty, op, timestamp:now, notes };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -862,11 +883,11 @@ function submitUseParts() {
   const now  = new Date().toISOString();
 
   _partsStock[machine][productId].qtyInStock = inStock - qty;
-  if (window._fb) window._fb.savePartsStock(machine, productId, {
+  if (window._fb) _invFbGuard(window._fb.savePartsStock(machine, productId, {
     productName: prod?.name || "", partCode: prod?.partCode || "", location: prod?.location || "",
     qtyInStock: _partsStock[machine][productId].qtyInStock,
     condition: _partsStock[machine][productId].condition || "New",
-  });
+  }), prod?.name || "Use Part");
 
   const tx = { type:"use_parts", machine, category:"parts", productId, productName:prod?.name||"", partCode:prod?.partCode||"", location:prod?.location||"", qty, op, timestamp:now, notes };
   if (window._fb) window._fb.saveInvTransaction(tx);
@@ -911,9 +932,26 @@ function submitEditProduct() {
   if (!window._invProductOverrides) window._invProductOverrides = {};
   const data = category === "parts" ? { name, partCode, location } : { name, partCode };
   window._invProductOverrides[productId] = data;
-  if (window._fb) window._fb.saveInvProduct(category, machine, productId, data);
+  if (window._fb) _invFbGuard(window._fb.saveInvProduct(category, machine, productId, data), name || "Edit Product");
 
   closeModal("inv-edit-product-modal");
+  renderInventory();
+}
+
+// ─── ADMIN: Delete Product ────────────────────────────
+// Soft-delete: hides the item everywhere instead of erasing its history,
+// so an accidental delete is never permanent data loss.
+function deleteProductPrompt(category, productId, machine) {
+  const products = _invGetProductsForCategory(category, machine);
+  const prod = products.find(p => p.id === productId);
+  if (!prod) return;
+  if (!confirm(`Remove "${prod.name}" from ${machine}? This hides it from the list — it won't show up anywhere, but nothing is permanently erased.`)) return;
+
+  if (!_invDeletedProducts[machine]) _invDeletedProducts[machine] = {};
+  if (!_invDeletedProducts[machine][category]) _invDeletedProducts[machine][category] = {};
+  _invDeletedProducts[machine][category][productId] = true;
+  if (window._fb) _invFbGuard(window._fb.deleteInvProduct(category, machine, productId), `Remove ${prod.name}`);
+
   renderInventory();
 }
 
@@ -946,7 +984,7 @@ function submitAddProduct() {
   if (category === "ink")        _invCatalogAdds[machine].ink.push(newProd);
   else if (category === "parts") _invCatalogAdds[machine].parts.push(newProd);
   else                           _invCatalogAdds[machine].maint.push(newProd);
-  if (window._fb) window._fb.saveInvProduct(category, machine, id, data);
+  if (window._fb) _invFbGuard(window._fb.saveInvProduct(category, machine, id, data), name || "Add Product");
 
   closeModal("inv-add-product-modal");
   renderInventory();
@@ -1054,6 +1092,10 @@ document.addEventListener("fbReady", () => {
         });
       });
     });
+    if (document.getElementById("maint-panel-inventory")?.style.display !== "none") renderInventory();
+  });
+  window._fb.listenDeletedProducts(data => {
+    _invDeletedProducts = data || {};
     if (document.getElementById("maint-panel-inventory")?.style.display !== "none") renderInventory();
   });
 });
@@ -1309,23 +1351,31 @@ function exportInventoryExcel() {
   ws1["!cols"] = [10,18,14,16,14,12,16,14].map(w => ({ wch:w }));
   XLSX.utils.book_append_sheet(wb, ws1, "Ink Stock");
 
-  // Sheet 2 — Current Maintenance Stock
+  // Sheet 2 — Current Maintenance Stock (every catalog item, even ones never Received yet)
   const maintRows = [["Machine","Product","Part Code","Qty In Stock"]];
-  Object.entries(_maintStock).sort(([a],[b]) => a.localeCompare(b)).forEach(([machine, prods]) => {
-    Object.values(prods).sort((a,b) => (a.productName||"").localeCompare(b.productName||"")).forEach(data => {
-      maintRows.push([machine, data.productName||"", data.partCode||"", data.qtyInStock||0]);
-    });
+  INV_MACHINES.forEach(machine => {
+    _invGetMaintProducts(machine)
+      .slice()
+      .sort((a,b) => (a.name||"").localeCompare(b.name||""))
+      .forEach(prod => {
+        const qty = (_maintStock[machine]||{})[prod.id]?.qtyInStock || 0;
+        maintRows.push([machine, prod.name||"", prod.partCode||"", qty]);
+      });
   });
   const ws2 = XLSX.utils.aoa_to_sheet(maintRows);
   ws2["!cols"] = [10,30,14,12].map(w => ({ wch:w }));
   XLSX.utils.book_append_sheet(wb, ws2, "Maintenance Stock");
 
-  // Sheet 3 — Current Spare Parts Stock
+  // Sheet 3 — Current Spare Parts Stock (every catalog item, even ones never Received yet)
   const partsRows = [["Machine","Location","Description","Part Number","Condition","Qty In Stock"]];
-  Object.entries(_partsStock).sort(([a],[b]) => a.localeCompare(b)).forEach(([machine, prods]) => {
-    Object.values(prods).sort((a,b) => (a.location||"").localeCompare(b.location||"")).forEach(data => {
-      partsRows.push([machine, data.location||"", data.productName||"", data.partCode||"", data.condition||"New", data.qtyInStock||0]);
-    });
+  INV_MACHINES.forEach(machine => {
+    _invGetPartsProducts(machine)
+      .slice()
+      .sort((a,b) => (a.location||"").localeCompare(b.location||""))
+      .forEach(prod => {
+        const stock = (_partsStock[machine]||{})[prod.id];
+        partsRows.push([machine, prod.location||"", prod.name||"", prod.partCode||"", stock?.condition||"New", stock?.qtyInStock||0]);
+      });
   });
   const ws3 = XLSX.utils.aoa_to_sheet(partsRows);
   ws3["!cols"] = [10,10,30,14,12,12].map(w => ({ wch:w }));

@@ -233,6 +233,9 @@
         listenInvTransactions:(cb)                              => onValue(ref(db, "inventory/transactions"),  snap => cb(snap.val() || {})),
         saveInvProduct:       (category, machine, productId, data) => set(ref(db, `inventory/catalog/${machine}/${category}/${productId}`), data),
         listenInvCatalog:     (cb)                              => onValue(ref(db, "inventory/catalog"),       snap => cb(snap.val() || {})),
+        deleteInvProduct:     (category, machine, productId)     => set(ref(db, `inventory/deletedProducts/${machine}/${category}/${productId}`), true),
+        listenDeletedProducts:(cb)                              => onValue(ref(db, "inventory/deletedProducts"), snap => cb(snap.val() || {})),
+        fetchDeletedProducts: ()                                => get(ref(db, "inventory/deletedProducts")).then(s => s.val() || {}),
 
       };
       window._fbReady = true;
