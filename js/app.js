@@ -42,6 +42,7 @@ function init() {
         });
       });
       renderReports();
+      updateTopCounters();
     });
 
     // Maintenance log
@@ -100,20 +101,35 @@ function init() {
       window._checklistProgress = data || {};
     });
 
-    // ── Restore today's tally counts from Firebase and sync them into sessions ──
+    // ── Restore today's tally counts from Firebase (or localStorage if offline) ──
     // This makes counts tallied earlier in the day (or in a previous page load)
     // appear immediately in report cards without the operator having to re-tally.
-    window._fb.fetchTallyState(todayStr()).then(data => {
+    function _applyTallyRestore(data) {
       if (!data || !data.counts) return;
-      // Only restore if no tally work has been done this session yet
-      if (Object.keys(_tallyCounts).length > 0) return;
-      _tallyCounts    = { ...data.counts };
-      _tallyMisprints = { ...(data.misprints || {}) };
-      // Re-render the tally cards if the screen is open
+      if (Object.keys(_tallyCounts).length > 0) return; // already have work in progress
+      _tallyCounts         = { ...data.counts };
+      _tallyMisprints      = { ...(data.misprints || {}) };
+      _tallyStartTimes     = { ...(data.startTimes || {}) };
+      _tallySavedCounts    = { ...data.counts };
+      _tallySavedMisprints = { ...(data.misprints || {}) };
       if (typeof tallyRenderCards === "function") tallyRenderCards();
-      // Write the restored counts into sessions/{machine} so reports show them
       if (typeof _tallyAutoSaveNow === "function") _tallyAutoSaveNow();
-    }).catch(() => {}); // silently ignore if offline / no data
+    }
+    function _localTallyDraft() {
+      try {
+        const raw = localStorage.getItem("pt_tally_draft_" + todayStr());
+        return raw ? JSON.parse(raw) : null;
+      } catch(e) { return null; }
+    }
+    window._fb.fetchTallyState(todayStr()).then(data => {
+      // Firebase had no data — try the localStorage draft saved while offline
+      if (!data || !data.counts) data = _localTallyDraft();
+      _applyTallyRestore(data);
+    }).catch(() => {
+      // Firebase fetch failed (offline, no cache) — use localStorage draft
+      _applyTallyRestore(_localTallyDraft());
+    });
+
   };
 
   // Set default date filter to today
@@ -155,7 +171,9 @@ function selectMachineByName(name) {
   document.querySelectorAll(".qs-machine-btn").forEach(b => {
     b.classList.toggle("qs-active", b.dataset.machine === name);
   });
-  if (typeof _qsMachine !== "undefined") _qsMachine = name;
+  if (typeof _qsMachine    !== "undefined") _qsMachine    = name;
+  if (typeof _tallyMachine !== "undefined") _tallyMachine = name;
+  if (typeof _tallyUpdateMachineBadge === "function") _tallyUpdateMachineBadge();
 }
 
 
@@ -213,7 +231,7 @@ function switchView(name) {
       slot.appendChild(opEl);
       slot.appendChild(catEl);
       slot.appendChild(subEl);
-      slot.appendChild(machEl);
+      // machine is selected inside the tally login — not needed in the top bar
     } else if (name === 'stamped') {
       slot.appendChild(opEl);
       slot.appendChild(catEl);
@@ -274,15 +292,18 @@ function switchView(name) {
     document.querySelectorAll(".machine-btn").forEach(b => {
       b.style.display = (b.dataset.machine === "Wallets" || b.dataset.machine === "Colex") ? "none" : "";
     });
-    const funcSel   = document.getElementById("print-function-select");
-    const modeSel   = document.getElementById("print-mode-select");
-    const tallyScr  = document.getElementById("print-tally-screen");
-    const runScr    = document.getElementById("print-run-screen");
-    const jobsScr   = document.getElementById("print-jobs-screen");
+    const funcSel    = document.getElementById("print-function-select");
+    const modeSel    = document.getElementById("print-mode-select");
+    const tallyScr   = document.getElementById("print-tally-screen");
+    const tally2Scr  = document.getElementById("print-tally2-screen");
+    const runScr     = document.getElementById("print-run-screen");
+    const jobsScr    = document.getElementById("print-jobs-screen");
     // Hide all first
-    [modeSel, tallyScr, runScr, jobsScr].forEach(el => { if (el) el.style.display = "none"; });
+    [modeSel, tallyScr, tally2Scr, runScr, jobsScr].forEach(el => { if (el) el.style.display = "none"; });
     if (runRunning) {
       runScr.style.display = "flex";
+    } else if (typeof _tally2Active !== "undefined" && _tally2Active) {
+      tally2Scr.style.display = "flex";
     } else if (typeof _tallyActive !== "undefined" && _tallyActive) {
       tallyScr.style.display = "flex";
     } else {

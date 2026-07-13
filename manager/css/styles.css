@@ -1,5 +1,5 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-serif; min-height: 100vh; }
+﻿*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f0f4f8; color: #1a2e1c; font-family: 'Libre Franklin', sans-serif; min-height: 100vh; }
 
 /* ── LOGIN ── */
 #login-screen {
@@ -8,7 +8,7 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
   z-index: 9999; gap: 14px;
 }
 #login-screen input {
-  padding: 11px 16px; border: 1.5px solid #c2e8b8; border-radius: 8px;
+  padding: 11px 16px; border: 1.5px solid #b8d8c0; border-radius: 8px;
   font-size: 15px; outline: none; width: 240px; text-align: center;
   letter-spacing: 0.15em; font-family: 'Libre Franklin', sans-serif;
 }
@@ -20,36 +20,36 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 
 /* ── TOP BAR ── */
 #top-bar {
-  background: #fff; border-bottom: 2px solid #c2e8b8; padding: 12px 24px;
+  background: #fff; border-bottom: 2px solid #b8d8c0; padding: 12px 24px;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  box-shadow: 0 1px 8px rgba(60,140,50,0.08);
+  box-shadow: 0 1px 8px rgba(30,77,43,0.08);
   position: sticky; top: 0; z-index: 100;
 }
-#mg-logo { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2a18; letter-spacing: -0.02em; }
-#mg-logo span { color: #e8457a; }
-#mg-subtitle { font-family: 'Josefin Slab', serif; font-size: 11px; color: #90b888; text-transform: uppercase; letter-spacing: 0.1em; }
+#mg-logo { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2e1c; letter-spacing: -0.02em; }
+#mg-logo span { color: #2e8b57; }
+#mg-subtitle { font-family: 'Josefin Slab', serif; font-size: 11px; color: #7aaa88; text-transform: uppercase; letter-spacing: 0.1em; }
 #lock-btn {
   margin-left: auto; padding: 6px 14px; font-size: 11px; font-family: 'Josefin Slab', sans-serif;
-  background: #fff; border: 1.5px solid #c2e8b8; border-radius: 6px; cursor: pointer; color: #1a2a18;
+  background: #fff; border: 1.5px solid #b8d8c0; border-radius: 6px; cursor: pointer; color: #1a2e1c;
 }
-#last-sync { font-family: 'Josefin Slab', serif; font-size: 10px; color: #90b888; }
+#last-sync { font-family: 'Josefin Slab', serif; font-size: 10px; color: #7aaa88; }
 
 /* ── MAIN TABS ── */
 #mg-tabs {
-  background: #fff; border-bottom: 2px solid #c2e8b8;
+  background: #fff; border-bottom: 2px solid #b8d8c0;
   display: flex; gap: 0; padding: 0 24px;
 }
 .mgtab {
   font-family: 'Josefin Slab', serif; font-size: 12px; font-weight: 700;
   padding: 12px 22px; border: none; background: transparent; cursor: pointer;
-  color: #90b888; border-bottom: 3px solid transparent; transition: all 0.15s;
+  color: #7aaa88; border-bottom: 3px solid transparent; transition: all 0.15s;
   letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px;
   text-transform: uppercase;
 }
-.mgtab.active { color: #1a2a18; border-bottom-color: #52a040; }
-.mgtab:hover:not(.active) { color: #52a040; }
+.mgtab.active { color: #1a2e1c; border-bottom-color: #2e8b57; }
+.mgtab:hover:not(.active) { color: #2e8b57; }
 .live-pill {
-  display: none; background: #e8457a; color: #fff; font-size: 10px; font-weight: 700;
+  display: none; background: #2e8b57; color: #fff; font-size: 10px; font-weight: 700;
   border-radius: 99px; padding: 1px 7px; font-family: 'Josefin Slab', serif;
   min-width: 20px; align-items: center; justify-content: center;
 }
@@ -61,14 +61,14 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 }
 .preset-btn {
   font-family: 'Josefin Slab', serif; font-size: 11px; font-weight: 700;
-  padding: 6px 14px; border: 1px solid #c2e8b8; border-radius: 6px;
-  background: #eef8eb; color: #72a868; cursor: pointer; transition: all 0.15s;
+  padding: 6px 14px; border: 1px solid #b8d8c0; border-radius: 6px;
+  background: #f0f7f2; color: #2d6b3d; cursor: pointer; transition: all 0.15s;
 }
-.preset-btn.active { background: #52a040; border-color: #3a7a2c; color: #fff; }
-.date-sep { font-family: 'Josefin Slab', serif; font-size: 11px; color: #90b888; }
+.preset-btn.active { background: #2e8b57; border-color: #1e6b40; color: #fff; }
+.date-sep { font-family: 'Josefin Slab', serif; font-size: 11px; color: #7aaa88; }
 #date-bar input[type="date"] {
-  font-family: 'Josefin Slab', serif; font-size: 12px; color: #1a2a18;
-  border: 1px solid #c2e8b8; border-radius: 6px; padding: 5px 10px; outline: none; cursor: pointer;
+  font-family: 'Josefin Slab', serif; font-size: 12px; color: #1a2e1c;
+  border: 1px solid #b8d8c0; border-radius: 6px; padding: 5px 10px; outline: none; cursor: pointer;
 }
 #apply-dates {
   font-family: 'Josefin Slab', serif; font-size: 11px; font-weight: 700;
@@ -107,42 +107,42 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 .machine-card {
   background: #fff; border: 1.5px solid #d8e8d8; border-radius: 12px;
   padding: 16px 18px; cursor: pointer; transition: all 0.15s;
-  box-shadow: 0 1px 6px rgba(60,140,50,0.06);
+  box-shadow: 0 1px 6px rgba(30,77,43,0.06);
 }
-.machine-card:hover { border-color: #6dcc58; box-shadow: 0 4px 16px rgba(60,140,50,0.14); transform: translateY(-1px); }
-.machine-card.selected { border: 2px solid #52a040; background: #f5fcf3; }
+.machine-card:hover { border-color: #2e8b57; box-shadow: 0 4px 16px rgba(30,77,43,0.14); transform: translateY(-1px); }
+.machine-card.selected { border: 2px solid #2e8b57; background: #f2f5f2; }
 .mc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
-.mc-name { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2a18; }
-.mc-sessions { font-family: 'Josefin Slab', serif; font-size: 10px; color: #90b888; }
+.mc-name { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2e1c; }
+.mc-sessions { font-family: 'Josefin Slab', serif; font-size: 10px; color: #7aaa88; }
 .mc-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
 .mc-stat { text-align: center; }
 .mc-stat-val { font-family: 'Abril Fatface', serif; font-size: 18px; line-height: 1; }
-.mc-stat-lbl { font-family: 'Josefin Slab', serif; font-size: 9px; color: #90b888; text-transform: uppercase; }
+.mc-stat-lbl { font-family: 'Josefin Slab', serif; font-size: 9px; color: #7aaa88; text-transform: uppercase; }
 .mc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
-.mc-tag { font-family: 'Josefin Slab', serif; font-size: 10px; background: #eef8eb; color: #52a040; border: 1px solid #b8e0b0; border-radius: 20px; padding: 2px 8px; }
-.op-tag { background: #f8f0ff; color: #7733aa; border-color: #ddbfee; }
+.mc-tag { font-family: 'Josefin Slab', serif; font-size: 10px; background: #f0f7f2; color: #2e8b57; border: 1px solid #b8d8c0; border-radius: 20px; padding: 2px 8px; }
+.op-tag { background: #f0f7f2; color: #1e4d2b; border-color: #b8d8c0; }
 .mc-footer { font-family: 'Josefin Slab', serif; font-size: 9px; color: #b8d0b8; margin-top: 8px; text-align: right; }
 
 /* ── BADGES ── */
 .badge { font-family: 'Josefin Slab', serif; font-size: 9px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
 .badge-down { background: #ff4444; color: #fff; }
 .badge-fix  { background: #fff0e0; color: #e87820; border: 1px solid #f0c080; }
-.badge-live { background: #228844; color: #fff; animation: live-pulse 2s ease-in-out infinite; }
+.badge-live { background: #1e6b40; color: #fff; animation: live-pulse 2s ease-in-out infinite; }
 @keyframes live-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
 /* ── DRILLDOWN ── */
 #drilldown-panel {
-  display: none; background: #fff; border: 1.5px solid #52a040;
+  display: none; background: #fff; border: 1.5px solid #2e8b57;
   border-radius: 14px; padding: 20px; margin-bottom: 24px;
 }
-#dd-title { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2a18; }
-.dd-tabs { display: flex; gap: 0; border-bottom: 2px solid #c2e8b8; margin-bottom: 16px; margin-top: 14px; }
+#dd-title { font-family: 'Abril Fatface', serif; font-size: 22px; color: #1a2e1c; }
+.dd-tabs { display: flex; gap: 0; border-bottom: 2px solid #b8d8c0; margin-bottom: 16px; margin-top: 14px; }
 .dd-tab {
   font-family: 'Josefin Slab', serif; font-size: 11px; font-weight: 700;
   padding: 8px 18px; border: none; background: transparent; cursor: pointer;
-  color: #90b888; border-bottom: 2px solid transparent; transition: all 0.15s; letter-spacing: 0.05em;
+  color: #7aaa88; border-bottom: 2px solid transparent; transition: all 0.15s; letter-spacing: 0.05em;
 }
-.dd-tab.active { color: #52a040; border-bottom-color: #52a040; }
+.dd-tab.active { color: #2e8b57; border-bottom-color: #2e8b57; }
 .dd-row { padding: 11px 0; border-bottom: 1px solid #e8f5e4; }
 .dd-row:last-child { border-bottom: none; }
 .dd-empty { font-family: 'Josefin Slab', serif; font-size: 12px; color: #b0c8a8; padding: 20px; text-align: center; }
@@ -159,8 +159,8 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 .feed-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
 .feed-body { flex: 1; min-width: 0; }
 .feed-line1 { font-family: 'Josefin Slab', serif; font-size: 11px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.feed-machine { background: #eef8eb; color: #52a040; border: 1px solid #b8e0b0; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
-.feed-meta { font-family: 'Josefin Slab', serif; font-size: 10px; color: #90b888; margin-top: 2px; }
+.feed-machine { background: #f0f7f2; color: #2e8b57; border: 1px solid #b8d8c0; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+.feed-meta { font-family: 'Josefin Slab', serif; font-size: 10px; color: #7aaa88; margin-top: 2px; }
 
 /* ── LIVE TIMERS VIEW ── */
 #mgpnl-live { padding: 24px; }
@@ -171,14 +171,14 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 }
 .live-card {
   background: #fff; border: 1.5px solid #a8e8c0; border-radius: 16px;
-  padding: 22px 24px; box-shadow: 0 2px 16px rgba(60,140,50,0.08);
+  padding: 22px 24px; box-shadow: 0 2px 16px rgba(30,77,43,0.08);
   position: relative; overflow: hidden;
 }
 .lt-header {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
 }
 .lt-machine {
-  font-family: 'Abril Fatface', serif; font-size: 26px; color: #1a2a18; line-height: 1;
+  font-family: 'Abril Fatface', serif; font-size: 26px; color: #1a2e1c; line-height: 1;
 }
 .lt-mode {
   font-family: 'Josefin Slab', serif; font-size: 10px; font-weight: 700;
@@ -194,15 +194,15 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
 }
 .lt-timer-label {
   font-family: 'Josefin Slab', serif; font-size: 9px; text-transform: uppercase;
-  letter-spacing: 0.14em; color: #90b888; margin-top: 4px; margin-bottom: 18px;
+  letter-spacing: 0.14em; color: #7aaa88; margin-top: 4px; margin-bottom: 18px;
 }
 .lt-meta-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
   border-top: 1px solid #e8f5e4; padding-top: 14px;
 }
 .lt-meta-block { display: flex; flex-direction: column; gap: 3px; }
-.lt-meta-lbl { font-family: 'Josefin Slab', serif; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #90b888; }
-.lt-meta-val { font-family: 'Josefin Slab', serif; font-size: 11px; color: #1a2a18; font-weight: 600; }
+.lt-meta-lbl { font-family: 'Josefin Slab', serif; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #7aaa88; }
+.lt-meta-val { font-family: 'Josefin Slab', serif; font-size: 11px; color: #1a2e1c; font-weight: 600; }
 .lt-pulse-bar {
   position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #e8f5e4; overflow: hidden;
 }
@@ -220,14 +220,14 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
   margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
 }
 #live-hdr-title {
-  font-family: 'Abril Fatface', serif; font-size: 24px; color: #1a2a18;
+  font-family: 'Abril Fatface', serif; font-size: 24px; color: #1a2e1c;
 }
 #live-hdr-sub {
-  font-family: 'Josefin Slab', serif; font-size: 11px; color: #90b888; margin-top: 2px;
+  font-family: 'Josefin Slab', serif; font-size: 11px; color: #7aaa88; margin-top: 2px;
 }
 #live-count-badge {
   font-family: 'Josefin Slab', serif; font-size: 12px; font-weight: 700;
-  background: #eef8eb; color: #52a040; border: 1px solid #b8e0b0;
+  background: #f0f7f2; color: #2e8b57; border: 1px solid #b8d8c0;
   border-radius: 8px; padding: 6px 14px;
 }
 
@@ -244,7 +244,7 @@ body { background: #f0f4f8; color: #1a2a18; font-family: 'Libre Franklin', sans-
   width: 36px; height: 20px; border-radius: 99px; background: #ddd;
   position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0;
 }
-.mm-toggle-on { background: #52a040; }
+.mm-toggle-on { background: #2e8b57; }
 .mm-toggle-knob {
   position: absolute; top: 2px; left: 2px;
   width: 16px; height: 16px; border-radius: 50%; background: #fff;

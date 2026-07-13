@@ -75,7 +75,7 @@ function stSaveAndReset() {
   if (window._fb) window._fb.saveSession('Wallets', session);
   localSaveSession('Wallets', session);
   updateTopCounters();
-  stAddLogEntry(session);
+  stAddLogEntry({ ...session, time: new Date() });
   // Reset state
   stSec = 0; stTally = 0; stMisprint = 0;
   document.getElementById('st-timer-display').textContent = '00:00';
@@ -113,6 +113,26 @@ function stTallyInc() {
   el.style.transform = 'scale(1.12)';
   el.style.transition = 'transform 0.1s';
   setTimeout(() => { el.style.transform = ''; }, 120);
+
+  // Log individual tally event to machineEvents for per-click PPH calculation
+  const sub     = (document.getElementById('st-piece-select')?.value || document.getElementById('global-subtype')?.value || '').trim();
+  const cat     = (document.getElementById('global-category')?.value || 'Wallets').trim();
+  const op      = (document.getElementById('global-operator')?.value || '—').trim();
+  const pieceType = cat + ' · ' + sub;
+  const now     = new Date().toISOString();
+  const tallyEvent = {
+    category: 'tally',
+    type: 'Tally Run',
+    time: now,
+    detail: pieceType + ' · ' + stTally + ' pcs',
+    color: '#e8457a',
+    notes: '',
+    op,
+    pieceType,
+    qty: stTally,
+    runningTotal: stTally
+  };
+  if (window._fb) window._fb.saveMachineEvent('Wallets', tallyEvent);
 }
 
 function stTallyDec() {
@@ -127,6 +147,24 @@ function stMisprintInc() {
   el.style.transform = 'scale(1.12)';
   el.style.transition = 'transform 0.1s';
   setTimeout(() => { el.style.transform = ''; }, 120);
+
+  // Log individual spoilage event to machineEvents
+  const sub     = (document.getElementById('st-piece-select')?.value || document.getElementById('global-subtype')?.value || '').trim();
+  const cat     = (document.getElementById('global-category')?.value || 'Wallets').trim();
+  const op      = (document.getElementById('global-operator')?.value || '—').trim();
+  const pieceType = cat + ' · ' + sub;
+  const now     = new Date().toISOString();
+  const spoilageEvent = {
+    category: 'tally',
+    type: 'Spoilage',
+    time: now,
+    detail: stMisprint + ' wasted piece(s)',
+    color: '#cc3333',
+    qty: stMisprint,
+    pieceType,
+    op
+  };
+  if (window._fb) window._fb.saveMachineEvent('Wallets', spoilageEvent);
 }
 
 function stMisprintDec() {
@@ -139,7 +177,6 @@ function stAddLogEntry(session) {
   const empty = list.querySelector('.empty-log');
   if (empty) empty.remove();
   const d = session.time instanceof Date ? session.time : new Date(session.time);
-  const timeStr = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const entry = document.createElement('div');
   entry.className = 'run-log-entry';
   entry.style.cssText = 'border-left-color:#7733aa;';
@@ -148,7 +185,7 @@ function stAddLogEntry(session) {
     <span class="run-log-time">${fmt(session.totalSec)}</span>
     <span style="font-family:'Josefin Slab',serif;font-size:11px;color:#228844;margin-left:8px;">✓ ${session.qtyGood}</span>
     ${session.qtyBad > 0 ? `<span style="font-family:'Josefin Slab',serif;font-size:11px;color:#cc3333;margin-left:6px;">✗ ${session.qtyBad}</span>` : ''}
-    <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#a070c0;margin-left:8px;">${timeStr}</span>
+    <span class="log-time" style="margin-left:8px;">${fmtDate(d)}</span>
   `;
   list.prepend(entry);
 }

@@ -61,3 +61,12 @@ function openModal(id)  { document.getElementById(id).classList.add("open"); }
 function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
 function esc(str) { return (str||"").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// Returns 1 (7am–3:30pm), 2 (3:30pm–11:30pm), or 0 (outside shift hours)
+function getShift(time) {
+  const d = time instanceof Date ? time : new Date(time);
+  const totalMin = d.getHours() * 60 + d.getMinutes();
+  if (totalMin >= 420  && totalMin < 930)  return 1; // 7:00 AM – 3:30 PM
+  if (totalMin >= 930  && totalMin < 1410) return 2; // 3:30 PM – 11:30 PM
+  return 0;
+}
