@@ -71,7 +71,8 @@ const CLEANING_CHECKLISTS = {
       "Clean carriage height solenoid",
       "Replace cure lamp filters",
       "Clean anti-static bars",
-      "Clean table"
+      "Clean table",
+      "Clear output/export/temp files for week prior"
     ]
   },
   "30+": {
@@ -124,7 +125,8 @@ const CLEANING_CHECKLISTS = {
       "Clean carriage height solenoid",
       "Replace cure lamp filters",
       "Clean anti-static bars",
-      "Clean table"
+      "Clean table",
+      "Clear output/export/temp files for week prior"
     ]
   },
   "H5": {
@@ -189,7 +191,8 @@ const CLEANING_CHECKLISTS = {
       "Calibrate the media roller",
       "Calibrate media measure sensor (MMS)",
       "Confirm carriage collision detector height",
-      "Clean Meech bar"
+      "Clean Meech bar",
+      "Clear output/export/temp files for week prior"
     ]
   }
 };
