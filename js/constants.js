@@ -66,7 +66,7 @@ const CLEANING_CHECKLISTS = {
       "Clean umbilical cord and tray"
     ],
     "40 Hour": [
-      "Clean and calibrate carriage rails",
+      "Clean and lubricate carriage rails",
       "Clean linear encoder strip",
       "Clean carriage height solenoid",
       "Replace cure lamp filters",
@@ -119,7 +119,7 @@ const CLEANING_CHECKLISTS = {
       "Clean umbilical cord and tray"
     ],
     "40 Hour": [
-      "Clean and calibrate carriage rails",
+      "Clean and lubricate carriage rails",
       "Clean linear encoder strip",
       "Clean carriage height solenoid",
       "Replace cure lamp filters",
