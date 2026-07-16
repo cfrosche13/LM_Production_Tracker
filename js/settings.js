@@ -62,6 +62,34 @@ const _MT_ROLES = {
   }
 };
 
+// ═══════════════════════════════════════
+// SETTINGS HOME / PANEL NAVIGATION
+// ═══════════════════════════════════════
+const _SETTINGS_TARGETS_PANELS = ["targets", "oee", "operators"];
+
+function settingsShowPanel(name) {
+  const home   = document.getElementById("settings-home");
+  const detail = document.getElementById("settings-detail");
+  if (home)   home.style.display   = "none";
+  if (detail) detail.style.display = "";
+  document.querySelectorAll(".settings-panel").forEach(p => p.style.display = "none");
+  const panel = document.getElementById("settings-panel-" + name);
+  if (panel) panel.style.display = "";
+  const saveBtn = document.getElementById("settings-save-btn");
+  if (saveBtn) saveBtn.style.display = _SETTINGS_TARGETS_PANELS.includes(name) ? "" : "none";
+  if (name === "profiles") renderMachineProfiles();
+  window.scrollTo({ top: 0 });
+}
+
+function settingsShowHome() {
+  const home   = document.getElementById("settings-home");
+  const detail = document.getElementById("settings-detail");
+  if (home)   home.style.display   = "";
+  if (detail) detail.style.display = "none";
+  const saveBtn = document.getElementById("settings-save-btn");
+  if (saveBtn) saveBtn.style.display = "none";
+}
+
 let _settingsAutoSaveTimer = null;
 function _settingsScheduleSave() {
   clearTimeout(_settingsAutoSaveTimer);
@@ -452,6 +480,359 @@ function settingsBufferColexMerch(input) {
     window._targets[key] = parseInt(input.value) || 0;
   }
   _settingsScheduleSave();
+}
+
+// ═══════════════════════════════════════
+// MACHINE PROFILES
+// ═══════════════════════════════════════
+// Per-product production settings for each machine — pieces per table,
+// jig/production style, bi/uni, stepping, strike, digital cut file, print mode.
+// Stored in Firebase at machineProfiles (flat array of row objects).
+window._machineProfiles          = [];
+window._machineProfilesLoaded    = false;
+window._machineProfilesSyncError = null;
+
+const _MP_DEFAULTS = [
+  { rm:"Coir 28x16", sub:"OC", machine:"30", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 28x16", sub:"FC", machine:"30", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 30x18", sub:"OC", machine:"30", ppt:"12", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 30x18", sub:"FC", machine:"30", ppt:"12", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 36x24", sub:"OC", machine:"30", ppt:"9",  style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 36x24", sub:"FC", machine:"30", ppt:"9",  style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 60x24", sub:"OC", machine:"30", ppt:"6",  style:"Alignment",   biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+  { rm:"Coir 60x24", sub:"FC", machine:"30", ppt:"6",  style:"Alignment",   biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
+
+  { rm:"Coir 28x16", sub:"OC", machine:"30+", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 28x16", sub:"FC", machine:"30+", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 30x18", sub:"OC", machine:"30+", ppt:"12", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 30x18", sub:"FC", machine:"30+", ppt:"12", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 36x24", sub:"OC", machine:"30+", ppt:"9",  style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 36x24", sub:"FC", machine:"30+", ppt:"9",  style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 60x24", sub:"OC", machine:"30+", ppt:"6",  style:"Alignment",   biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Coir 60x24", sub:"FC", machine:"30+", ppt:"6",  style:"Alignment",   biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Anti-Fatigue 18x30",     sub:"", machine:"30+", ppt:"12", style:"Printed Jig",              biUni:"bi",  stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Anti-Fatigue 20x40",     sub:"", machine:"30+", ppt:"1",  style:"0/0",                       biUni:"bi",  stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"DBL Sided Leaner 46x10", sub:"", machine:"30+", ppt:"2",  style:"0 margin 1.5 inch space",   biUni:"bi",  stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Flocked Coir 22x10",     sub:"", machine:"30+", ppt:"20", style:"Coroplast Jig",             biUni:"bi",  stepping:"light",  strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Hanging Sign 11x6",      sub:"", machine:"30+", ppt:"12", style:"Coroplast Jig",             biUni:"uni", stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Hanging Sign 18x18",     sub:"", machine:"30+", ppt:"8",  style:"SignFoam Jig",              biUni:"bi",  stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Plock 12x8",             sub:"", machine:"30+", ppt:"9",  style:"Coroplast Jig",             biUni:"uni", stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Plock 6x6",              sub:"", machine:"30+", ppt:"48", style:"Coroplast Jig",             biUni:"uni", stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Wall Art 12x12",         sub:"", machine:"30+", ppt:"5",  style:"0 margin 1 inch space",     biUni:"bi",  stepping:"medium", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Wall Art 24x16",         sub:"", machine:"30+", ppt:"3",  style:"0 margin 1 inch space",     biUni:"bi",  stepping:"medium", strike:"single", cut:"2",    workflow:"", printMode:"", verified:"no" },
+  { rm:"PVC (size TBD)",         sub:"", machine:"30+", ppt:"",   style:"0 margin 1.5 inch space",   biUni:"",    stepping:"none",   strike:"",       cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"PVC 28x16",              sub:"", machine:"30+", ppt:"8",  style:"Printed Jig",               biUni:"bi",  stepping:"light",  strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Yard Signs",             sub:"", machine:"30+", ppt:"1",  style:"Pre-cut piece",             biUni:"bi",  stepping:"light",  strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+
+  { rm:"Anti-Fatigue 18x30",     sub:"", machine:"H5", ppt:"6",  style:"Signfoam Jig", biUni:"bi", stepping:"production", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Anti-Fatigue 20x40",     sub:"", machine:"H5", ppt:"5",  style:"Signfoam Jig", biUni:"bi", stepping:"production", strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"DBL Sided Leaner 46x10", sub:"", machine:"H5", ppt:"2",  style:"",             biUni:"bi", stepping:"pop",        strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Flocked Coir 22x10",     sub:"", machine:"H5", ppt:"16", style:"Signfoam Jig", biUni:"bi", stepping:"pop",        strike:"double strike multilayer", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Hanging Sign 18x18",     sub:"", machine:"H5", ppt:"8",  style:"Signfoam Jig", biUni:"bi", stepping:"pop",        strike:"single", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Tapestry 54x36",         sub:"", machine:"H5", ppt:"4",  style:"Loaded roll",  biUni:"bi", stepping:"pop",        strike:"single", cut:"CanvasLG Cutfile 4up_P1_T1_71010_622.cut", workflow:"", printMode:"", verified:"no" },
+  { rm:"Tapestry 36x24",         sub:"", machine:"H5", ppt:"8",  style:"Loaded roll",  biUni:"bi", stepping:"pop",        strike:"single", cut:"CanvasSM Cutfile 8up_P1_T1_71018_630.cut", workflow:"", printMode:"", verified:"no" },
+  { rm:"PVC (size TBD)",         sub:"", machine:"H5", ppt:"",   style:"",             biUni:"bi", stepping:"none",       strike:"",       cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"PVC 28x16",              sub:"", machine:"H5", ppt:"8",  style:"Signfoam Jig", biUni:"bi", stepping:"production", strike:"double", cut:"none", workflow:"", printMode:"", verified:"no" },
+  { rm:"Yard Signs",             sub:"", machine:"H5", ppt:"10", style:"Full Sheet",   biUni:"bi", stepping:"production", strike:"single", cut:"Yard Sign 10UP_Master", workflow:"", printMode:"", verified:"no" },
+  { rm:"Yard Sign Singles",      sub:"", machine:"H5", ppt:"1",  style:"Pre-cut piece",biUni:"bi", stepping:"production", strike:"single", cut:"yardsignBlanks", workflow:"", printMode:"", verified:"no" },
+
+  { rm:"Pint Glass", sub:"M1", machine:"Drinkware", ppt:"1", style:"IDS Jig", printOrder:"", printSpeed:"", dropSize:"", qualityLevel:"", bottleTopPosition:"", zAxis:"", tAxis:"", verified:"no" },
+
+  { rm:"Tapestry 54x36", sub:"",       machine:"Colex", ppt:"4",  style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"CanvasLG Cutfile 4up_P1_T1_71010_622.cut", workflow:"", printMode:"", verified:"no" },
+  { rm:"Tapestry 36x24", sub:"",       machine:"Colex", ppt:"8",  style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"CanvasSM Cutfile 8up_P1_T1_71018_630.cut", workflow:"", printMode:"", verified:"no" },
+  { rm:"Yard Signs",     sub:"",       machine:"Colex", ppt:"10", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"Yard Sign 10UP_Master", workflow:"", printMode:"", verified:"no" },
+  { rm:"Yard Sign Display with Header Card, Holds 30pc", sub:"1250MDF", machine:"Colex", ppt:"3", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"GDZ6JEGSD_GenericYardSign_6mmCompBit_3up_MDF", workflow:"", printMode:"", verified:"no" },
+  { rm:"Wall Tapestry Display",     sub:"1251MDF", machine:"Colex", ppt:"1", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"HIXFNESCD26_Tapestry Merchandiser_.5MDF_ 6mm Comp Bit", workflow:"", printMode:"", verified:"no" },
+  { rm:"Porch Leaner Display, Holds 9x 46\"pc", sub:"1249MDF", machine:"Colex", ppt:"6", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"GDK78EGSD_PorchLeanerDisplay_ 6 mm Compression Bit_MDF_6up", workflow:"", printMode:"", verified:"no" },
+  { rm:"Horizontal Yard Sign Display", sub:"1248MDF", machine:"Colex", ppt:"1", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"GICVXWD25_PVC Horizontal Yardsign Merchandiser .5 MDF - .25 Compression Bit Default Depths.job_Origional", workflow:"", printMode:"", verified:"no" },
+  { rm:"Vertical Yard Sign Display",   sub:"1248MDF", machine:"Colex", ppt:"1", style:"Digital File", biUni:"", stepping:"none", strike:"", cut:"GI46BWD 25 PVC Vertical Yardsign Merchandiser MDF - .25 Compression_1up", workflow:"", printMode:"", verified:"no" },
+];
+
+const _MP_TABS             = ["30", "30+", "H5", "Colex", "Drinkware", "Wallets"];
+const _MP_SUB_SUGGESTIONS  = ["OC", "FC"];
+const _MP_DRINKWARE_SUB_SUGGESTIONS = ["M1", "M2"];
+const _MP_BIUNI_OPTIONS    = ["", "bi", "uni"];
+const _MP_STEPPING_OPTIONS = ["none", "light", "medium", "heavy", "production", "pop", "ultra quality"];
+const _MP_STRIKE_OPTIONS   = ["", "single", "double", "double strike multilayer"];
+const _MP_PRINT_ORDER_OPTIONS = [
+  "", "CMYK", "CMYK+VV", "WW", "WW+CMYK", "WW+CMYK+VV", "VV",
+  "WW*KM+CY*VV", "WW*KM+CY", "KM+CY*VV", "KM+CY", "KCMY+WW*KCMY*VV"
+];
+const _MP_PRINT_SPEED_OPTIONS   = ["", "Low", "Medium", "High"];
+const _MP_DROP_SIZE_OPTIONS     = ["", "Drop 1", "Drop 2", "Drop 3"];
+const _MP_QUALITY_LEVEL_OPTIONS = ["", "Custom", "Standard", "High", "Super High"];
+let _settingsMPTab = "30";
+let _mpAutoSaveTimer = null;
+
+function _mpFieldsFor(machine) {
+  if (machine === "Drinkware") {
+    return [
+      ["style",             "Production Style", "text"],
+      ["printOrder",        "Print Order", "select", _MP_PRINT_ORDER_OPTIONS],
+      ["printSpeed",        "Print Speed", "select", _MP_PRINT_SPEED_OPTIONS],
+      ["dropSize",          "Drop Size", "select", _MP_DROP_SIZE_OPTIONS],
+      ["qualityLevel",      "Quality Level", "select", _MP_QUALITY_LEVEL_OPTIONS],
+      ["bottleTopPosition", "Bottle Top Position", "number"],
+      ["zAxis",             "Z Axis (mm)", "number"],
+      ["tAxis",             "T Axis (mm)", "number"],
+    ];
+  }
+  return [
+    ["ppt",       "Pieces / Table", "number"],
+    ["style",     "Production Style", "text"],
+    ["biUni",     "Bi / Uni", "select", _MP_BIUNI_OPTIONS],
+    ["stepping",  "Stepping", "select", _MP_STEPPING_OPTIONS],
+    ["strike",    "Strike", "select", _MP_STRIKE_OPTIONS],
+    ["cut",       "Digital Cut File", "text"],
+    ["workflow",  "Workflow", "text"],
+    ["printMode", "Print Mode", "text"],
+  ];
+}
+
+function _mpNormalize(data) {
+  if (!data) return _MP_DEFAULTS.map((r, i) => ({ ...r, id: "mp" + i }));
+  const list = Array.isArray(data) ? data : Object.values(data);
+  return list.filter(Boolean).map(r => ({
+    // Backfill fields added after this row may have been saved, and migrate
+    // the old "mode" key (pre-Stepping/Print-Mode split) onto "stepping".
+    stepping: r.stepping ?? r.mode ?? "none",
+    printMode: r.printMode ?? "",
+    verified: r.verified ?? "no",
+    ...r,
+  }));
+}
+
+function _mpScheduleSave() {
+  clearTimeout(_mpAutoSaveTimer);
+  _mpAutoSaveTimer = setTimeout(() => {
+    if (window._fb && window._machineProfilesLoaded && !window._machineProfilesSyncError) {
+      window._fb.saveMachineProfiles(window._machineProfiles).catch(err => {
+        console.error("Machine Profiles autosave failed:", err);
+      });
+    }
+  }, 800);
+}
+
+function _mpAllRmNames() {
+  const names = new Set(_MP_DEFAULTS.map(r => r.rm));
+  window._machineProfiles.forEach(r => { if (r.rm) names.add(r.rm); });
+  return [...names].sort();
+}
+
+function renderMachineProfiles() {
+  const tabsEl  = document.getElementById("settings-mp-tabs");
+  const tableEl = document.getElementById("settings-mp-table");
+  if (!tabsEl || !tableEl) return;
+
+  if (!window._machineProfilesLoaded) {
+    tabsEl.innerHTML = "";
+    tableEl.innerHTML = `<div style="font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:32px 0;">⏳ Loading machine profiles…</div>`;
+    return;
+  }
+
+  tabsEl.innerHTML = "";
+
+  if (window._machineProfilesSyncError) {
+    const warn = document.createElement("div");
+    warn.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;color:#a85400;background:#fff3e0;border:1px solid #f0c896;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;";
+    warn.textContent = "⚠ Couldn't sync Machine Profiles with the cloud (" + window._machineProfilesSyncError + "). Showing your built-in defaults — edits here won't save online until this is fixed.";
+    tableEl.innerHTML = "";
+    tableEl.appendChild(warn);
+  }
+
+  // Tab bar
+  _MP_TABS.forEach(m => {
+    const tab = document.createElement("button");
+    tab.className = "settings-mp-tab" + (m === _settingsMPTab ? " active" : "");
+    tab.textContent = m;
+    tab.onclick = () => { _settingsMPTab = m; renderMachineProfiles(); };
+    tabsEl.appendChild(tab);
+  });
+
+  // Shared datalist for RM Name autocomplete (hard-coded suggestions, but typing a new one is fine)
+  const rmList = document.createElement("datalist");
+  rmList.id = "settings-mp-rm-list";
+  _mpAllRmNames().forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    rmList.appendChild(opt);
+  });
+  tableEl.appendChild(rmList);
+
+  const subList = document.createElement("datalist");
+  subList.id = "settings-mp-sub-list";
+  const subSuggestions = _settingsMPTab === "Drinkware" ? _MP_DRINKWARE_SUB_SUGGESTIONS : _MP_SUB_SUGGESTIONS;
+  subSuggestions.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    subList.appendChild(opt);
+  });
+  tableEl.appendChild(subList);
+
+  // Rows for this tab
+  const rows = window._machineProfiles.filter(r => r.machine === _settingsMPTab);
+
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:24px 0;";
+    empty.textContent = "No profiles yet for " + _settingsMPTab + ". Click “+ Add Profile” to create one.";
+    tableEl.appendChild(empty);
+    return;
+  }
+
+  function makeSelect(options, value, onChange, blankLabel) {
+    const sel = document.createElement("select");
+    options.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt === "" ? (blankLabel || "—") : opt;
+      if (opt === (value || "")) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", () => onChange(sel.value));
+    return sel;
+  }
+
+  const FIELDS = _mpFieldsFor(_settingsMPTab);
+
+  rows.forEach(row => {
+    const card = document.createElement("div");
+    card.className = "settings-mp-card";
+
+    const head = document.createElement("div");
+    head.className = "settings-mp-card-head";
+
+    const piece = document.createElement("div");
+    piece.className = "settings-mp-piece";
+
+    const nameInp = document.createElement("input");
+    nameInp.className = "settings-mp-name";
+    nameInp.value = row.rm || "";
+    nameInp.placeholder = "Product name";
+    nameInp.setAttribute("list", "settings-mp-rm-list");
+    nameInp.addEventListener("input", () => mpBufferField(row.id, "rm", nameInp.value));
+
+    const subInp = document.createElement("input");
+    subInp.className = "settings-mp-sub";
+    subInp.value = row.sub || "";
+    subInp.placeholder = "Sub";
+    subInp.setAttribute("list", "settings-mp-sub-list");
+    subInp.addEventListener("input", () => mpBufferField(row.id, "sub", subInp.value));
+
+    piece.appendChild(nameInp);
+    piece.appendChild(subInp);
+
+    const verifiedBtn = document.createElement("button");
+    verifiedBtn.type = "button";
+    verifiedBtn.className = "settings-mp-verified" + (row.verified === "yes" ? " is-verified" : "");
+    verifiedBtn.title = "Click to toggle verified";
+    const checkSpan = document.createElement("span");
+    checkSpan.className = "settings-mp-verified-check";
+    checkSpan.textContent = "✓";
+    verifiedBtn.appendChild(checkSpan);
+    verifiedBtn.appendChild(document.createTextNode("Verified"));
+    verifiedBtn.onclick = () => {
+      mpBufferField(row.id, "verified", row.verified === "yes" ? "no" : "yes");
+      renderMachineProfiles();
+    };
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "settings-mp-remove";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Remove this profile";
+    removeBtn.onclick = () => mpRemoveRow(row.id);
+
+    head.appendChild(piece);
+    head.appendChild(verifiedBtn);
+    head.appendChild(removeBtn);
+    card.appendChild(head);
+
+    const grid = document.createElement("div");
+    grid.className = "settings-mp-grid";
+    FIELDS.forEach(([field, label, type, options]) => {
+      const wrap = document.createElement("div");
+      wrap.className = "settings-mp-field";
+      const lbl = document.createElement("label");
+      lbl.textContent = label;
+      wrap.appendChild(lbl);
+
+      if (type === "select") {
+        const sel = makeSelect(options, row[field], val => mpBufferField(row.id, field, val));
+        wrap.appendChild(sel);
+      } else {
+        const inp = document.createElement("input");
+        inp.type = type === "number" ? "number" : "text";
+        inp.value = row[field] || "";
+        if (field === "cut") inp.placeholder = "none";
+        inp.addEventListener("input", () => mpBufferField(row.id, field, inp.value));
+        wrap.appendChild(inp);
+      }
+      grid.appendChild(wrap);
+    });
+    card.appendChild(grid);
+
+    tableEl.appendChild(card);
+  });
+}
+
+function mpBufferField(id, field, value) {
+  const row = window._machineProfiles.find(r => r.id === id);
+  if (!row) return;
+  row[field] = value;
+  _mpScheduleSave();
+}
+
+function mpAddRow() {
+  const id = "mp_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const base = { id, machine: _settingsMPTab, rm: "", sub: "", ppt: "", style: "", verified: "no" };
+  const extra = _settingsMPTab === "Drinkware"
+    ? { printOrder: "", printSpeed: "", dropSize: "", qualityLevel: "", bottleTopPosition: "", zAxis: "", tAxis: "" }
+    : { biUni: "", stepping: "none", strike: "", cut: "none", workflow: "", printMode: "" };
+  window._machineProfiles.push({ ...base, ...extra });
+  renderMachineProfiles();
+  _mpScheduleSave();
+}
+
+function mpRemoveRow(id) {
+  window._machineProfiles = window._machineProfiles.filter(r => r.id !== id);
+  renderMachineProfiles();
+  _mpScheduleSave();
+}
+
+function mpSaveNow() {
+  const confirmEl = document.getElementById("settings-mp-save-confirm");
+  const saveBtn   = document.getElementById("settings-mp-save-btn");
+  if (!window._fb) {
+    if (confirmEl) {
+      confirmEl.textContent  = "✗ Not connected — please log in again.";
+      confirmEl.style.color  = "#cc3333";
+      confirmEl.style.display = "block";
+      setTimeout(() => { confirmEl.style.display = "none"; }, 3000);
+    }
+    return;
+  }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
+  window._fb.saveMachineProfiles(window._machineProfiles)
+    .then(() => {
+      if (confirmEl) {
+        confirmEl.textContent  = "✓ Machine profiles saved successfully";
+        confirmEl.style.color  = "#228844";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 2500);
+      }
+    })
+    .catch(err => {
+      console.error("mpSaveNow failed:", err);
+      if (confirmEl) {
+        confirmEl.textContent  = "✗ Save failed: " + (err.message || err);
+        confirmEl.style.color  = "#cc3333";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 5000);
+      }
+    })
+    .finally(() => {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓ Save Machine Profiles"; }
+    });
 }
 
 // ═══════════════════════════════════════

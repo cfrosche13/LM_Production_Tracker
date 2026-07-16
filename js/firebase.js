@@ -192,6 +192,13 @@
         saveOrders:    (data) => set(ref(db, "openOrders"), data),
         listenOrders:  (cb)   => onValue(ref(db, "openOrders"), snap => cb(snap.val() || null)),
 
+        saveMachineProfiles:   (list) => set(ref(db, "machineProfiles"), list),
+        listenMachineProfiles: (cb, onError) => onValue(
+          ref(db, "machineProfiles"),
+          snap => cb(snap.val() || null),
+          err  => { console.error("listenMachineProfiles denied/failed:", err); if (onError) onError(err); }
+        ),
+
         saveChecklistProgress:  (key, data) => set(ref(db, `checklistProgress/${key}`), data),
         clearChecklistProgress: (key)       => set(ref(db, `checklistProgress/${key}`), null),
         listenChecklistProgress:(cb)        => onValue(ref(db, "checklistProgress"), snap => cb(snap.val() || {})),

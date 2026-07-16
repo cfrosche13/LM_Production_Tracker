@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Libre+Franklin:wght@400;500;600;700&family=Josefin+Slab:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
 <!-- Firebase -->
 <script type="module" src="js/firebase.js"></script>
-<link rel="stylesheet" href="css/styles.css?v=3" />
+<link rel="stylesheet" href="css/styles.css?v=5" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -1342,13 +1342,13 @@ function stopAllTransitions() {
 <script src="js/inventory.js?v=23"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
-<script src="js/settings.js?v=4"></script>
+<script src="js/settings.js?v=8"></script>
 <script src="js/printing.js?v=6"></script>
 <script src="js/stamped.js?v=4"></script>
 <script src="js/tally2.js?v=1"></script>
 <script src="js/colex.js?v=4"></script>
 <script src="js/tally.js?v=8"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/app.js?v=9"></script>
 
 <script>
 // ── SESSION GATE ──
@@ -1609,64 +1609,130 @@ function sessionGateAdmin() {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <div style="font-family:'Abril Fatface',serif;font-size:22px;color:#2e8b57;">Settings</div>
       <button onclick="settingsSave()" id="settings-save-btn"
-        style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s;">
+        style="display:none;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s;">
         ✓ Save Targets
       </button>
     </div>
 
-    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:20px;line-height:1.6;">
-      Set target rates for each piece type. These will be used to calculate efficiency scores on your production reports.
+    <!-- ══════════ SETTINGS HOME — CATEGORY CARDS ══════════ -->
+    <div id="settings-home">
+      <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:20px;line-height:1.6;">
+        Choose a category to view or edit its settings.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;">
+        <button class="settings-card" onclick="settingsShowPanel('targets')">
+          <span class="settings-card-icon">🎯</span>
+          <span class="settings-card-title">Targets &amp; Expected Times</span>
+          <span class="settings-card-desc">Machine speed targets, Drinkware, and Colex merchandiser expected times</span>
+        </button>
+        <button class="settings-card" onclick="settingsShowPanel('oee')">
+          <span class="settings-card-icon">⚙️</span>
+          <span class="settings-card-title">OEE Ideal Cycle Times</span>
+          <span class="settings-card-desc">Theoretical best time per unit, used to calculate Performance</span>
+        </button>
+        <button class="settings-card" onclick="settingsShowPanel('operators')">
+          <span class="settings-card-icon">👥</span>
+          <span class="settings-card-title">Operators</span>
+          <span class="settings-card-desc">Names shown in the tally login</span>
+        </button>
+        <button class="settings-card" onclick="settingsShowPanel('orders')">
+          <span class="settings-card-icon">📦</span>
+          <span class="settings-card-title">Open Orders Source</span>
+          <span class="settings-card-desc">OneDrive / SharePoint link for the daily orders export</span>
+        </button>
+        <button class="settings-card" onclick="settingsShowPanel('profiles')">
+          <span class="settings-card-icon">🖨️</span>
+          <span class="settings-card-title">Machine Profiles</span>
+          <span class="settings-card-desc">Per-product production settings for each machine</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Open Orders URL -->
-    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:12px;">
-      Open Orders — OneDrive / SharePoint URL
-    </div>
-    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:10px;line-height:1.6;">
-      Paste the direct download link to your daily LMContainers Excel export. The tracker will fetch it automatically on load.
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
-      <input id="settings-orders-url" type="url" placeholder="https://company.sharepoint.com/...download=1"
-        style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:8px 12px;outline:none;color:#1a2a38;" />
-      <button onclick="settingsSaveOrdersUrl()"
-        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;white-space:nowrap;">Save URL</button>
-    </div>
+    <!-- ══════════ SETTINGS DETAIL — ONE PANEL AT A TIME ══════════ -->
+    <div id="settings-detail" style="display:none;">
+      <button onclick="settingsShowHome()" class="settings-back-btn">← Back to Settings</button>
 
-    <!-- Operators (compact) -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:10px;">
-      <span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;">Operators</span>
-      <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#90a8b8;">Names shown in the tally login</span>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;margin-bottom:8px;">
-      <div id="settings-operators-list" style="display:inline;"></div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:28px;">
-      <input id="settings-op-input" type="text" placeholder="Add operator name…"
-        style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:7px 12px;outline:none;color:#1a2a38;"
-        onkeydown="if(event.key==='Enter') operatorAdd()" />
-      <button onclick="operatorAdd()"
-        style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;white-space:nowrap;">+ Add</button>
-    </div>
+      <!-- Open Orders URL -->
+      <div id="settings-panel-orders" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:12px;">
+          Open Orders — OneDrive / SharePoint URL
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:10px;line-height:1.6;">
+          Paste the direct download link to your daily LMContainers Excel export. The tracker will fetch it automatically on load.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+          <input id="settings-orders-url" type="url" placeholder="https://company.sharepoint.com/...download=1"
+            style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:8px 12px;outline:none;color:#1a2a38;" />
+          <button onclick="settingsSaveOrdersUrl()"
+            style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;white-space:nowrap;">Save URL</button>
+        </div>
+      </div>
 
-    <div id="settings-targets-table"></div>
+      <!-- Operators -->
+      <div id="settings-panel-operators" class="settings-panel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:10px;">
+          <span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;">Operators</span>
+          <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#90a8b8;">Names shown in the tally login</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;margin-bottom:8px;">
+          <div id="settings-operators-list" style="display:inline;"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="settings-op-input" type="text" placeholder="Add operator name…"
+            style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:7px 12px;outline:none;color:#1a2a38;"
+            onkeydown="if(event.key==='Enter') operatorAdd()" />
+          <button onclick="operatorAdd()"
+            style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;white-space:nowrap;">+ Add</button>
+        </div>
+      </div>
 
-    <!-- Colex Merchandiser Expected Times -->
-    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#9a7e00;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #e8d870;margin-bottom:8px;">
-      Colex — Merchandiser Expected Times
-    </div>
-    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
-      Set the expected time per sheet for each merchandiser type. The tally view uses these to calculate total expected time automatically.
-    </div>
-    <div id="settings-colex-merch"></div>
+      <!-- Targets & Expected Times -->
+      <div id="settings-panel-targets" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:16px;line-height:1.6;">
+          Set target rates for each piece type. These will be used to calculate efficiency scores on your production reports.
+        </div>
+        <div id="settings-targets-table"></div>
 
-    <!-- OEE Ideal Cycle Times -->
-    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
-      OEE — Ideal Cycle Time (sec / unit)
+        <!-- Colex Merchandiser Expected Times -->
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#9a7e00;text-transform:uppercase;letter-spacing:0.12em;padding:20px 0 6px;border-bottom:2px solid #e8d870;margin-bottom:8px;">
+          Colex — Merchandiser Expected Times
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+          Set the expected time per sheet for each merchandiser type. The tally view uses these to calculate total expected time automatically.
+        </div>
+        <div id="settings-colex-merch"></div>
+      </div>
+
+      <!-- OEE Ideal Cycle Times -->
+      <div id="settings-panel-oee" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
+          OEE — Ideal Cycle Time (sec / unit)
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+          The theoretical best time to produce one unit on each machine. Used to calculate Performance in OEE.
+        </div>
+        <div id="settings-oee-cycles"></div>
+      </div>
+
+      <!-- Machine Profiles -->
+      <div id="settings-panel-profiles" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
+          Machine Profiles
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+          Production settings for every product on every machine — pieces per table, jig/production style, print mode, and cut files. Edit any field, then save.
+        </div>
+        <div id="settings-mp-tabs" style="display:flex;flex-wrap:wrap;gap:0;border-bottom:2px solid #d0e4ee;margin-bottom:16px;"></div>
+        <div id="settings-mp-table"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+          <button onclick="mpAddRow()"
+            style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#fff;color:#2e8b57;border:1.5px solid #2e8b57;border-radius:6px;padding:8px 16px;cursor:pointer;white-space:nowrap;">+ Add Profile</button>
+          <button onclick="mpSaveNow()" id="settings-mp-save-btn"
+            style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;">✓ Save Machine Profiles</button>
+        </div>
+        <div id="settings-mp-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:10px;text-align:center;"></div>
+      </div>
     </div>
-    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
-      The theoretical best time to produce one unit on each machine. Used to calculate Performance in OEE.
-    </div>
-    <div id="settings-oee-cycles"></div>
 
     <div id="settings-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:12px;text-align:center;">
       ✓ Targets saved successfully

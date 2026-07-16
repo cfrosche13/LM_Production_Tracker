@@ -79,6 +79,42 @@ function init() {
       renderReports();
     });
 
+    // Machine Profiles — only re-render settings if the profiles panel is open
+    let _mpTimeoutFired = false;
+    const _mpLoadTimeout = setTimeout(() => {
+      if (window._machineProfilesLoaded) return;
+      _mpTimeoutFired = true;
+      window._machineProfiles = _mpNormalize(null);
+      window._machineProfilesLoaded = true;
+      window._machineProfilesSyncError = "timed out waiting for a response";
+      const panel = document.getElementById("settings-panel-profiles");
+      const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+      if (settingsActive && panel && panel.style.display !== "none") renderMachineProfiles();
+    }, 8000);
+
+    window._fb.listenMachineProfiles(
+      data => {
+        clearTimeout(_mpLoadTimeout);
+        if (_mpTimeoutFired) return; // already fell back; don't fight the user's edits
+        window._machineProfiles = _mpNormalize(data);
+        window._machineProfilesLoaded = true;
+        window._machineProfilesSyncError = null;
+        const panel = document.getElementById("settings-panel-profiles");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderMachineProfiles();
+      },
+      err => {
+        clearTimeout(_mpLoadTimeout);
+        if (_mpTimeoutFired) return;
+        window._machineProfiles = _mpNormalize(null);
+        window._machineProfilesLoaded = true;
+        window._machineProfilesSyncError = (err && err.message) || String(err);
+        const panel = document.getElementById("settings-panel-profiles");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderMachineProfiles();
+      }
+    );
+
     // Open Orders — sync across all devices when any device uploads a file
     window._fb.listenOrders(data => {
       if (!data) return;
@@ -214,6 +250,7 @@ function switchView(name) {
   const tb = document.getElementById("transition-bar");
   if (tb) tb.style.display = (name === 'printing' || name === 'colex') ? '' : 'none';
   if (name === 'settings') {
+    settingsShowHome();
     renderSettingsTargets();
     const urlInput = document.getElementById("settings-orders-url");
     if (urlInput && window._targets) urlInput.value = window._targets["__orders_url"] || "";
