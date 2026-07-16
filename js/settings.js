@@ -631,12 +631,12 @@ function renderMachineProfiles() {
   }
 
   tabsEl.innerHTML = "";
+  tableEl.innerHTML = "";
 
   if (window._machineProfilesSyncError) {
     const warn = document.createElement("div");
     warn.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;color:#a85400;background:#fff3e0;border:1px solid #f0c896;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;";
     warn.textContent = "⚠ Couldn't sync Machine Profiles with the cloud (" + window._machineProfilesSyncError + "). Showing your built-in defaults — edits here won't save online until this is fixed.";
-    tableEl.innerHTML = "";
     tableEl.appendChild(warn);
   }
 
