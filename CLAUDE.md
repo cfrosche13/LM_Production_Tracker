@@ -96,6 +96,21 @@ listening AND rendering is handled inside the ES6 module (unlike the operator tr
 exposes `window._fb` for the plain scripts to use). This is intentional — the manager
 dashboard is read-only and all logic fits cleanly in one file.
 
+### PWA / home-screen install
+The Operator Tracker is installable to a phone home screen as a standalone app (added 2026-07-24):
+- `manifest.json` (root) — name, icons, `display: standalone`, theme/background color
+- `icons/icon-192.png`, `icons/icon-512.png` — generated from the embedded favicon logo (only
+  108x72 source resolution, padded onto a white square — revisit with a higher-res logo file
+  if a crisper icon is ever wanted)
+- `sw.js` — minimal service worker, caches only the same-origin static shell (HTML/CSS/JS/icons)
+  under `CACHE_NAME`. Firebase calls, Google Fonts, and the XLSX CDN script are deliberately
+  left alone and always hit the network — never served from cache.
+- **Whenever you change `index.html`, `css/styles.css`, or any `js/*.js` file, bump `CACHE_NAME`
+  in `sw.js`** (e.g. `printtrack-shell-v1` → `v2`) — otherwise phones with the app already
+  installed may keep serving the old cached version after a deploy.
+- Manager Dashboard and Production Dashboard do not have this yet — same pattern can be repeated
+  for `manager/` and `dashboard/` if wanted later.
+
 ---
 
 ## Shared Firebase project
