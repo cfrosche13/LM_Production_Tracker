@@ -90,3 +90,6 @@ body { background: #e8f5ee; font-family: 'Helvetica Neue', Helvetica, Arial, san
 #loading img { height: 80px; opacity: 0.9; }
 .spinner { width: 36px; height: 36px; border: 3px solid #9bc2a1; border-top-color: #0d6748; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+#loading-msg { max-width: 480px; text-align: center; font-size: 12px; color: #c4447a; font-weight: 700; display: none; }
+#loading.load-error .spinner { border-top-color: #c4447a; animation-duration: 2s; }
+#loading.load-error #loading-msg { display: block; }

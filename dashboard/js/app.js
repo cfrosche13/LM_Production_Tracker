@@ -557,6 +557,22 @@ function renderCards(td) {
 }
 
 // ── FIREBASE LISTENERS ──
+function showLoadError(path, err) {
+  console.error("Dashboard: failed to load '"+path+"' —", err);
+  const loadingEl = document.getElementById("loading");
+  const msgEl = document.getElementById("loading-msg");
+  if (msgEl) msgEl.textContent = "Couldn't load \"" + path + "\" (" + (err && err.message ? err.message : err) + ") — check Firebase rules allow unauthenticated reads on this path.";
+  if (loadingEl) loadingEl.classList.add("load-error");
+}
+
+function safeRender() {
+  try {
+    render();
+  } catch (err) {
+    showLoadError("render", err);
+  }
+}
+
 onValue(ref(db,"sessions"), snap => {
   const data = snap.val()||{};
   machineReports = {};
@@ -564,27 +580,27 @@ onValue(ref(db,"sessions"), snap => {
     machineReports[machine] = Object.values(sessions).map(s=>({...s, time: s.time ? new Date(s.time) : null}));
   });
   loaded.sessions = true;
-  if (Object.values(loaded).every(Boolean)) render();
-});
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("sessions", err));
 
 onValue(ref(db,"maintLog"), snap => {
   const data = snap.val()||{};
   maintLog = Object.values(data).map(e=>({...e, time: e.time ? new Date(e.time) : null}));
   loaded.maint = true;
-  if (Object.values(loaded).every(Boolean)) render();
-});
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("maintLog", err));
 
 onValue(ref(db,"waitLog"), snap => {
   waitLog = Object.values(snap.val()||{});
   loaded.wait = true;
-  if (Object.values(loaded).every(Boolean)) render();
-});
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("waitLog", err));
 
 onValue(ref(db,"targets"), snap => {
   targets = snap.val()||{};
   loaded.targets = true;
-  if (Object.values(loaded).every(Boolean)) render();
-});
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("targets", err));
 
 // Auto-refresh chart every 5 minutes
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
