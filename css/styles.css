@@ -489,7 +489,8 @@ select option { background: #fff; color: #1a2e1c; }
   /* Top bar — stack logo above counters */
   #top-bar { flex-direction: column; align-items: stretch; padding: 8px 10px; gap: 6px; }
   #top-bar img { height: 40px; align-self: center; }
-  #top-bar > div:last-child { justify-content: space-between; }
+  /* justify-content is set inline on this element (space-evenly) and takes precedence; only flex-wrap needs overriding here */
+  #top-bar-counters { flex-wrap: wrap; row-gap: 8px; }
 
   /* Nav — shrink labels */
   #nav-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
@@ -500,7 +501,7 @@ select option { background: #fff; color: #1a2e1c; }
   .top-field { flex-direction: row; align-items: center; justify-content: space-between; }
   .top-input, .top-select { width: auto; flex: 1; max-width: 200px; font-size: 13px; }
   #machine-btns { flex-wrap: wrap; gap: 6px; }
-  .machine-btn { font-size: 13px; padding: 7px 12px; flex: 1; min-width: 60px; text-align: center; }
+  .machine-btn { font-size: 13px; padding: 7px 12px; flex: 1; min-width: 60px; text-align: center; white-space: normal; line-height: 1.25; }
 
   /* Reports grid — single column */
   #reports-grid { grid-template-columns: 1fr; }
