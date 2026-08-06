@@ -19,8 +19,10 @@ const MACHINES       = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkw
 const PF_MACHINES    = ["30","30+","H5","Drinkware M1","Drinkware M2"];
 const STAMPED_MACHINES = ["Wallets"];
 const DRINKWARE_MACHINES = ["Drinkware M1","Drinkware M2"];
+const PLAN_MACHINES = ["30","30+","H5","Drinkware M1","Drinkware M2"];
+const DAY_SHIFT_START_HOUR = 6;   // earliest flex-in
+const DAY_SHIFT_END_HOUR   = 15;  // 3pm — day/night cutoff
 const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware M1":"#a8ddb8","Drinkware M2":"#85c99e" };
-const OEE_IDEAL_CYCLE_DEFAULTS = { "30":94, "30+":42.5, "H5":32.5, "Colex":0, "Wallets":0, "Drinkware M1":0, "Drinkware M2":0 };
 const CHART_HOURS_START = 6;
 const CHART_HOURS_END   = 23; // 6am to end of 11pm hour (covers the 11:30pm shift end)
 const SHIP_CONFIRM_COLOR = "#3a6ea5";
@@ -32,7 +34,8 @@ let maintLog       = [];
 let waitLog        = [];
 let targets        = {};
 let shipConfirmData = {};
-let loaded         = { sessions: false, maint: false, wait: false, targets: false, shipConfirm: false };
+let plansData = {};
+let loaded         = { sessions: false, maint: false, wait: false, targets: false, shipConfirm: false, plans: false };
 
 function fmt(s) {
   return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
@@ -42,10 +45,6 @@ function localDateStr(d) {
   return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 }
 function today() { return localDateStr(new Date()); }
-function getIdealCycle(machine) {
-  if (targets["__oee_cycle_"+machine]) return targets["__oee_cycle_"+machine];
-  return OEE_IDEAL_CYCLE_DEFAULTS[machine] || 0;
-}
 function oeeColor(pct) {
   if (pct >= 85) return { bar:"#0d6748", text:"#0d6748" };
   if (pct >= 65) return { bar:"#568e7b", text:"#568e7b" };
@@ -53,54 +52,9 @@ function oeeColor(pct) {
   return { bar:"#c4770a", text:"#c4770a" };
 }
 
-function calcOEE(machine) {
-  const td = today();
-  const sessions = (machineReports[machine]||[]).filter(s => s.time && localDateStr(s.time)===td);
-  if (!sessions.length) return null;
-  const times = sessions.map(s => { const e=new Date(s.time).getTime(); return {s:e-(s.totalSec||0)*1000,e}; });
-  const plannedSec = (Math.max(...times.map(t=>t.e)) - Math.min(...times.map(t=>t.s))) / 1000;
-  if (plannedSec<=0) return null;
-  const runSec      = sessions.reduce((a,s)=>a+(s.totalSec||0),0);
-  const totalUnits  = sessions.reduce((a,s)=>a+(s.qtyGood||0)+(s.qtyBad||0),0);
-  const goodUnits   = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
-  const availability= Math.min(1, runSec/plannedSec);
-  const idealCycle  = getIdealCycle(machine);
-  const performance = (idealCycle>0 && runSec>0 && totalUnits>0) ? Math.min(1,(totalUnits*idealCycle)/runSec) : 0;
-  const quality     = totalUnits>0 ? goodUnits/totalUnits : 0;
-  return {
-    oee:          Math.round(availability*performance*quality*100),
-    availability: Math.round(availability*100),
-    performance:  Math.round(performance*100),
-    quality:      Math.round(quality*100),
-    runSec, totalUnits, goodUnits
-  };
-}
-
 function yesterday() {
   const d = new Date(); d.setDate(d.getDate()-1);
   return localDateStr(d);
-}
-
-function calcOEEForDate(machine, dateStr) {
-  const sessions = (machineReports[machine]||[]).filter(s => s.time && localDateStr(s.time)===dateStr);
-  if (!sessions.length) return null;
-  const times = sessions.map(s => { const e=new Date(s.time).getTime(); return {s:e-(s.totalSec||0)*1000,e}; });
-  const plannedSec = (Math.max(...times.map(t=>t.e)) - Math.min(...times.map(t=>t.s))) / 1000;
-  if (plannedSec<=0) return null;
-  const runSec     = sessions.reduce((a,s)=>a+(s.totalSec||0),0);
-  const totalUnits = sessions.reduce((a,s)=>a+(s.qtyGood||0)+(s.qtyBad||0),0);
-  const goodUnits  = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
-  const avail      = Math.min(1, runSec/plannedSec);
-  const idealCycle = getIdealCycle(machine);
-  const perf       = (idealCycle>0 && runSec>0 && totalUnits>0) ? Math.min(1,(totalUnits*idealCycle)/runSec) : 0;
-  const qual       = totalUnits>0 ? goodUnits/totalUnits : 0;
-  return {
-    oee: Math.round(avail*perf*qual*100),
-    availability: Math.round(avail*100),
-    performance:  Math.round(perf*100),
-    quality:      Math.round(qual*100),
-    runSec, totalUnits, goodUnits
-  };
 }
 
 
@@ -257,149 +211,117 @@ function render() {
 
   renderChart(td);
   renderCards(td);
-  renderPrevDay();
+  renderWeeklySummary();
   document.getElementById("loading").style.display = "none";
 }
 
-function renderPrevDay() {
-  const yd = yesterday();
-  const ydLabel = new Date(yd + "T12:00:00").toLocaleDateString("en-US", {weekday:"long", month:"long", day:"numeric"});
-  const titleEl = document.getElementById("prev-day-title");
-  if (titleEl) titleEl.textContent = "Previous Day — " + ydLabel;
-
-  // ── DEPARTMENT TOTALS ──
-  const deptRow = document.getElementById("prev-dept-row");
-  if (!deptRow) return;
-  deptRow.innerHTML = "";
-
-  let printGood=0, printBad=0, stampGood=0, stampBad=0;
-  PF_MACHINES.forEach(m => {
-    (machineReports[m]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).forEach(s=>{
-      printGood += s.qtyGood||0; printBad += s.qtyBad||0;
-    });
+// ── PLAN LOOKUP ──
+function currentShift(now) {
+  now = now || new Date();
+  return now.getHours() < DAY_SHIFT_END_HOUR ? "day" : "night";
+}
+function shiftHourRange(shift) {
+  return shift === "day" ? [DAY_SHIFT_START_HOUR, DAY_SHIFT_END_HOUR] : [DAY_SHIFT_END_HOUR, 24];
+}
+function findPlanRecord(dateStr, shift, group) {
+  const suffix = group === "drinkware" ? "_drinkware" : "";
+  const baseKey = `committed-plan_${dateStr}_${shift}${suffix}`;
+  return plansData[baseKey] || plansData[baseKey+"_mid"] || null;
+}
+function machinePlan(machine, dateStr, shift) {
+  const group = DRINKWARE_MACHINES.includes(machine) ? "drinkware" : "standard";
+  const rec = findPlanRecord(dateStr, shift, group);
+  if (!rec || !rec.machineLoad || rec.machineLoad[machine]==null) return null;
+  return rec.machineLoad[machine];
+}
+function machinePlanWholeDay(machine, dateStr) {
+  const day = machinePlan(machine, dateStr, "day");
+  const night = machinePlan(machine, dateStr, "night");
+  if (day==null && night==null) return null;
+  return (day||0) + (night||0);
+}
+function machineActualForShift(machine, dateStr, shift) {
+  const [hStart, hEnd] = shiftHourRange(shift);
+  return (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===dateStr)
+    .filter(s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; })
+    .reduce((a,s)=>a+(s.qtyGood||0),0);
+}
+function leadingPieceType(sessions) {
+  const map = {};
+  sessions.forEach(s => {
+    const pt = s.pieceType || "Unknown";
+    map[pt] = (map[pt]||0) + (s.qtyGood||0);
   });
-  STAMPED_MACHINES.forEach(m => {
-    (machineReports[m]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).forEach(s=>{
-      stampGood += s.qtyGood||0; stampBad += s.qtyBad||0;
-    });
-  });
+  const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  if (!entries.length || entries[0][1]<=0) return null;
+  return { label: entries[0][0].split(" · ")[1] || entries[0][0], qty: entries[0][1] };
+}
 
-  // Dept OEE — average of machines that have data
-  function deptOEE(machines) {
-    const vals = machines.map(m => calcOEEForDate(m, yd)).filter(o => o && o.oee > 0);
-    if (!vals.length) return null;
-    return {
-      oee:          Math.round(vals.reduce((a,o)=>a+o.oee,         0)/vals.length),
-      availability: Math.round(vals.reduce((a,o)=>a+o.availability,0)/vals.length),
-      performance:  Math.round(vals.reduce((a,o)=>a+o.performance, 0)/vals.length),
-      quality:      Math.round(vals.reduce((a,o)=>a+o.quality,     0)/vals.length),
-    };
-  }
-  const printOEE = deptOEE(PF_MACHINES);
+// ── WEEKLY SUMMARY ──
+const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat"];
+function mondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  d.setDate(d.getDate() + (day===0 ? -6 : 1-day));
+  d.setHours(0,0,0,0);
+  return d;
+}
+function weekDates(monday) {
+  const dates = [];
+  for (let i=0;i<6;i++) { const d=new Date(monday); d.setDate(d.getDate()+i); dates.push(localDateStr(d)); }
+  return dates;
+}
 
-  // Windchimes totals
-  let windGood=0, windBad=0;
-  (machineReports["Windchimes"]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).forEach(s=>{
-    windGood += s.qtyGood||0; windBad += s.qtyBad||0;
-  });
+function renderWeeklySummary() {
+  const thisMonday = mondayOf(new Date());
+  const lastMonday = new Date(thisMonday); lastMonday.setDate(lastMonday.getDate()-7);
+  renderWeekRow("week-this-grid", weekDates(thisMonday));
+  renderWeekRow("week-last-grid", weekDates(lastMonday));
+}
 
-  [
-    { label:"Printing Dept", good:printGood, bad:printBad, oee:printOEE, color:"#0d6748", bg:"#ffffff", border:"#e0e3de" },
-    { label:"Stamped Dept",  good:stampGood, bad:stampBad, oee:null,     color:"#568e7b", bg:"#ffffff", border:"#e0e3de" },
-    { label:"Windchimes",    good:windGood,  bad:windBad,  oee:null,     color:"#7a9e6e", bg:"#ffffff", border:"#e0e3de" }
-  ].forEach(({label,good,bad,oee,color,bg,border}) => {
-    const oc = oee ? oeeColor(oee.oee) : null;
-    const cell = document.createElement("div");
-    cell.style.cssText = `background:${bg};border:2px solid ${border};border-radius:10px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:14px;`;
-    cell.innerHTML = `
-      <div>
-        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:${color};margin-bottom:2px;">${label} — Total Good</div>
-        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:34px;color:${color};line-height:1;">${good.toLocaleString()}</div>
-        ${bad ? `<div style="font-size:10px;color:#c4770a;margin-top:2px;">${bad} bad units</div>` : `<div style="font-size:10px;color:${color};opacity:0.5;margin-top:2px;">0 bad units</div>`}
-      </div>
-      ${oee ? `
-      <div style="text-align:right;">
-        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:${color};opacity:0.7;margin-bottom:2px;">Dept OEE</div>
-        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:28px;color:${oc.text};line-height:1;">${oee.oee}%</div>
-        <div style="background:#e0e3de;border-radius:99px;height:4px;overflow:hidden;margin:4px 0;">
-          <div style="height:100%;width:${oee.oee}%;background:${oc.bar};border-radius:99px;"></div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <div style="font-size:8px;color:${color};opacity:0.8;">A: ${oee.availability}%</div>
-          <div style="font-size:8px;color:${color};opacity:0.8;">P: ${oee.performance}%</div>
-          <div style="font-size:8px;color:${color};opacity:0.8;">Q: ${oee.quality}%</div>
-        </div>
-      </div>` : `<div style="font-size:10px;color:${color};opacity:0.4;text-align:right;">No OEE data</div>`}`;
-    deptRow.appendChild(cell);
-  });
-
-  // ── PER MACHINE ──
-  const grid = document.getElementById("prev-machine-grid");
+function renderWeekRow(gridId, dateStrs) {
+  const grid = document.getElementById(gridId);
   if (!grid) return;
   grid.innerHTML = "";
+  const todayStr = today();
 
-  MACHINES.forEach(machine => {
-    const sessions = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd);
-    const oee = calcOEEForDate(machine, yd);
-    const machineColor = MACHINE_COLORS[machine]||"#568e7b";
+  dateStrs.forEach((dateStr, i) => {
+    const box = document.createElement("div");
+    box.style.cssText = "background:#ffffff;border:1px solid #e0e3de;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:3px;min-width:0;";
 
-    const card = document.createElement("div");
-    card.style.cssText = "background:#ffffff;border:1px solid #e0e3de;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:5px;min-width:0;";
-
-    if (!sessions.length) {
-      card.innerHTML = `
-        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:18px;color:${machineColor};">${machine}</div>
-        <div style="font-size:10px;color:#9b9b9b;text-align:center;padding:6px 0;">No data</div>`;
-      grid.appendChild(card);
+    if (dateStr > todayStr) {
+      box.innerHTML = `
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#9b9b9b;">${DAY_LABELS[i]}</div>
+        <div style="font-size:9px;color:#c8c8c8;text-align:center;padding:14px 0;">—</div>`;
+      grid.appendChild(box);
       return;
     }
 
-    // Piece type breakdown
-    const pieceMap = {};
-    sessions.forEach(s => {
-      const pt = s.pieceType || "Unknown";
-      if (!pieceMap[pt]) pieceMap[pt] = { good:0, bad:0 };
-      pieceMap[pt].good += s.qtyGood||0;
-      pieceMap[pt].bad  += s.qtyBad||0;
-    });
-    const totalGood  = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
-    const totalBad   = sessions.reduce((a,s)=>a+(s.qtyBad||0),0);
+    const machineRows = PLAN_MACHINES.map(m => {
+      const actual = (machineReports[m]||[]).filter(s=>s.time&&localDateStr(s.time)===dateStr).reduce((a,s)=>a+(s.qtyGood||0),0);
+      const plan = machinePlanWholeDay(m, dateStr);
+      const pct  = (plan!=null && plan>0) ? Math.round(actual/plan*100) : null;
+      const pc   = pct!=null ? oeeColor(pct) : null;
+      return `
+        <div style="padding:2px 0;border-bottom:1px solid #f0f0ee;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:9px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};">${m}</span>
+            <span style="font-size:10px;font-weight:800;color:#232323;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</span>
+          </div>
+          <div style="font-size:8px;text-align:right;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
+        </div>`;
+    }).join("");
 
-    const oc = oee ? oeeColor(oee.oee) : null;
+    const shipTotal = (shipConfirmData[dateStr]||{}).total || 0;
 
-    // Piece type rows — sorted by qty desc
-    const ptRows = Object.entries(pieceMap)
-      .sort((a,b)=>b[1].good-a[1].good)
-      .map(([pt,qty]) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #e0e3de;">
-          <span style="font-size:9px;color:#232323;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pt.split(" · ")[1]||pt}</span>
-          <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;margin-left:6px;">${qty.good}</span>
-        </div>`).join("");
-
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:15px;color:${machineColor};">${machine}</div>
-        ${oee ? `<div style="text-align:right;">
-          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:16px;color:${oc.text};">${oee.oee}%</div>
-          <div style="font-size:6px;text-transform:uppercase;letter-spacing:0.08em;color:#6b6b6b;">OEE</div>
-        </div>` : ""}
-      </div>
-      ${oee ? `<div style="background:#e0e3de;border-radius:99px;height:4px;overflow:hidden;">
-        <div style="height:100%;width:${oee.oee}%;background:${oc.bar};border-radius:99px;"></div>
-      </div>` : ""}
-      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.08em;color:#6b6b6b;border-bottom:1px solid #e0e3de;padding-bottom:3px;margin-bottom:1px;">Piece Types</div>
-      <div style="display:flex;flex-direction:column;gap:1px;">${ptRows}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:1px;">
-        <div style="background:#f7f8f6;border-radius:5px;padding:4px 6px;">
-          <div style="font-size:6px;text-transform:uppercase;color:#6b6b6b;">Good</div>
-          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;">${totalGood.toLocaleString()}</div>
-        </div>
-        <div style="background:#f7f8f6;border-radius:5px;padding:4px 6px;">
-          <div style="font-size:6px;text-transform:uppercase;color:#6b6b6b;">Bad</div>
-          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:${totalBad>0?"#c4770a":"#0d6748"};">${totalBad}</div>
-        </div>
+    box.innerHTML = `
+      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;">${DAY_LABELS[i]}</div>
+      ${machineRows}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding-top:3px;border-top:1px solid #e0e3de;">
+        <span style="font-size:9px;font-weight:700;color:${SHIP_CONFIRM_COLOR};">Shipped</span>
+        <span style="font-size:12px;font-weight:800;color:${SHIP_CONFIRM_COLOR};">${shipTotal.toLocaleString()}</span>
       </div>`;
-    grid.appendChild(card);
+    grid.appendChild(box);
   });
 }
 
@@ -500,79 +422,80 @@ function renderChart(td) {
 function renderCards(td) {
   const grid = document.getElementById("cards-grid");
   grid.innerHTML = "";
+  const shift = currentShift();
+  const yd = yesterday();
 
-  MACHINES.forEach(machine => {
+  PLAN_MACHINES.forEach(machine => {
     const sessions = (machineReports[machine]||[]).filter(s=>localDateStr(s.time)===td);
-    const oee = calcOEE(machine);
     const hasMechDown = maintLog.some(e=>(e.machine||"")=== machine && e.type==="Machine Down" && localDateStr(e.time)===td);
+    const machineColor = MACHINE_COLORS[machine]||"#aaaaaa";
+
+    const plan    = machinePlan(machine, td, shift);
+    const printed = machineActualForShift(machine, td, shift);
+    const pct     = (plan!=null && plan>0) ? Math.round(printed/plan*100) : null;
+    const pc      = pct!=null ? oeeColor(pct) : null;
+
+    const totalTables = sessions.reduce((a,s)=>{
+      const isCont = s.mode&&s.mode.startsWith("continuous");
+      return a + (isCont ? (s.changeovers||1) : (s.changeovers||0)+1);
+    },0);
+    const leading = leadingPieceType(sessions);
+
+    const ySessions = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd);
+    const yTotal = ySessions.reduce((a,s)=>a+(s.qtyGood||0),0);
+    const yPlan  = machinePlanWholeDay(machine, yd);
+    const yPct   = (yPlan!=null && yPlan>0) ? Math.round(yTotal/yPlan*100) : null;
+    const yPc    = yPct!=null ? oeeColor(yPct) : null;
+
+    if (!sessions.length && plan==null && !yTotal) return; // nothing to show
 
     const card = document.createElement("div");
     card.className = "machine-card" + (hasMechDown?" has-down":"");
 
-    const totalRunSec    = sessions.reduce((a,s)=>a+(s.totalSec||0),0);
-    const totalGood      = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
-    const totalBad       = sessions.reduce((a,s)=>a+(s.qtyBad||0),0);
-    const totalTables    = sessions.reduce((a,s)=>{
-      const isCont = s.mode&&s.mode.startsWith("continuous");
-      return a + (isCont ? (s.changeovers||1) : (s.changeovers||0)+1);
-    },0);
-    const machineColor   = MACHINE_COLORS[machine]||"#aaaaaa";
-
-    if (!sessions.length && !oee) {
-      // Hide cards with no data
-      return;
-    }
-
-    const oc = oee ? oeeColor(oee.oee) : null;
-
     card.innerHTML = `
       <div class="card-header">
         <div class="card-machine-name" style="color:${machineColor};">${machine}</div>
-        ${oee ? `
-        <div class="card-oee-block">
-          <div class="card-oee-pct" style="color:${oc.text};">${oee.oee}%</div>
-          <div class="card-oee-label">OEE</div>
-        </div>` : ""}
+        <div class="card-oee-label">${shift==="day"?"Day Shift":"Night Shift"}</div>
       </div>
 
-      ${oee ? `
       <div class="oee-bar-wrap">
-        <div class="oee-bar" style="width:${oee.oee}%;background:${oc.bar};"></div>
+        <div class="oee-bar" style="width:${pct!=null?Math.min(100,pct):0}%;background:${pct!=null?pc.bar:'transparent'};"></div>
       </div>
+
       <div class="apq-row">
         <div class="apq-cell">
-          <div class="apq-label">Availability</div>
-          <div class="apq-val" style="color:#568e7b;">${oee.availability}%</div>
+          <div class="apq-label">Plan</div>
+          <div class="apq-val" style="color:#568e7b;">${plan!=null ? plan.toLocaleString() : "—"}</div>
         </div>
         <div class="apq-cell">
-          <div class="apq-label">Performance</div>
-          <div class="apq-val" style="color:#0d6748;">${oee.performance}%</div>
+          <div class="apq-label">Printed</div>
+          <div class="apq-val" style="color:#0d6748;">${printed.toLocaleString()}</div>
         </div>
         <div class="apq-cell">
-          <div class="apq-label">Quality</div>
-          <div class="apq-val" style="color:#0d6748;">${oee.quality}%</div>
-        </div>
-      </div>` : `<div style="font-size:10px;color:#555;font-style:italic;">No ideal cycle time set — OEE unavailable</div>`}
-
-      <div class="stats-row">
-        <div class="stat-cell">
-          <div class="stat-label">Run Time</div>
-          <div class="stat-val">${fmt(totalRunSec)}</div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-label">Tables</div>
-          <div class="stat-val" style="color:${machineColor};">${totalTables}</div>
+          <div class="apq-label">% to Plan</div>
+          <div class="apq-val" style="color:${pct!=null?pc.text:'#9b9b9b'};">${pct!=null ? pct+"%" : "—"}</div>
         </div>
       </div>
 
       <div class="stats-row">
         <div class="stat-cell">
-          <div class="stat-label">Good Units</div>
-          <div class="stat-val qty-good">${totalGood.toLocaleString()}</div>
+          <div class="stat-label">Tables Run</div>
+          <div class="stat-val" style="color:${machineColor};">${totalTables}</div>
         </div>
         <div class="stat-cell">
-          <div class="stat-label">Bad Units</div>
-          <div class="stat-val qty-bad">${totalBad}</div>
+          <div class="stat-label">Leading Piece</div>
+          <div class="stat-val" style="font-size:11px;">${leading ? leading.label+" ("+leading.qty+")" : "—"}</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">Yesterday Total</div>
+          <div class="stat-val">${yTotal.toLocaleString()}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Yesterday % to Plan</div>
+          <div class="stat-val" style="color:${yPct!=null?yPc.text:'#9b9b9b'};">${yPct!=null ? yPct+"%" : "—"}</div>
         </div>
       </div>
 
@@ -633,6 +556,12 @@ onValue(ref(db,"shipConfirm"), snap => {
   loaded.shipConfirm = true;
   if (Object.values(loaded).every(Boolean)) safeRender();
 }, err => showLoadError("shipConfirm", err));
+
+onValue(ref(db,"printtrack-plans"), snap => {
+  plansData = snap.val()||{};
+  loaded.plans = true;
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("printtrack-plans", err));
 
 // Open Orders — populated automatically by a scheduled script; the manual
 // upload button above still works too and will simply be overwritten by the
