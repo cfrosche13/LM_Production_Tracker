@@ -22,7 +22,8 @@ const DRINKWARE_MACHINES = ["Drinkware M1","Drinkware M2"];
 const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware M1":"#a8ddb8","Drinkware M2":"#85c99e" };
 const OEE_IDEAL_CYCLE_DEFAULTS = { "30":94, "30+":42.5, "H5":32.5, "Colex":0, "Wallets":0, "Drinkware M1":0, "Drinkware M2":0 };
 const CHART_HOURS_START = 6;
-const CHART_HOURS_END   = 21; // 6am to 9pm
+const CHART_HOURS_END   = 23; // 6am to end of 11pm hour (covers the 11:30pm shift end)
+const SHIP_CONFIRM_COLOR = "#3a6ea5";
 
 // ── STATE ──
 let machineReports = {};
@@ -409,14 +410,14 @@ function renderChart(td) {
   const activeMachines = MACHINES.filter(m => (machineReports[m]||[]).some(s=>localDateStr(s.time)===td));
   legend.innerHTML = activeMachines.map(m=>
     `<div class="legend-item"><div class="legend-dot" style="background:${MACHINE_COLORS[m]||'#aaa'}"></div>${m}</div>`
-  ).join("");
+  ).join("") + `<div class="legend-item"><div class="legend-dot" style="background:${SHIP_CONFIRM_COLOR}"></div>Shipped</div>`;
 
   if (!activeMachines.length) {
     canvas.style.display = "none"; return;
   }
   canvas.style.display = "block";
 
-  // Build hourly data 6am–9pm
+  // Build hourly data across the full shift window (6am–11pm hour, covers an 11:30pm end)
   const hours = [];
   for (let h=CHART_HOURS_START; h<=CHART_HOURS_END; h++) hours.push(h);
   const hourlyData = {};
@@ -428,14 +429,19 @@ function renderChart(td) {
       if (h>=CHART_HOURS_START && h<=CHART_HOURS_END) hourlyData[m][h] += (s.qtyGood||0);
     });
   });
+  const shippedByHour = (shipConfirmData[td]||{}).byHour || [];
+  const shippedForHour = h => shippedByHour[h] || 0;
 
   const dpr = window.devicePixelRatio || 1;
   const cssWidth  = canvas.parentElement.offsetWidth;
   const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=16, PAD_RIGHT=12;
-  const CHART_H=140;
+  const CHART_H=200;
   const cssH = CHART_H + PAD_TOP + PAD_BOTTOM;
   const BAR_GROUP_W = Math.floor((cssWidth-PAD_LEFT-PAD_RIGHT) / hours.length);
-  const BAR_W = Math.max(3, Math.floor((BAR_GROUP_W-4)/activeMachines.length));
+  const GROUP_GAP  = 10;  // breathing room between hours
+  const INNER_GAP  = 4;   // gap between the printed bar and the shipped bar within an hour
+  const usableW    = Math.max(10, BAR_GROUP_W - GROUP_GAP);
+  const BAR_W      = Math.max(4, Math.floor((usableW - INNER_GAP) / 2));
 
   canvas.width  = cssWidth*dpr;
   canvas.height = cssH*dpr;
@@ -444,7 +450,9 @@ function renderChart(td) {
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,cssWidth,cssH);
 
-  const maxVal = Math.max(1,...activeMachines.flatMap(m=>Object.values(hourlyData[m])));
+  const stackedTotals = hours.map(h => activeMachines.reduce((a,m)=>a+(hourlyData[m][h]||0),0));
+  const shippedTotals = hours.map(h => shippedForHour(h));
+  const maxVal = Math.max(1, ...stackedTotals, ...shippedTotals);
   const yScale = CHART_H/maxVal;
   const gridLines = 5;
 
@@ -458,26 +466,34 @@ function renderChart(td) {
   ctx.setLineDash([]);
 
   hours.forEach((h,gi) => {
-    const groupX = PAD_LEFT + gi*BAR_GROUP_W + 2;
-    activeMachines.forEach((m,mi) => {
-      const val = hourlyData[m][h];
-      const barH = val*yScale;
-      if (barH<1) return;
-      const x = groupX+mi*(BAR_W+1);
-      const y = PAD_TOP+CHART_H-barH;
-      const r = Math.min(3,BAR_W/2,barH);
+    const groupX = PAD_LEFT + gi*BAR_GROUP_W + GROUP_GAP/2;
+    const printedX = groupX;
+    const shippedX = groupX + BAR_W + INNER_GAP;
+
+    // Stacked printed bar — one segment per machine
+    let cumulative = 0;
+    activeMachines.forEach(m => {
+      const val = hourlyData[m][h] || 0;
+      if (val <= 0) return;
+      const yBottom = PAD_TOP + CHART_H - cumulative*yScale;
+      const yTop    = yBottom - val*yScale;
       ctx.fillStyle = MACHINE_COLORS[m]||"#aaa";
-      ctx.beginPath();
-      ctx.moveTo(x,y+r);
-      ctx.arcTo(x,y,x+r,y,r);
-      ctx.arcTo(x+BAR_W,y,x+BAR_W,y+r,r);
-      ctx.lineTo(x+BAR_W,y+barH); ctx.lineTo(x,y+barH); ctx.closePath();
-      ctx.fill();
+      ctx.fillRect(printedX, yTop, BAR_W, yBottom-yTop);
+      cumulative += val;
     });
+
+    // Shipped bar — single color
+    const shipVal = shippedForHour(h);
+    if (shipVal > 0) {
+      const shipH = shipVal*yScale;
+      ctx.fillStyle = SHIP_CONFIRM_COLOR;
+      ctx.fillRect(shippedX, PAD_TOP+CHART_H-shipH, BAR_W, shipH);
+    }
+
     // Hour label
     const label = h>12 ? (h-12)+"pm" : h===12 ? "12pm" : h+"am";
     ctx.fillStyle="#0d6748"; ctx.font="9px Helvetica,Arial,sans-serif"; ctx.textAlign="center";
-    ctx.fillText(label, groupX+BAR_GROUP_W/2-2, PAD_TOP+CHART_H+14);
+    ctx.fillText(label, groupX+usableW/2, PAD_TOP+CHART_H+14);
   });
 }
 
