@@ -32,7 +32,7 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 #last-updated { font-size: 9px; color: #b0b0b0; }
 
 /* ── MAIN CONTENT ── */
-#content { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; overflow: hidden; min-width: 0; }
+#content { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; overflow-y: auto; min-width: 0; }
 
 /* ── SECTION TITLE ── */
 .section-title {

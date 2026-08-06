@@ -297,29 +297,30 @@ function renderWeekRow(gridId, dateStrs) {
       return;
     }
 
-    const machineRows = PLAN_MACHINES.map(m => {
+    const machineTiles = PLAN_MACHINES.map(m => {
       const actual = (machineReports[m]||[]).filter(s=>s.time&&localDateStr(s.time)===dateStr).reduce((a,s)=>a+(s.qtyGood||0),0);
       const plan = machinePlanWholeDay(m, dateStr);
       const pct  = (plan!=null && plan>0) ? Math.round(actual/plan*100) : null;
       const pc   = pct!=null ? oeeColor(pct) : null;
       return `
-        <div style="padding:2px 0;border-bottom:1px solid #f0f0ee;">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;">
-            <span style="font-size:9px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};">${m}</span>
-            <span style="font-size:10px;font-weight:800;color:#232323;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</span>
-          </div>
-          <div style="font-size:8px;text-align:right;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
+        <div style="background:#f7f8f6;border-radius:6px;padding:4px 5px;min-width:0;">
+          <div style="font-size:8px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m}</div>
+          <div style="font-size:10px;font-weight:800;color:#232323;white-space:nowrap;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</div>
+          <div style="font-size:7px;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
         </div>`;
     }).join("");
 
     const shipTotal = (shipConfirmData[dateStr]||{}).total || 0;
+    const shipTile = `
+      <div style="background:#eef3f8;border-radius:6px;padding:4px 5px;min-width:0;">
+        <div style="font-size:8px;font-weight:700;color:${SHIP_CONFIRM_COLOR};">Shipped</div>
+        <div style="font-size:13px;font-weight:800;color:${SHIP_CONFIRM_COLOR};">${shipTotal.toLocaleString()}</div>
+      </div>`;
 
     box.innerHTML = `
       <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;">${DAY_LABELS[i]}</div>
-      ${machineRows}
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding-top:3px;border-top:1px solid #e0e3de;">
-        <span style="font-size:9px;font-weight:700;color:${SHIP_CONFIRM_COLOR};">Shipped</span>
-        <span style="font-size:12px;font-weight:800;color:${SHIP_CONFIRM_COLOR};">${shipTotal.toLocaleString()}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+        ${machineTiles}${shipTile}
       </div>`;
     grid.appendChild(box);
   });
@@ -339,9 +340,11 @@ function renderChart(td) {
   }
   canvas.style.display = "block";
 
-  // Build hourly data across the full shift window (6am–11pm hour, covers an 11:30pm end)
+  // Chart grows through the day — only render up through the current hour so
+  // early-shift bars aren't squeezed to make room for hours that haven't happened yet.
+  const effectiveEnd = Math.min(CHART_HOURS_END, Math.max(CHART_HOURS_START, new Date().getHours()));
   const hours = [];
-  for (let h=CHART_HOURS_START; h<=CHART_HOURS_END; h++) hours.push(h);
+  for (let h=CHART_HOURS_START; h<=effectiveEnd; h++) hours.push(h);
   const hourlyData = {};
   activeMachines.forEach(m => {
     hourlyData[m] = {};
