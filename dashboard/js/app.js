@@ -47,7 +47,7 @@ function oeeColor(pct) {
   if (pct >= 85) return { bar:"#0d6748", text:"#0d6748" };
   if (pct >= 65) return { bar:"#568e7b", text:"#568e7b" };
   if (pct >= 40) return { bar:"#8aaa44", text:"#8aaa44" };
-  return { bar:"#c4447a", text:"#c4447a" };
+  return { bar:"#c4770a", text:"#c4770a" };
 }
 
 function calcOEE(machine) {
@@ -293,9 +293,9 @@ function renderPrevDay() {
   });
 
   [
-    { label:"Printing Dept", good:printGood, bad:printBad, oee:printOEE, color:"#0d6748", bg:"#c3e0b0", border:"#9bc2a1" },
-    { label:"Stamped Dept",  good:stampGood, bad:stampBad, oee:null,     color:"#568e7b", bg:"#d4ecdc", border:"#9bc2a1" },
-    { label:"Windchimes",    good:windGood,  bad:windBad,  oee:null,     color:"#7a9e6e", bg:"#e0eed8", border:"#a8c898" }
+    { label:"Printing Dept", good:printGood, bad:printBad, oee:printOEE, color:"#0d6748", bg:"#ffffff", border:"#e0e3de" },
+    { label:"Stamped Dept",  good:stampGood, bad:stampBad, oee:null,     color:"#568e7b", bg:"#ffffff", border:"#e0e3de" },
+    { label:"Windchimes",    good:windGood,  bad:windBad,  oee:null,     color:"#7a9e6e", bg:"#ffffff", border:"#e0e3de" }
   ].forEach(({label,good,bad,oee,color,bg,border}) => {
     const oc = oee ? oeeColor(oee.oee) : null;
     const cell = document.createElement("div");
@@ -304,13 +304,13 @@ function renderPrevDay() {
       <div>
         <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:${color};margin-bottom:2px;">${label} — Total Good</div>
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:34px;color:${color};line-height:1;">${good.toLocaleString()}</div>
-        ${bad ? `<div style="font-size:10px;color:#c4447a;margin-top:2px;">${bad} bad units</div>` : `<div style="font-size:10px;color:${color};opacity:0.5;margin-top:2px;">0 bad units</div>`}
+        ${bad ? `<div style="font-size:10px;color:#c4770a;margin-top:2px;">${bad} bad units</div>` : `<div style="font-size:10px;color:${color};opacity:0.5;margin-top:2px;">0 bad units</div>`}
       </div>
       ${oee ? `
       <div style="text-align:right;">
         <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:${color};opacity:0.7;margin-bottom:2px;">Dept OEE</div>
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:28px;color:${oc.text};line-height:1;">${oee.oee}%</div>
-        <div style="background:#b8d4a1;border-radius:99px;height:4px;overflow:hidden;margin:4px 0;">
+        <div style="background:#e0e3de;border-radius:99px;height:4px;overflow:hidden;margin:4px 0;">
           <div style="height:100%;width:${oee.oee}%;background:${oc.bar};border-radius:99px;"></div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -333,12 +333,12 @@ function renderPrevDay() {
     const machineColor = MACHINE_COLORS[machine]||"#568e7b";
 
     const card = document.createElement("div");
-    card.style.cssText = "background:#d4ecdc;border:1px solid #9bc2a1;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:5px;min-width:0;";
+    card.style.cssText = "background:#ffffff;border:1px solid #e0e3de;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:5px;min-width:0;";
 
     if (!sessions.length) {
       card.innerHTML = `
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:18px;color:${machineColor};">${machine}</div>
-        <div style="font-size:10px;color:#9bc2a1;text-align:center;padding:6px 0;">No data</div>`;
+        <div style="font-size:10px;color:#9b9b9b;text-align:center;padding:6px 0;">No data</div>`;
       grid.appendChild(card);
       return;
     }
@@ -360,8 +360,8 @@ function renderPrevDay() {
     const ptRows = Object.entries(pieceMap)
       .sort((a,b)=>b[1].good-a[1].good)
       .map(([pt,qty]) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #b8d4a1;">
-          <span style="font-size:9px;color:#0d6748;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pt.split(" · ")[1]||pt}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #e0e3de;">
+          <span style="font-size:9px;color:#232323;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pt.split(" · ")[1]||pt}</span>
           <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;margin-left:6px;">${qty.good}</span>
         </div>`).join("");
 
@@ -370,22 +370,22 @@ function renderPrevDay() {
         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:15px;color:${machineColor};">${machine}</div>
         ${oee ? `<div style="text-align:right;">
           <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:16px;color:${oc.text};">${oee.oee}%</div>
-          <div style="font-size:6px;text-transform:uppercase;letter-spacing:0.08em;color:#568e7b;">OEE</div>
+          <div style="font-size:6px;text-transform:uppercase;letter-spacing:0.08em;color:#6b6b6b;">OEE</div>
         </div>` : ""}
       </div>
-      ${oee ? `<div style="background:#b8d4a1;border-radius:99px;height:4px;overflow:hidden;">
+      ${oee ? `<div style="background:#e0e3de;border-radius:99px;height:4px;overflow:hidden;">
         <div style="height:100%;width:${oee.oee}%;background:${oc.bar};border-radius:99px;"></div>
       </div>` : ""}
-      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.08em;color:#568e7b;border-bottom:1px solid #9bc2a1;padding-bottom:3px;margin-bottom:1px;">Piece Types</div>
+      <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.08em;color:#6b6b6b;border-bottom:1px solid #e0e3de;padding-bottom:3px;margin-bottom:1px;">Piece Types</div>
       <div style="display:flex;flex-direction:column;gap:1px;">${ptRows}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:1px;">
-        <div style="background:#c3e0b0;border-radius:5px;padding:4px 6px;">
-          <div style="font-size:6px;text-transform:uppercase;color:#568e7b;">Good</div>
+        <div style="background:#f7f8f6;border-radius:5px;padding:4px 6px;">
+          <div style="font-size:6px;text-transform:uppercase;color:#6b6b6b;">Good</div>
           <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:#0d6748;">${totalGood.toLocaleString()}</div>
         </div>
-        <div style="background:#c3e0b0;border-radius:5px;padding:4px 6px;">
-          <div style="font-size:6px;text-transform:uppercase;color:#568e7b;">Bad</div>
-          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:${totalBad>0?"#c4447a":"#0d6748"};">${totalBad}</div>
+        <div style="background:#f7f8f6;border-radius:5px;padding:4px 6px;">
+          <div style="font-size:6px;text-transform:uppercase;color:#6b6b6b;">Bad</div>
+          <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;color:${totalBad>0?"#c4770a":"#0d6748"};">${totalBad}</div>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -438,7 +438,7 @@ function renderChart(td) {
   const yScale = CHART_H/maxVal;
   const gridLines = 5;
 
-  ctx.strokeStyle="#b8d4a1"; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.strokeStyle="#e0e3de"; ctx.lineWidth=1; ctx.setLineDash([3,3]);
   for (let i=0;i<=gridLines;i++) {
     const y = PAD_TOP+CHART_H-(i/gridLines)*CHART_H;
     ctx.beginPath(); ctx.moveTo(PAD_LEFT,y); ctx.lineTo(cssWidth-PAD_RIGHT,y); ctx.stroke();
