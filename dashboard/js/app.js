@@ -18,6 +18,7 @@ const db  = getDatabase(app);
 const MACHINES       = ["30","30+","H5","Colex","Wallets","Drinkware M1","Drinkware M2"];
 const PF_MACHINES    = ["30","30+","H5","Drinkware M1","Drinkware M2"];
 const STAMPED_MACHINES = ["Wallets"];
+const DRINKWARE_MACHINES = ["Drinkware M1","Drinkware M2"];
 const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware M1":"#a8ddb8","Drinkware M2":"#85c99e" };
 const OEE_IDEAL_CYCLE_DEFAULTS = { "30":94, "30+":42.5, "H5":32.5, "Colex":0, "Wallets":0, "Drinkware M1":0, "Drinkware M2":0 };
 const CHART_HOURS_START = 6;
@@ -29,7 +30,8 @@ let machineEvents  = {};
 let maintLog       = [];
 let waitLog        = [];
 let targets        = {};
-let loaded         = { sessions: false, maint: false, wait: false, targets: false };
+let shipConfirmData = {};
+let loaded         = { sessions: false, maint: false, wait: false, targets: false, shipConfirm: false };
 
 function fmt(s) {
   return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
@@ -226,7 +228,7 @@ function render() {
   const td = today();
 
   // Header counters
-  let totalPrinted=0, badPrinted=0, totalStamped=0, badStamped=0;
+  let totalPrinted=0, badPrinted=0, totalStamped=0, badStamped=0, totalDrinkware=0, badDrinkware=0;
   PF_MACHINES.forEach(m => {
     (machineReports[m]||[]).filter(s=>localDateStr(s.time)===td).forEach(s=>{
       totalPrinted += s.qtyGood||0; badPrinted += s.qtyBad||0;
@@ -237,10 +239,18 @@ function render() {
       totalStamped += s.qtyGood||0; badStamped += s.qtyBad||0;
     });
   });
+  DRINKWARE_MACHINES.forEach(m => {
+    (machineReports[m]||[]).filter(s=>localDateStr(s.time)===td).forEach(s=>{
+      totalDrinkware += s.qtyGood||0; badDrinkware += s.qtyBad||0;
+    });
+  });
   document.getElementById("h-printed").textContent     = totalPrinted.toLocaleString();
   document.getElementById("h-printed-bad").textContent = badPrinted ? badPrinted+" bad" : "";
   document.getElementById("h-stamped").textContent     = totalStamped.toLocaleString();
   document.getElementById("h-stamped-bad").textContent = badStamped ? badStamped+" bad" : "";
+  document.getElementById("h-drinkware").textContent     = totalDrinkware.toLocaleString();
+  document.getElementById("h-drinkware-bad").textContent = badDrinkware ? badDrinkware+" bad" : "";
+  document.getElementById("h-ship-confirm").textContent  = ((shipConfirmData[td]||{}).total||0).toLocaleString();
   document.getElementById("last-updated").textContent  = "Updated " + new Date().toLocaleTimeString();
   document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
@@ -601,6 +611,12 @@ onValue(ref(db,"targets"), snap => {
   loaded.targets = true;
   if (Object.values(loaded).every(Boolean)) safeRender();
 }, err => showLoadError("targets", err));
+
+onValue(ref(db,"shipConfirm"), snap => {
+  shipConfirmData = snap.val()||{};
+  loaded.shipConfirm = true;
+  if (Object.values(loaded).every(Boolean)) safeRender();
+}, err => showLoadError("shipConfirm", err));
 
 // Auto-refresh chart every 5 minutes
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
