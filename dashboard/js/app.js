@@ -634,6 +634,16 @@ onValue(ref(db,"shipConfirm"), snap => {
   if (Object.values(loaded).every(Boolean)) safeRender();
 }, err => showLoadError("shipConfirm", err));
 
+// Open Orders — populated automatically by a scheduled script; the manual
+// upload button above still works too and will simply be overwritten by the
+// next automated update.
+onValue(ref(db,"dashboardOpenOrders"), snap => {
+  const data = snap.val();
+  if (!data) return;
+  _dashOrders = data;
+  renderOrdersSidebar();
+});
+
 // Auto-refresh chart every 5 minutes
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
 window.addEventListener("resize", () => { if (Object.values(loaded).every(Boolean)) renderChart(today()); });
