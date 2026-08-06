@@ -48,11 +48,16 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── MACHINE CARDS ── */
-#cards-grid {
+.cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 10px;
 }
+.shift-row-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b6b6b;
+  margin: 6px 0 4px;
+}
+.shift-row-label:first-child { margin-top: 0; }
 .machine-card {
   background: #fff; border: 1px solid #e0e3de; border-radius: 10px;
   padding: 7px; display: flex; flex-direction: column; gap: 4px;

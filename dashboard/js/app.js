@@ -216,10 +216,6 @@ function render() {
 }
 
 // ── PLAN LOOKUP ──
-function currentShift(now) {
-  now = now || new Date();
-  return now.getHours() < DAY_SHIFT_END_HOUR ? "day" : "night";
-}
 function shiftHourRange(shift) {
   return shift === "day" ? [DAY_SHIFT_START_HOUR, DAY_SHIFT_END_HOUR] : [DAY_SHIFT_END_HOUR, 24];
 }
@@ -239,12 +235,6 @@ function machinePlanWholeDay(machine, dateStr) {
   const night = machinePlan(machine, dateStr, "night");
   if (day==null && night==null) return null;
   return (day||0) + (night||0);
-}
-function machineActualForShift(machine, dateStr, shift) {
-  const [hStart, hEnd] = shiftHourRange(shift);
-  return (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===dateStr)
-    .filter(s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; })
-    .reduce((a,s)=>a+(s.qtyGood||0),0);
 }
 function leadingPieceType(sessions) {
   const map = {};
@@ -423,18 +413,25 @@ function renderChart(td) {
 }
 
 function renderCards(td) {
-  const grid = document.getElementById("cards-grid");
+  renderShiftCards("cards-grid-day", td, "day");
+  renderShiftCards("cards-grid-night", td, "night");
+}
+
+function renderShiftCards(gridId, td, shift) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
   grid.innerHTML = "";
-  const shift = currentShift();
   const yd = yesterday();
+  const [hStart, hEnd] = shiftHourRange(shift);
+  const inShift = s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; };
 
   PLAN_MACHINES.forEach(machine => {
-    const sessions = (machineReports[machine]||[]).filter(s=>localDateStr(s.time)===td);
+    const sessions = (machineReports[machine]||[]).filter(s=>localDateStr(s.time)===td).filter(inShift);
     const hasMechDown = maintLog.some(e=>(e.machine||"")=== machine && e.type==="Machine Down" && localDateStr(e.time)===td);
     const machineColor = MACHINE_COLORS[machine]||"#aaaaaa";
 
     const plan    = machinePlan(machine, td, shift);
-    const printed = machineActualForShift(machine, td, shift);
+    const printed = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
     const pct     = (plan!=null && plan>0) ? Math.round(printed/plan*100) : null;
     const pc      = pct!=null ? oeeColor(pct) : null;
 
@@ -444,13 +441,13 @@ function renderCards(td) {
     },0);
     const leading = leadingPieceType(sessions);
 
-    const ySessions = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd);
+    const ySessions = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).filter(inShift);
     const yTotal = ySessions.reduce((a,s)=>a+(s.qtyGood||0),0);
-    const yPlan  = machinePlanWholeDay(machine, yd);
+    const yPlan  = machinePlan(machine, yd, shift);
     const yPct   = (yPlan!=null && yPlan>0) ? Math.round(yTotal/yPlan*100) : null;
     const yPc    = yPct!=null ? oeeColor(yPct) : null;
 
-    if (!sessions.length && plan==null && !yTotal) return; // nothing to show
+    if (!sessions.length && plan==null && !yTotal) return; // nothing to show for this shift
 
     const card = document.createElement("div");
     card.className = "machine-card" + (hasMechDown?" has-down":"");
@@ -458,7 +455,6 @@ function renderCards(td) {
     card.innerHTML = `
       <div class="card-header">
         <div class="card-machine-name" style="color:${machineColor};">${machine}</div>
-        <div class="card-oee-label">${shift==="day"?"Day Shift":"Night Shift"}</div>
       </div>
 
       <div class="oee-bar-wrap">
