@@ -25,6 +25,7 @@ const DAY_SHIFT_END_HOUR   = 15;  // 3pm — day/night cutoff
 const MACHINE_COLORS = { "30":"#0d6748","30+":"#1a7a54","H5":"#2e9e6e","Colex":"#52b888","Wallets":"#7aca9e","Drinkware M1":"#a8ddb8","Drinkware M2":"#85c99e" };
 const CHART_HOURS_START = 6;
 const CHART_HOURS_END   = 23; // 6am to end of 11pm hour (covers the 11:30pm shift end)
+const CHART_WINDOW_HOURS = 8; // rolling window width shown on the chart
 const SHIP_CONFIRM_COLOR = "#3a6ea5";
 
 // ── STATE ──
@@ -332,11 +333,14 @@ function renderChart(td) {
   }
   canvas.style.display = "block";
 
-  // Chart grows through the day — only render up through the current hour so
-  // early-shift bars aren't squeezed to make room for hours that haven't happened yet.
+  // Rolling window: current hour at the right edge, up to 7 hours back --
+  // never extends earlier than CHART_HOURS_START (6am), since 12am-6am is
+  // never a working window. Early in the day this just shows fewer columns
+  // (e.g. only 6-7am at 7am) rather than padding with dead hours.
   const effectiveEnd = Math.min(CHART_HOURS_END, Math.max(CHART_HOURS_START, new Date().getHours()));
+  const windowStart = Math.max(CHART_HOURS_START, effectiveEnd - (CHART_WINDOW_HOURS - 1));
   const hours = [];
-  for (let h=CHART_HOURS_START; h<=effectiveEnd; h++) hours.push(h);
+  for (let h=windowStart; h<=effectiveEnd; h++) hours.push(h);
   const hourlyData = {};
   activeMachines.forEach(m => {
     hourlyData[m] = {};
