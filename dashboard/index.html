@@ -84,34 +84,31 @@
 <!-- MAIN CONTENT -->
 <div id="content">
 
-  <!-- VIEW 1: TODAY -->
+  <!-- HOURLY CHART — pinned above both rotating views -->
+  <div id="chart-section">
+    <div class="section-title">Production by Hour — Today</div>
+    <div id="chart-legend"></div>
+    <canvas id="hourly-chart" style="width:100%;display:block;"></canvas>
+  </div>
+
+  <!-- VIEW 1: MACHINE SUMMARY -->
   <div class="dash-view active" id="view-today">
-
-    <!-- HOURLY CHART -->
-    <div id="chart-section">
-      <div class="section-title">Production by Hour — Today</div>
-      <div id="chart-legend"></div>
-      <canvas id="hourly-chart" style="width:100%;display:block;"></canvas>
-    </div>
-
-    <!-- MACHINE CARDS -->
-    <div>
-      <div class="section-title">Machine Summary — Today</div>
-      <div class="shift-row-label">Day Shift · 7am–3pm</div>
-      <div id="cards-grid-day" class="cards-grid"></div>
-      <div class="shift-row-label">Night Shift · 3pm–11:30pm</div>
-      <div id="cards-grid-night" class="cards-grid"></div>
-    </div>
-
+    <div class="section-title">Machine Summary — Today</div>
+    <div class="shift-row-label">Day Shift · 7am–3pm</div>
+    <div id="cards-grid-day" class="cards-grid"></div>
+    <div class="shift-row-label">Night Shift · 3pm–11:30pm</div>
+    <div id="cards-grid-night" class="cards-grid"></div>
   </div>
 
   <!-- VIEW 2: WEEKLY PERFORMANCE -->
   <div class="dash-view" id="view-weekly">
     <div class="section-title">Weekly Performance</div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">This Week</div>
-    <div id="week-this-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;flex:1;min-height:0;"></div>
+    <div id="week-this-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;flex:1;min-height:0;"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">Last Week</div>
-    <div id="week-last-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-height:0;"></div>
+    <div id="week-last-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;flex:1;min-height:0;"></div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">Two Weeks Ago</div>
+    <div id="week-prior-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-height:0;"></div>
   </div>
 
 </div>

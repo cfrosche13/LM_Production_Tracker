@@ -265,8 +265,10 @@ function weekDates(monday) {
 function renderWeeklySummary() {
   const thisMonday = mondayOf(new Date());
   const lastMonday = new Date(thisMonday); lastMonday.setDate(lastMonday.getDate()-7);
+  const priorMonday = new Date(thisMonday); priorMonday.setDate(priorMonday.getDate()-14);
   renderWeekRow("week-this-grid", weekDates(thisMonday));
   renderWeekRow("week-last-grid", weekDates(lastMonday));
+  renderWeekRow("week-prior-grid", weekDates(priorMonday));
 }
 
 function renderWeekRow(gridId, dateStrs) {
@@ -277,12 +279,12 @@ function renderWeekRow(gridId, dateStrs) {
 
   dateStrs.forEach((dateStr, i) => {
     const box = document.createElement("div");
-    box.style.cssText = "background:#ffffff;border:1px solid #e0e3de;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0;flex:1;";
+    box.style.cssText = "background:#ffffff;border:1px solid #e0e3de;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;";
 
     if (dateStr > todayStr) {
       box.innerHTML = `
-        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:18px;color:#9b9b9b;">${DAY_LABELS[i]}</div>
-        <div style="font-size:12px;color:#c8c8c8;text-align:center;padding:20px 0;">—</div>`;
+        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:15px;color:#9b9b9b;">${DAY_LABELS[i]}</div>
+        <div style="font-size:11px;color:#c8c8c8;text-align:center;padding:14px 0;">—</div>`;
       grid.appendChild(box);
       return;
     }
@@ -293,23 +295,23 @@ function renderWeekRow(gridId, dateStrs) {
       const pct  = (plan!=null && plan>0) ? Math.round(actual/plan*100) : null;
       const pc   = pct!=null ? oeeColor(pct) : null;
       return `
-        <div style="background:#f7f8f6;border-radius:8px;padding:8px 9px;min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m}</div>
-          <div style="font-size:16px;font-weight:800;color:#232323;white-space:nowrap;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</div>
-          <div style="font-size:11px;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
+        <div style="background:#f7f8f6;border-radius:6px;padding:5px 6px;min-width:0;">
+          <div style="font-size:10px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m}</div>
+          <div style="font-size:13px;font-weight:800;color:#232323;white-space:nowrap;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</div>
+          <div style="font-size:9px;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
         </div>`;
     }).join("");
 
     const shipTotal = (shipConfirmData[dateStr]||{}).total || 0;
     const shipTile = `
-      <div style="background:#eef3f8;border-radius:8px;padding:8px 9px;min-width:0;">
-        <div style="font-size:12px;font-weight:700;color:${SHIP_CONFIRM_COLOR};">Shipped</div>
-        <div style="font-size:20px;font-weight:800;color:${SHIP_CONFIRM_COLOR};">${shipTotal.toLocaleString()}</div>
+      <div style="background:#eef3f8;border-radius:6px;padding:5px 6px;min-width:0;">
+        <div style="font-size:10px;font-weight:700;color:${SHIP_CONFIRM_COLOR};">Shipped</div>
+        <div style="font-size:16px;font-weight:800;color:${SHIP_CONFIRM_COLOR};">${shipTotal.toLocaleString()}</div>
       </div>`;
 
     box.innerHTML = `
-      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:18px;color:#0d6748;">${DAY_LABELS[i]}</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1;">
+      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:15px;color:#0d6748;">${DAY_LABELS[i]}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;">
         ${machineTiles}${shipTile}
       </div>`;
     grid.appendChild(box);
@@ -577,7 +579,7 @@ onValue(ref(db,"dashboardOpenOrders"), snap => {
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
 window.addEventListener("resize", () => { if (Object.values(loaded).every(Boolean)) renderChart(today()); });
 
-// ── VIEW ROTATION — cycles the TV display between screens every 20s ──
+// ── VIEW ROTATION — the chart stays fixed; this cycles the section below it every 20s ──
 const DASH_VIEWS = ["view-today", "view-weekly"];
 let _dashViewIndex = 0;
 function rotateDashView() {
@@ -586,11 +588,5 @@ function rotateDashView() {
   _dashViewIndex = (_dashViewIndex + 1) % DASH_VIEWS.length;
   const next = document.getElementById(DASH_VIEWS[_dashViewIndex]);
   if (next) next.classList.add("active");
-  // The chart canvas reports zero size while its view is hidden (display:none),
-  // so redraw it once its view becomes visible again rather than relying on
-  // whatever stale measurement happened while it was off-screen.
-  if (DASH_VIEWS[_dashViewIndex] === "view-today" && Object.values(loaded).every(Boolean)) {
-    renderChart(today());
-  }
 }
 setInterval(rotateDashView, 20000);

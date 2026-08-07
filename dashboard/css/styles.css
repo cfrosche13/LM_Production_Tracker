@@ -32,11 +32,11 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 #last-updated { font-size: 9px; color: #b0b0b0; }
 
 /* ── MAIN CONTENT ── */
-#content { flex: 1; display: flex; flex-direction: column; padding: 14px 20px; overflow-y: auto; min-width: 0; min-height: 0; }
+#content { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 14px 20px; overflow-y: auto; min-width: 0; min-height: 0; }
 
-/* ── ROTATING VIEWS ── */
-.dash-view { display: none; flex: 1; flex-direction: column; gap: 14px; min-height: 0; }
-.dash-view.active { display: flex; }
+/* ── ROTATING VIEWS — chart above stays fixed; this part cycles every 20s ── */
+.dash-view { display: none; flex-direction: column; gap: 14px; min-height: 0; }
+.dash-view.active { display: flex; flex: 1; }
 
 /* ── SECTION TITLE ── */
 .section-title {
@@ -46,7 +46,7 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 }
 
 /* ── CHART ── */
-#chart-section { background: #fff; border: 1px solid #e0e3de; border-radius: 10px; padding: 14px 20px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#chart-section { background: #fff; border: 1px solid #e0e3de; border-radius: 10px; padding: 14px 20px; display: flex; flex-direction: column; flex: 0 0 34%; min-height: 0; }
 #chart-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
 .legend-item { display: flex; align-items: center; gap: 7px; font-size: 14px; color: #232323; }
 .legend-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
