@@ -84,11 +84,17 @@
 <!-- MAIN CONTENT -->
 <div id="content">
 
-  <!-- HOURLY CHART — pinned above both rotating views -->
+  <!-- HOURLY CHART — pinned above all rotating views -->
   <div id="chart-section">
     <div class="section-title">Production by Hour — Today</div>
     <div id="chart-legend"></div>
     <canvas id="hourly-chart" style="width:100%;display:block;"></canvas>
+  </div>
+
+  <!-- NEEDS ATTENTION — pinned below the chart, shown on all 3 rotating views -->
+  <div class="exceptions-banner" id="exceptions-banner">
+    <div class="exceptions-banner-title" id="exceptions-banner-title">Needs Attention</div>
+    <div class="exceptions-chips" id="exceptions-chips"></div>
   </div>
 
   <!-- VIEW 1: MACHINE SUMMARY -->
@@ -106,9 +112,103 @@
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">This Week</div>
     <div id="week-this-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;flex:1;min-height:0;"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">Last Week</div>
-    <div id="week-last-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;flex:1;min-height:0;"></div>
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#6b6b6b;margin-bottom:6px;">Two Weeks Ago</div>
-    <div id="week-prior-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-height:0;"></div>
+    <div id="week-last-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1;min-height:0;"></div>
+  </div>
+
+  <!-- VIEW 3: SHIPPING STATUS -->
+  <div class="dash-view" id="view-shipping">
+    <div class="section-title">Shipping Status — <span id="ship-shift-title">Shift</span></div>
+
+    <div class="shift-row-label" id="ship-cur-label">This Shift</div>
+    <div class="cards-grid" style="grid-template-columns:repeat(4,1fr);">
+
+      <div class="machine-card" style="border-left:4px solid #0d6748;">
+        <div class="card-header">
+          <div class="card-machine-name" style="color:#0d6748;">Collated</div>
+          <div class="card-oee-block">
+            <div class="card-oee-pct" id="pct-collation">—</div>
+            <div class="card-oee-label">of input</div>
+          </div>
+        </div>
+        <div class="oee-bar-wrap"><div class="oee-bar" id="bar-collation"></div></div>
+        <div class="apq-row">
+          <div class="apq-cell"><div class="apq-label">Fed In</div><div class="apq-val" style="color:#568e7b;" id="input-collation">—</div></div>
+          <div class="apq-cell"><div class="apq-label">Completed</div><div class="apq-val" style="color:#0d6748;" id="ship-cur-collation">—</div></div>
+          <div class="apq-cell"><div class="apq-label">% Complete</div><div class="apq-val" id="pctcell-collation">—</div></div>
+        </div>
+        <div class="top-materials" id="materials-collation"></div>
+        <div class="stats-row">
+          <div class="stat-cell"><div class="stat-label">Yesterday, Same Shift</div><div class="stat-val" id="ship-prev-collation">—</div></div>
+          <div class="stat-cell"><div class="stat-label">5-Day Avg, Same Shift</div><div class="stat-val" id="avg5-collation">—</div></div>
+        </div>
+      </div>
+
+      <div class="machine-card" style="border-left:4px solid #0d6748;">
+        <div class="card-header">
+          <div class="card-machine-name" style="color:#0d6748;">Assembled</div>
+          <div class="card-oee-block">
+            <div class="card-oee-pct" id="pct-assembly">—</div>
+            <div class="card-oee-label">of input</div>
+          </div>
+        </div>
+        <div class="oee-bar-wrap"><div class="oee-bar" id="bar-assembly"></div></div>
+        <div class="apq-row">
+          <div class="apq-cell"><div class="apq-label">Fed In</div><div class="apq-val" style="color:#568e7b;" id="input-assembly">—</div></div>
+          <div class="apq-cell"><div class="apq-label">Completed</div><div class="apq-val" style="color:#0d6748;" id="ship-cur-assembly">—</div></div>
+          <div class="apq-cell"><div class="apq-label">% Complete</div><div class="apq-val" id="pctcell-assembly">—</div></div>
+        </div>
+        <div class="top-materials" id="materials-assembly"></div>
+        <div class="stats-row">
+          <div class="stat-cell"><div class="stat-label">Yesterday, Same Shift</div><div class="stat-val" id="ship-prev-assembly">—</div></div>
+          <div class="stat-cell"><div class="stat-label">5-Day Avg, Same Shift</div><div class="stat-val" id="avg5-assembly">—</div></div>
+        </div>
+      </div>
+
+      <div class="machine-card" style="border-left:4px solid #0d6748;">
+        <div class="card-header">
+          <div class="card-machine-name" style="color:#0d6748;">Sorted</div>
+          <div class="card-oee-block">
+            <div class="card-oee-pct" id="pct-sorting">—</div>
+            <div class="card-oee-label">of input</div>
+          </div>
+        </div>
+        <div class="oee-bar-wrap"><div class="oee-bar" id="bar-sorting"></div></div>
+        <div class="apq-row">
+          <div class="apq-cell"><div class="apq-label">Fed In</div><div class="apq-val" style="color:#568e7b;" id="input-sorting">—</div></div>
+          <div class="apq-cell"><div class="apq-label">Completed</div><div class="apq-val" style="color:#0d6748;" id="ship-cur-sorting">—</div></div>
+          <div class="apq-cell"><div class="apq-label">% Complete</div><div class="apq-val" id="pctcell-sorting">—</div></div>
+        </div>
+        <div class="top-materials" id="materials-sorting"></div>
+        <div class="stats-row">
+          <div class="stat-cell"><div class="stat-label">Yesterday, Same Shift</div><div class="stat-val" id="ship-prev-sorting">—</div></div>
+          <div class="stat-cell"><div class="stat-label">5-Day Avg, Same Shift</div><div class="stat-val" id="avg5-sorting">—</div></div>
+        </div>
+      </div>
+
+      <div class="machine-card" style="border-left:4px solid #3a6ea5;">
+        <div class="card-header">
+          <div class="card-machine-name" style="color:#3a6ea5;">Ready to Ship</div>
+          <div class="card-oee-block">
+            <div class="card-oee-pct" id="pct-readyToShip">—</div>
+            <div class="card-oee-label">of input</div>
+          </div>
+        </div>
+        <div class="oee-bar-wrap"><div class="oee-bar" id="bar-readyToShip"></div></div>
+        <div class="apq-row">
+          <div class="apq-cell"><div class="apq-label">Fed In</div><div class="apq-val" style="color:#568e7b;" id="input-readyToShip">—</div></div>
+          <div class="apq-cell"><div class="apq-label">Completed</div><div class="apq-val" style="color:#3a6ea5;" id="ship-cur-ready">—</div></div>
+          <div class="apq-cell"><div class="apq-label">% Complete</div><div class="apq-val" id="pctcell-readyToShip">—</div></div>
+        </div>
+        <div class="top-materials" id="materials-readyToShip"></div>
+        <div class="stats-row">
+          <div class="stat-cell"><div class="stat-label">Yesterday, Same Shift</div><div class="stat-val" id="ship-prev-ready">—</div></div>
+          <div class="stat-cell"><div class="stat-label">5-Day Avg, Same Shift</div><div class="stat-val" id="avg5-readyToShip">—</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="shipping-updated"></div>
   </div>
 
 </div>

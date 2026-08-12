@@ -27,6 +27,15 @@ const CHART_HOURS_START = 6;
 const CHART_HOURS_END   = 23; // 6am to end of 11pm hour (covers the 11:30pm shift end)
 const CHART_WINDOW_HOURS = 8; // rolling window width shown on the chart
 const SHIP_CONFIRM_COLOR = "#3a6ea5";
+// Shipping-pipeline stack on the hourly chart — Shipped anchors the bottom,
+// light-to-dark fading upward through the earlier stages
+const STATION_STACK = [
+  { key: "shipped",     label: "Shipped",     color: SHIP_CONFIRM_COLOR },
+  { key: "readyToShip", label: "Ready to Ship", color: "#5a8ebd" },
+  { key: "sorting",     label: "Sorted",      color: "#82abd0" },
+  { key: "assembly",    label: "Assembled",   color: "#aecbe3" },
+  { key: "collation",   label: "Collated",    color: "#d6e6f2" },
+];
 
 // ── STATE ──
 let machineReports = {};
@@ -36,6 +45,7 @@ let waitLog        = [];
 let targets        = {};
 let shipConfirmData = {};
 let plansData = {};
+let shippingStatus = null;
 let loaded         = { sessions: false, maint: false, wait: false, targets: false, shipConfirm: false, plans: false };
 
 function fmt(s) {
@@ -213,6 +223,7 @@ function render() {
   renderChart(td);
   renderCards(td);
   renderWeeklySummary();
+  if (shippingStatus) renderShipping();
   document.getElementById("loading").style.display = "none";
 }
 
@@ -266,10 +277,8 @@ function weekDates(monday) {
 function renderWeeklySummary() {
   const thisMonday = mondayOf(new Date());
   const lastMonday = new Date(thisMonday); lastMonday.setDate(lastMonday.getDate()-7);
-  const priorMonday = new Date(thisMonday); priorMonday.setDate(priorMonday.getDate()-14);
   renderWeekRow("week-this-grid", weekDates(thisMonday));
   renderWeekRow("week-last-grid", weekDates(lastMonday));
-  renderWeekRow("week-prior-grid", weekDates(priorMonday));
 }
 
 function renderWeekRow(gridId, dateStrs) {
@@ -326,7 +335,9 @@ function renderChart(td) {
   const activeMachines = MACHINES.filter(m => (machineReports[m]||[]).some(s=>localDateStr(s.time)===td));
   legend.innerHTML = activeMachines.map(m=>
     `<div class="legend-item"><div class="legend-dot" style="background:${MACHINE_COLORS[m]||'#aaa'}"></div>${m}</div>`
-  ).join("") + `<div class="legend-item"><div class="legend-dot" style="background:${SHIP_CONFIRM_COLOR}"></div>Shipped</div>`;
+  ).join("") + STATION_STACK.map(s=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}</div>`
+  ).join("");
 
   if (!activeMachines.length) {
     canvas.style.display = "none"; return;
@@ -351,7 +362,9 @@ function renderChart(td) {
     });
   });
   const shippedByHour = (shipConfirmData[td]||{}).byHour || [];
-  const shippedForHour = h => shippedByHour[h] || 0;
+  const stationByHour = key => (((shippingStatus||{})[key]||{}).byHour) || {};
+  // Per-station hourly value for a given stack segment key ("shipped" reuses shipConfirmData)
+  const stackForHour = (key, h) => key === "shipped" ? (shippedByHour[h]||0) : (stationByHour(key)[h]||0);
 
   const dpr = window.devicePixelRatio || 1;
   const cssWidth  = canvas.parentElement.offsetWidth;
@@ -373,7 +386,7 @@ function renderChart(td) {
   ctx.clearRect(0,0,cssWidth,cssH);
 
   const stackedTotals = hours.map(h => activeMachines.reduce((a,m)=>a+(hourlyData[m][h]||0),0));
-  const shippedTotals = hours.map(h => shippedForHour(h));
+  const shippedTotals = hours.map(h => STATION_STACK.reduce((a,s)=>a+stackForHour(s.key,h),0));
   const maxVal = Math.max(1, ...stackedTotals, ...shippedTotals);
   const yScale = CHART_H/maxVal;
   const gridLines = 5;
@@ -404,13 +417,17 @@ function renderChart(td) {
       cumulative += val;
     });
 
-    // Shipped bar — single color
-    const shipVal = shippedForHour(h);
-    if (shipVal > 0) {
-      const shipH = shipVal*yScale;
-      ctx.fillStyle = SHIP_CONFIRM_COLOR;
-      ctx.fillRect(shippedX, PAD_TOP+CHART_H-shipH, BAR_W, shipH);
-    }
+    // Shipping pipeline bar — stacked, light-to-dark blue, Collated at bottom up to Shipped
+    let shipCumulative = 0;
+    STATION_STACK.forEach(s => {
+      const val = stackForHour(s.key, h);
+      if (val <= 0) return;
+      const yBottom = PAD_TOP + CHART_H - shipCumulative*yScale;
+      const yTop    = yBottom - val*yScale;
+      ctx.fillStyle = s.color;
+      ctx.fillRect(shippedX, yTop, BAR_W, yBottom-yTop);
+      shipCumulative += val;
+    });
 
     // Hour label
     const label = h>12 ? (h-12)+"pm" : h===12 ? "12pm" : h+"am";
@@ -511,6 +528,152 @@ function renderShiftCards(gridId, td, shift) {
   });
 }
 
+// Pieces printed this shift across the print-floor machines -- used as the
+// "input" side of the Collation completion bar (Collation's own output feeds
+// Assembly, Assembly's feeds Sorting, Sorting's feeds Ready to Ship).
+function printedThisShift(shift) {
+  const td = today();
+  const [hStart, hEnd] = shiftHourRange(shift);
+  let total = 0;
+  PF_MACHINES.forEach(m => {
+    (machineReports[m]||[]).forEach(s => {
+      if (!s.time || localDateStr(s.time) !== td) return;
+      const h = new Date(s.time).getHours();
+      if (h >= hStart && h < hEnd) total += (s.qtyGood||0);
+    });
+  });
+  return total;
+}
+
+function renderCompletionBar(id, input, output) {
+  const barEl    = document.getElementById("bar-"+id);
+  const pctEl    = document.getElementById("pct-"+id);
+  const pctCell  = document.getElementById("pctcell-"+id);
+  const inputEl  = document.getElementById("input-"+id);
+  if (!barEl) return;
+  if (inputEl) inputEl.textContent = (input||0).toLocaleString();
+
+  if (!input) {
+    barEl.style.width = "0%"; barEl.style.background = "#e0e3de";
+    if (pctEl)   { pctEl.textContent = "—"; pctEl.style.color = "#9b9b9b"; }
+    if (pctCell) { pctCell.textContent = "no input yet"; pctCell.style.color = "#9b9b9b"; }
+    return;
+  }
+  const pct = Math.round((output/input)*100);
+  const pc  = oeeColor(pct);
+  barEl.style.width = Math.min(100,pct)+"%";
+  barEl.style.background = pc.bar;
+  if (pctEl)   { pctEl.textContent = pct+"%"; pctEl.style.color = pc.text; }
+  if (pctCell) { pctCell.textContent = pct+"%"; pctCell.style.color = pc.text; }
+}
+
+function renderAvg5Cell(id, avg) {
+  const el = document.getElementById("avg5-"+id);
+  if (el) el.textContent = (avg||0).toLocaleString();
+}
+
+function titleCaseType(s) {
+  return (s||"").replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderExceptions() {
+  if (!shippingStatus) return;
+  const exc = shippingStatus.exceptions;
+  const banner  = document.getElementById("exceptions-banner");
+  const titleEl = document.getElementById("exceptions-banner-title");
+  const chipsEl = document.getElementById("exceptions-chips");
+  if (!banner || !titleEl || !chipsEl || !exc) return;
+
+  if (!exc.count) {
+    banner.classList.add("clear");
+    titleEl.textContent = "✓ No Exceptions Flagged Today";
+    chipsEl.innerHTML = "";
+    return;
+  }
+
+  banner.classList.remove("clear");
+  titleEl.textContent = "⚠ Needs Attention — " + exc.count + " Flagged Today (" + exc.qty + " pcs)";
+  chipsEl.innerHTML = "";
+  (exc.items||[]).forEach(it => {
+    const chip = document.createElement("div");
+    chip.className = "exception-chip";
+    const pjSpan = document.createElement("span");
+    pjSpan.className = "pj";
+    pjSpan.textContent = it.pjCode || "No PJ yet";
+    chip.appendChild(pjSpan);
+    chip.appendChild(document.createTextNode(titleCaseType(it.type) + " (" + it.qty + ")"));
+    chipsEl.appendChild(chip);
+  });
+}
+
+function renderTopMaterials(stationKey, station) {
+  const el = document.getElementById("materials-"+stationKey);
+  if (!el) return;
+  el.innerHTML = "";
+  ((station&&station.topMaterials)||[]).forEach(mat => {
+    const row = document.createElement("div");
+    row.className = "top-materials-row";
+    const nameEl = document.createElement("span");
+    nameEl.className = "top-materials-name";
+    nameEl.textContent = mat.name;
+    const qtyEl = document.createElement("span");
+    qtyEl.className = "top-materials-qty";
+    qtyEl.textContent = mat.qty.toLocaleString();
+    row.appendChild(nameEl);
+    row.appendChild(qtyEl);
+    el.appendChild(row);
+  });
+}
+
+function renderShipping() {
+  if (!shippingStatus) return;
+  renderExceptions();
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (val||0).toLocaleString(); };
+
+  // Today's top piece types per station (whole day, not shift-scoped)
+  renderTopMaterials("collation",   shippingStatus.collation);
+  renderTopMaterials("assembly",    shippingStatus.assembly);
+  renderTopMaterials("sorting",     shippingStatus.sorting);
+  renderTopMaterials("readyToShip", shippingStatus.readyToShip);
+
+  const sb = shippingStatus.shiftBreakdown;
+  if (sb) {
+    const shiftName = sb.shift === "day" ? "Day Shift" : "Night Shift";
+    const titleEl = document.getElementById("ship-shift-title");
+    if (titleEl) titleEl.textContent = shiftName;
+    const curLabelEl = document.getElementById("ship-cur-label");
+    if (curLabelEl) curLabelEl.textContent = shiftName + " · Today vs. Yesterday";
+
+    setVal("ship-cur-collation", sb.current.collation);
+    setVal("ship-cur-assembly",  sb.current.assembly);
+    setVal("ship-cur-sorting",   sb.current.sorting);
+    setVal("ship-cur-ready",     sb.current.readyToShip);
+
+    setVal("ship-prev-collation", sb.previous.collation);
+    setVal("ship-prev-assembly",  sb.previous.assembly);
+    setVal("ship-prev-sorting",   sb.previous.sorting);
+    setVal("ship-prev-ready",     sb.previous.readyToShip);
+
+    const printedShift = printedThisShift(sb.shift);
+    renderCompletionBar("collation",   printedShift,        sb.current.collation);
+    renderCompletionBar("assembly",    sb.current.collation, sb.current.assembly);
+    renderCompletionBar("sorting",     sb.current.assembly,  sb.current.sorting);
+    renderCompletionBar("readyToShip", sb.current.sorting,   sb.current.readyToShip);
+
+    if (sb.avg5) {
+      renderAvg5Cell("collation",   sb.avg5.collation);
+      renderAvg5Cell("assembly",    sb.avg5.assembly);
+      renderAvg5Cell("sorting",     sb.avg5.sorting);
+      renderAvg5Cell("readyToShip", sb.avg5.readyToShip);
+    }
+  }
+
+  const updatedEl = document.getElementById("shipping-updated");
+  if (updatedEl && shippingStatus.updatedAt) {
+    updatedEl.textContent = "Updated " + new Date(shippingStatus.updatedAt).toLocaleTimeString();
+  }
+}
+
 // ── FIREBASE LISTENERS ──
 function showLoadError(path, err) {
   console.error("Dashboard: failed to load '"+path+"' —", err);
@@ -579,12 +742,23 @@ onValue(ref(db,"dashboardOpenOrders"), snap => {
   renderOrdersSidebar();
 });
 
+// Shipping status — live queue-depth snapshot from the coworker's Postgres
+// database, populated automatically by a scheduled script (shipping_status_sync.py)
+onValue(ref(db,"shippingStatus"), snap => {
+  shippingStatus = snap.val();
+  renderShipping();
+  // The hourly chart's shipping-pipeline stack depends on this data too, but
+  // this listener is independent of the main "loaded" gate, so the chart
+  // needs an explicit redraw here rather than waiting on the next render().
+  if (Object.values(loaded).every(Boolean)) renderChart(today());
+}, err => console.error("shippingStatus load failed:", err));
+
 // Auto-refresh chart every 5 minutes
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
 window.addEventListener("resize", () => { if (Object.values(loaded).every(Boolean)) renderChart(today()); });
 
 // ── VIEW ROTATION — the chart stays fixed; this cycles the section below it every 20s ──
-const DASH_VIEWS = ["view-today", "view-weekly"];
+const DASH_VIEWS = ["view-today", "view-weekly", "view-shipping"];
 let _dashViewIndex = 0;
 function rotateDashView() {
   const current = document.getElementById(DASH_VIEWS[_dashViewIndex]);
