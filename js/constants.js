@@ -222,6 +222,51 @@ const CLEANING_CHECKLISTS = {
       "Print check nozzle chart and log date/time/operator",
       "Maintain heads and power off printer",
       "Switch manual 3-way valve to OFF"
+    ],
+    "20 Hour": [
+      "Clean the UV emitting window",
+      "Clean the UV light sensor",
+      "Clean the UV light shield sensor"
+    ],
+    "Weekly": [
+      "Clean the wiping tray",
+      "Clean the capping tray",
+      "Clean the baffle",
+      "Clean the media height sensors",
+      "Clean the components for motion (carriage beam, linear guides, jig/coupler, clamp shaft, supporting wheels) — apply calcium grease to linear guide after cleaning",
+      "Clean the doors and covers",
+      "Check the filter regulator, drain any water",
+      "Clean the ink mesh (soak in alcohol 30+ min, rinse until clear, dry before reinstalling)",
+      "Wipe down the ink mist fans and fan covers"
+    ],
+    "Biweekly": [
+      "Lubricate the lead screw with lithium grease #2",
+      "Check ink tubes and motor cables on the carriage for wear/tangling"
+    ],
+    "Monthly": [
+      "Replace the sponge sheet of the UV lamp (ECLE400122)"
+    ],
+    "Quarterly": [
+      "Replace the wiping blades (MCAS000215)",
+      "Replace the ink overflow filter (ECIK000155)",
+      "Replace the disk filter (ECIK000051)",
+      "Replace the quick connectors on the waste tube (ECCO001031/ECCO001089)"
+    ],
+    "Semi-Annual": [
+      "Replace the ink pump (ECIK000024-A)",
+      "Replace the needle filter (ECIK000254)",
+      "Replace the manual 3-way valve (ECCO001055)",
+      "Replace the one-way valve in the flush channel — above the needle filter (ECCO000283)",
+      "Replace the one-way valve in the flush channel — above the manual 3-way valve (ECCO000283)",
+      "Replace the ink mist fan (ECFN000106-A)",
+      "Replace the sealing rubber strip (MCOT000516)"
+    ],
+    "Annual": [
+      "Replace the air pump (ECIK000026-A)",
+      "Replace the air disk filter — on the PP pump (ECIK000021)",
+      "Replace the air disk filter — on the main ink tank (ECIK000021)",
+      "Replace the one-way valve in the ink channel (ECCO001029-A)",
+      "Replace the ink tube assembly — contact technical support (MBIA000074-A / MBIA000073-A)"
     ]
   },
   "Drinkware M2": {
@@ -251,8 +296,61 @@ const CLEANING_CHECKLISTS = {
       "Print check nozzle chart and log date/time/operator",
       "Maintain heads and power off printer",
       "Switch manual 3-way valve to OFF"
+    ],
+    "20 Hour": [
+      "Clean the UV emitting window",
+      "Clean the UV light sensor",
+      "Clean the UV light shield sensor"
+    ],
+    "Weekly": [
+      "Clean the wiping tray",
+      "Clean the capping tray",
+      "Clean the baffle",
+      "Clean the media height sensors",
+      "Clean the components for motion (carriage beam, linear guides, jig/coupler, clamp shaft, supporting wheels) — apply calcium grease to linear guide after cleaning",
+      "Clean the doors and covers",
+      "Check the filter regulator, drain any water",
+      "Clean the ink mesh (soak in alcohol 30+ min, rinse until clear, dry before reinstalling)",
+      "Wipe down the ink mist fans and fan covers"
+    ],
+    "Biweekly": [
+      "Lubricate the lead screw with lithium grease #2",
+      "Check ink tubes and motor cables on the carriage for wear/tangling"
+    ],
+    "Monthly": [
+      "Replace the sponge sheet of the UV lamp (ECLE400122)"
+    ],
+    "Quarterly": [
+      "Replace the wiping blades (MCAS000215)",
+      "Replace the ink overflow filter (ECIK000155)",
+      "Replace the disk filter (ECIK000051)",
+      "Replace the quick connectors on the waste tube (ECCO001031/ECCO001089)"
+    ],
+    "Semi-Annual": [
+      "Replace the ink pump (ECIK000024-A)",
+      "Replace the needle filter (ECIK000254)",
+      "Replace the manual 3-way valve (ECCO001055)",
+      "Replace the one-way valve in the flush channel — above the needle filter (ECCO000283)",
+      "Replace the one-way valve in the flush channel — above the manual 3-way valve (ECCO000283)",
+      "Replace the ink mist fan (ECFN000106-A)",
+      "Replace the sealing rubber strip (MCOT000516)"
+    ],
+    "Annual": [
+      "Replace the air pump (ECIK000026-A)",
+      "Replace the air disk filter — on the PP pump (ECIK000021)",
+      "Replace the air disk filter — on the main ink tank (ECIK000021)",
+      "Replace the one-way valve in the ink channel (ECCO001029-A)",
+      "Replace the ink tube assembly — contact technical support (MBIA000074-A / MBIA000073-A)"
     ]
   }
+};
+
+// Per-machine list of shift-type options for the Cleaning checklist dropdown.
+// Machines not listed here fall back to CLEANING_SHIFT_TYPES_DEFAULT.
+const CLEANING_SHIFT_TYPES_DEFAULT = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
+const CLEANING_SHIFT_TYPES = {
+  "Drinkware M1": ["Start of Shift","Mid Shift","End of Shift","20 Hour","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"],
+  "Drinkware M2": ["Start of Shift","Mid Shift","End of Shift","20 Hour","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"]
 };
 
 const COLEX_YARD_SIGN_YIELD = 10; // pieces per sheet

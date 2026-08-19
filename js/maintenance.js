@@ -154,8 +154,25 @@ function openCleanModal() {
   const activeMachine = document.querySelector(".machine-btn.active")?.dataset.machine || "";
   const machSel = document.getElementById("clean-machine");
   if (activeMachine && machSel) machSel.value = activeMachine;
+  cleanUpdateShiftOptions();
   cleanRenderChecklist();
   openModal("clean-modal");
+}
+
+function cleanMachineChanged() {
+  cleanUpdateShiftOptions();
+  cleanRenderChecklist();
+}
+
+function cleanUpdateShiftOptions() {
+  const machine = document.getElementById("clean-machine")?.value || "";
+  const shiftSel = document.getElementById("clean-shift");
+  if (!shiftSel) return;
+  const options = CLEANING_SHIFT_TYPES[machine] || CLEANING_SHIFT_TYPES_DEFAULT;
+  const prevValue = shiftSel.value;
+  shiftSel.innerHTML = "";
+  options.forEach(opt => shiftSel.appendChild(makeOption(opt, opt)));
+  shiftSel.value = options.includes(prevValue) ? prevValue : options[0];
 }
 
 function cleanRenderChecklist() {
@@ -436,7 +453,6 @@ function renderMaintReports() {
   if (!grid) return;
   grid.innerHTML = "";
 
-  const SHIFT_TYPES = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
   const MECH_TYPES  = ["Operator Fix","Machine Down","Machine Back Up"];
 
   // Group maint log by machine
@@ -456,6 +472,7 @@ function renderMaintReports() {
     const downOrUp = mechEntries.filter(e => e.type === "Machine Down" || e.type === "Machine Back Up");
     const lastDownOrUp = downOrUp.length ? downOrUp.reduce((a,b) => new Date(a.time) > new Date(b.time) ? a : b) : null;
     const hasDown = lastDownOrUp?.type === "Machine Down";
+    const SHIFT_TYPES = CLEANING_SHIFT_TYPES[machine] || CLEANING_SHIFT_TYPES_DEFAULT;
 
     // Figure out which shift types have been completed for this machine
     const completedShifts = {};
@@ -521,7 +538,7 @@ function renderMaintReports() {
 }
 
 function openMaintMachineDetail(machine) {
-  const SHIFT_TYPES = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
+  const SHIFT_TYPES = CLEANING_SHIFT_TYPES[machine] || CLEANING_SHIFT_TYPES_DEFAULT;
   const MECH_TYPES  = ["Operator Fix","Machine Down","Machine Back Up"];
   const entries = maintLog.filter(e => (e.machine || "Unassigned") === machine);
   const mechEntries  = entries.filter(e => MECH_TYPES.includes(e.type));
