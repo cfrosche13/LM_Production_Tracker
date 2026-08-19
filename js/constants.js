@@ -236,7 +236,7 @@ const CLEANING_CHECKLISTS = {
       "Clean the components for motion (carriage beam, linear guides, jig/coupler, clamp shaft, supporting wheels) — apply calcium grease to linear guide after cleaning",
       "Clean the doors and covers",
       "Check the filter regulator, drain any water",
-      "Clean the ink mesh (soak in alcohol 30+ min, rinse until clear, dry before reinstalling)",
+      "Replace the blue filter with a roll filter",
       "Wipe down the ink mist fans and fan covers"
     ],
     "Biweekly": [
@@ -310,7 +310,7 @@ const CLEANING_CHECKLISTS = {
       "Clean the components for motion (carriage beam, linear guides, jig/coupler, clamp shaft, supporting wheels) — apply calcium grease to linear guide after cleaning",
       "Clean the doors and covers",
       "Check the filter regulator, drain any water",
-      "Clean the ink mesh (soak in alcohol 30+ min, rinse until clear, dry before reinstalling)",
+      "Replace the blue filter with a roll filter",
       "Wipe down the ink mist fans and fan covers"
     ],
     "Biweekly": [
