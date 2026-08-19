@@ -194,6 +194,64 @@ const CLEANING_CHECKLISTS = {
       "Clean Meech bar",
       "Clear output/export/temp files for week prior"
     ]
+  },
+  "Drinkware M1": {
+    "Start of Shift": [
+      "Turn on computer and start PCS / ColorPRINT Bottle software",
+      "Power on printer and confirm Ready status",
+      "Check for and resolve any LCD/PCS warnings",
+      "Switch manual 3-way valve to Ink",
+      "Perform auto clean",
+      "Print check nozzle chart and inspect for clogs",
+      "Confirm PCS and ColorPRINT Bottle settings are correct"
+    ],
+    "Mid Shift": [
+      "Check ink supply and waste levels",
+      "Print check nozzle chart and inspect nozzle status",
+      "Clear any clogged nozzles",
+      "Clean the UV lamp face"
+    ],
+    "End of Shift": [
+      "Clean the head plate and PWC",
+      "Clean the wiping blades with flushing fluid",
+      "Clean the sealing rubber strip",
+      "Clean the UV lamp face",
+      "Inspect head nozzles with magnifier and clear any clogged nozzles",
+      "Switch manual 3-way valve to Ink",
+      "Perform auto clean",
+      "Print check nozzle chart and log date/time/operator",
+      "Maintain heads and power off printer",
+      "Switch manual 3-way valve to OFF"
+    ]
+  },
+  "Drinkware M2": {
+    "Start of Shift": [
+      "Turn on computer and start PCS / ColorPRINT Bottle software",
+      "Power on printer and confirm Ready status",
+      "Check for and resolve any LCD/PCS warnings",
+      "Switch manual 3-way valve to Ink",
+      "Perform auto clean",
+      "Print check nozzle chart and inspect for clogs",
+      "Confirm PCS and ColorPRINT Bottle settings are correct"
+    ],
+    "Mid Shift": [
+      "Check ink supply and waste levels",
+      "Print check nozzle chart and inspect nozzle status",
+      "Clear any clogged nozzles",
+      "Clean the UV lamp face"
+    ],
+    "End of Shift": [
+      "Clean the head plate and PWC",
+      "Clean the wiping blades with flushing fluid",
+      "Clean the sealing rubber strip",
+      "Clean the UV lamp face",
+      "Inspect head nozzles with magnifier and clear any clogged nozzles",
+      "Switch manual 3-way valve to Ink",
+      "Perform auto clean",
+      "Print check nozzle chart and log date/time/operator",
+      "Maintain heads and power off printer",
+      "Switch manual 3-way valve to OFF"
+    ]
   }
 };
 
