@@ -353,6 +353,67 @@ const CLEANING_SHIFT_TYPES = {
   "Drinkware M2": ["Start of Shift","Mid Shift","End of Shift","20 Hour","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"]
 };
 
+// Per-machine manual PDF (deep-linked via "#page=N"), used by cleanRenderChecklist()
+// to show a reference link next to any task that has a matching page in CLEANING_TASK_MANUAL_REF.
+const MACHINE_MANUALS = {
+  "Drinkware M1": "manuals/MagicSpin-Pro-Maintenance-Guide.pdf",
+  "Drinkware M2": "manuals/MagicSpin-Pro-Maintenance-Guide.pdf"
+};
+
+// Task text -> page number in that machine's manual (MACHINE_MANUALS above).
+// Tasks not listed here (e.g. "Replace the blue filter with a roll filter" — our
+// process differs from the manual's ink-mesh procedure) simply show no reference link.
+const CLEANING_TASK_MANUAL_REF = {
+  "Turn on computer and start PCS / ColorPRINT Bottle software": 20,
+  "Power on printer and confirm Ready status": 20,
+  "Check for and resolve any LCD/PCS warnings": 20,
+  "Switch manual 3-way valve to Ink": 20,
+  "Perform auto clean": 20,
+  "Print check nozzle chart and inspect for clogs": 20,
+  "Confirm PCS and ColorPRINT Bottle settings are correct": 20,
+  "Check ink supply and waste levels": 2,
+  "Print check nozzle chart and inspect nozzle status": 2,
+  "Clear any clogged nozzles": 2,
+  "Clean the UV lamp face": 3,
+  "Clean the head plate and PWC": 1,
+  "Clean the wiping blades with flushing fluid": 1,
+  "Clean the sealing rubber strip": 1,
+  "Inspect head nozzles with magnifier and clear any clogged nozzles": 2,
+  "Print check nozzle chart and log date/time/operator": 20,
+  "Maintain heads and power off printer": 20,
+  "Switch manual 3-way valve to OFF": 20,
+  "Clean the UV emitting window": 3,
+  "Clean the UV light sensor": 3,
+  "Clean the UV light shield sensor": 3,
+  "Clean the wiping tray": 5,
+  "Clean the capping tray": 5,
+  "Clean the baffle": 5,
+  "Clean the media height sensors": 5,
+  "Clean the components for motion (carriage beam, linear guides, jig/coupler, clamp shaft, supporting wheels) — apply calcium grease to linear guide after cleaning": 6,
+  "Clean the doors and covers": 6,
+  "Check the filter regulator, drain any water": 6,
+  "Wipe down the ink mist fans and fan covers": 4,
+  "Lubricate the lead screw with lithium grease #2": 7,
+  "Check ink tubes and motor cables on the carriage for wear/tangling": 7,
+  "Replace the sponge sheet of the UV lamp (ECLE400122)": 8,
+  "Replace the wiping blades (MCAS000215)": 9,
+  "Replace the ink overflow filter (ECIK000155)": 9,
+  "Replace the disk filter (ECIK000051)": 10,
+  "Replace the quick connectors on the waste tube (ECCO001031/ECCO001089)": 10,
+  "Replace the ink pump (ECIK000024-A)": 11,
+  "Replace the needle filter (ECIK000254)": 12,
+  "Replace the manual 3-way valve (ECCO001055)": 12,
+  "Replace the one-way valve in the flush channel — above the needle filter (ECCO000283)": 13,
+  "Replace the one-way valve in the flush channel — above the manual 3-way valve (ECCO000283)": 13,
+  "Replace the ink mist fan (ECFN000106-A)": 14,
+  "Replace the sealing rubber strip (MCOT000516)": 15,
+  "Replace the air pump (ECIK000026-A)": 16,
+  "Replace the air disk filter — on the PP pump (ECIK000021)": 17,
+  "Replace the air disk filter — on the main ink tank (ECIK000021)": 17,
+  "Replace the one-way valve in the ink channel (ECCO001029-A)": 17,
+  "Replace the ink tube assembly — contact technical support (MBIA000074-A / MBIA000073-A)": 18
+};
+
 const COLEX_YARD_SIGN_YIELD = 10; // pieces per sheet
 
 const COLEX_MERCHANDISERS = [

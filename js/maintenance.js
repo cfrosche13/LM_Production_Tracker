@@ -218,11 +218,26 @@ function cleanRenderChecklist() {
 
     const label = document.createElement("span");
     label.id = "clean-label-" + i;
-    label.style.cssText = `font-family:'Josefin Slab',serif;font-size:13px;color:${done?'#88aacc':'#1a2a38'};text-decoration:${done?'line-through':'none'};`;
+    label.style.cssText = `font-family:'Josefin Slab',serif;font-size:13px;color:${done?'#88aacc':'#1a2a38'};text-decoration:${done?'line-through':'none'};flex:1;`;
     label.textContent = task;
 
     row.appendChild(box);
     row.appendChild(label);
+
+    const manualUrl = MACHINE_MANUALS[machine];
+    const manualPage = CLEANING_TASK_MANUAL_REF[task];
+    if (manualUrl && manualPage) {
+      const refLink = document.createElement("a");
+      refLink.href = manualUrl + "#page=" + manualPage;
+      refLink.target = "_blank";
+      refLink.rel = "noopener";
+      refLink.textContent = "📄 p." + manualPage;
+      refLink.title = "View this step in the manual";
+      refLink.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;color:#2288cc;text-decoration:none;white-space:nowrap;flex-shrink:0;";
+      refLink.onclick = (e) => e.stopPropagation();
+      row.appendChild(refLink);
+    }
+
     body.appendChild(row);
   });
 
