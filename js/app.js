@@ -132,6 +132,13 @@ function init() {
       if (ordersView && ordersView.classList.contains("active")) renderOpenOrders();
     });
 
+    // Tasks ready to close (SWMMS batch closure) — written by task_closure_sync.py
+    window._fb.listenReadyToCloseTasks(data => {
+      _readyToCloseTasks = data;
+      const ordersView = document.getElementById("view-orders");
+      if (ordersView && ordersView.classList.contains("active")) renderReadyToCloseTasks();
+    });
+
     // Checklist partial progress — sync in-progress checklists across devices
     window._fb.listenChecklistProgress(data => {
       window._checklistProgress = data || {};
@@ -252,10 +259,8 @@ function switchView(name) {
   if (name === 'settings') {
     settingsShowHome();
     renderSettingsTargets();
-    const urlInput = document.getElementById("settings-orders-url");
-    if (urlInput && window._targets) urlInput.value = window._targets["__orders_url"] || "";
   }
-  if (name === 'orders') renderOpenOrders();
+  if (name === 'orders') { renderOpenOrders(); renderReadyToCloseTasks(); }
 
   // Move the master controls into this view's slot
   const slot = document.getElementById("view-controls-slot-" + name);

@@ -60,6 +60,8 @@ let _cdmMachine = null;
 
 let _openOrdersData = null; // { byType: {}, aging: {}, total: 0, fetchedAt: Date }
 
+let _readyToCloseTasks = null; // { tasks: [{taskId, pjCount, firstReadyAt}], count, updatedAt }
+
 let stSec = 0, stRunning = false, stPaused = false, stInterval = null;
 let stStartWall = 0;
 let stTally = 0, stMisprint = 0;

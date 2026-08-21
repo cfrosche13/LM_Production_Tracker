@@ -192,6 +192,9 @@
         saveOrders:    (data) => set(ref(db, "openOrders"), data),
         listenOrders:  (cb)   => onValue(ref(db, "openOrders"), snap => cb(snap.val() || null)),
 
+        // Tasks validated as ready to close in SWMMS (written by task_closure_sync.py)
+        listenReadyToCloseTasks: (cb) => onValue(ref(db, "readyToCloseTasks"), snap => cb(snap.val() || null)),
+
         saveMachineProfiles:   (list) => set(ref(db, "machineProfiles"), list),
         listenMachineProfiles: (cb, onError) => onValue(
           ref(db, "machineProfiles"),

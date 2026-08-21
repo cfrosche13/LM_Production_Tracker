@@ -1649,11 +1649,6 @@ function sessionGateAdmin() {
           <span class="settings-card-title">Operators</span>
           <span class="settings-card-desc">Names shown in the tally login</span>
         </button>
-        <button class="settings-card" onclick="settingsShowPanel('orders')">
-          <span class="settings-card-icon">📦</span>
-          <span class="settings-card-title">Open Orders Source</span>
-          <span class="settings-card-desc">OneDrive / SharePoint link for the daily orders export</span>
-        </button>
         <button class="settings-card" onclick="settingsShowPanel('profiles')">
           <span class="settings-card-icon">🖨️</span>
           <span class="settings-card-title">Machine Profiles</span>
@@ -1665,22 +1660,6 @@ function sessionGateAdmin() {
     <!-- ══════════ SETTINGS DETAIL — ONE PANEL AT A TIME ══════════ -->
     <div id="settings-detail" style="display:none;">
       <button onclick="settingsShowHome()" class="settings-back-btn">← Back to Settings</button>
-
-      <!-- Open Orders URL -->
-      <div id="settings-panel-orders" class="settings-panel" style="display:none;">
-        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:12px;">
-          Open Orders — OneDrive / SharePoint URL
-        </div>
-        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:10px;line-height:1.6;">
-          Paste the direct download link to your daily LMContainers Excel export. The tracker will fetch it automatically on load.
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
-          <input id="settings-orders-url" type="url" placeholder="https://company.sharepoint.com/...download=1"
-            style="font-family:'Josefin Slab',serif;font-size:12px;flex:1;background:#f0f7fb;border:1px solid #b8d8ee;border-radius:6px;padding:8px 12px;outline:none;color:#1a2a38;" />
-          <button onclick="settingsSaveOrdersUrl()"
-            style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;white-space:nowrap;">Save URL</button>
-        </div>
-      </div>
 
       <!-- Operators -->
       <div id="settings-panel-operators" class="settings-panel" style="display:none;">
@@ -1780,25 +1759,7 @@ function sessionGateAdmin() {
     <!-- Header row -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
       <div style="font-family:'Abril Fatface',serif;font-size:22px;color:#1a3a28;">Open Orders</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <span id="orders-last-updated" style="font-family:'Josefin Slab',serif;font-size:10px;color:#7aaa88;"></span>
-        <label id="orders-upload-btn" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#1e6b40;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;letter-spacing:0.05em;display:inline-flex;align-items:center;gap:6px;">
-          ⬆️ Upload LMContainers File<input type="file" accept=".xlsx,.xls" style="display:none;" onchange="handleOrdersUpload(event)"/>
-        </label>
-      </div>
-    </div>
-
-    <!-- Drag & drop zone — shown when no data loaded -->
-    <div id="orders-dropzone"
-      ondragover="event.preventDefault();this.style.borderColor='#1e6b40';this.style.background='#e0f7e8';"
-      ondragleave="this.style.borderColor='#b8d8c0';this.style.background='#f5fbf7';"
-      ondrop="event.preventDefault();this.style.borderColor='#b8d8c0';this.style.background='#f5fbf7';handleOrdersDrop(event);"
-      style="border:2px dashed #b8d8c0;border-radius:12px;padding:40px 24px;text-align:center;margin-bottom:20px;background:#f5fbf7;transition:all 0.2s;cursor:pointer;"
-      onclick="document.querySelector('#orders-upload-btn input').click()">
-      <div style="font-size:36px;margin-bottom:10px;">📂</div>
-      <div style="font-family:'Abril Fatface',serif;font-size:16px;color:#336644;margin-bottom:6px;">Drop LMContainers file here</div>
-      <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#7aaa88;">or click to browse — accepts .xlsx</div>
-      <div style="font-family:'Josefin Slab',serif;font-size:10px;color:#b8d8c0;margin-top:8px;">Export daily from your warehouse system and drop it here each morning</div>
+      <span id="orders-last-updated" style="font-family:'Josefin Slab',serif;font-size:10px;color:#7aaa88;"></span>
     </div>
 
     <!-- Summary stats -->
@@ -1808,14 +1769,28 @@ function sessionGateAdmin() {
     <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;">Aging</div>
     <div id="orders-aging" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;"></div>
 
-    <!-- Piece type breakdown -->
-    <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;">Unproduced by Piece Type vs Today's Output</div>
-    <div id="orders-by-type" style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px;"></div>
-
     <!-- No data state -->
     <div id="orders-empty" style="font-family:'Josefin Slab',serif;font-size:13px;color:#7aaa88;text-align:center;padding:40px;">
-      No open orders data yet.<br>
-      <span style="font-size:11px;">Upload a file or configure a OneDrive URL in Settings to auto-fetch.</span>
+      No open orders data yet — waiting on the next sync.
+    </div>
+
+    <!-- Tasks ready to close (SWMMS batch closure) -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;flex-wrap:wrap;gap:8px;">
+      <div>
+        <span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;">Tasks Ready to Close — SWMMS Batch</span>
+        <span id="close-tasks-count" style="font-family:'Abril Fatface',serif;font-size:14px;color:#1e6b40;margin-left:8px;">0</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span id="close-tasks-updated" style="font-family:'Josefin Slab',serif;font-size:10px;color:#7aaa88;"></span>
+        <button id="close-tasks-copy-btn" onclick="copyReadyToCloseTasks()" disabled
+          style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#1e6b40;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;letter-spacing:0.05em;">
+          📋 Copy Task List
+        </button>
+      </div>
+    </div>
+    <div id="close-tasks-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;"></div>
+    <div id="close-tasks-empty" style="font-family:'Josefin Slab',serif;font-size:12px;color:#7aaa88;text-align:center;padding:24px;">
+      No tasks ready to close right now.
     </div>
   </div>
 </div>
