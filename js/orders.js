@@ -102,15 +102,19 @@ function renderReadyToCloseTasks() {
 
   const machineFilter = machineSel?.value || "";
   const pieceFilter   = pieceSel?.value || "";
-  const minWaitMs     = Number(waitSel?.value || 0) * 3600000;
+  const maxWaitMs     = Number(waitSel?.value || 0) * 3600000;
 
+  // Wait filter is "this recent or newer" (excludes older stale/dummy tasks),
+  // not a minimum threshold — a task with no firstReadyAt can't be aged, so
+  // it's excluded whenever a max-wait filter is active.
   const now = Date.now();
   const tasks = allTasks.filter(t => {
     if (machineFilter && !(t.machines || []).includes(machineFilter)) return false;
     if (pieceFilter && t.pieceType !== pieceFilter) return false;
-    if (minWaitMs > 0) {
-      const readyMs = t.firstReadyAt ? now - new Date(t.firstReadyAt).getTime() : 0;
-      if (readyMs < minWaitMs) return false;
+    if (maxWaitMs > 0) {
+      if (!t.firstReadyAt) return false;
+      const readyMs = now - new Date(t.firstReadyAt).getTime();
+      if (readyMs > maxWaitMs) return false;
     }
     return true;
   });
