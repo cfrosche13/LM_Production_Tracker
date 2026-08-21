@@ -105,9 +105,10 @@ function renderReadyToCloseTasks() {
   const now = Date.now();
   listEl.innerHTML = tasks.map(t => {
     const readyMs = t.firstReadyAt ? now - new Date(t.firstReadyAt).getTime() : null;
-    const waitLabel = readyMs == null ? "" : readyMs < 3600000
-      ? Math.max(1, Math.round(readyMs/60000)) + "m waiting"
-      : Math.round(readyMs/3600000) + "h waiting";
+    const waitLabel = readyMs == null ? "" :
+      readyMs < 3600000  ? Math.max(1, Math.round(readyMs/60000)) + "m waiting" :
+      readyMs < 86400000 ? Math.round(readyMs/3600000) + "h waiting" :
+                            Math.round(readyMs/86400000) + "d waiting";
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:8px 14px;">
         <span style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;font-weight:700;">${esc(t.taskId)}</span>
