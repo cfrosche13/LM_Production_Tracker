@@ -73,17 +73,51 @@ function renderOpenOrders() {
 // (_readyToCloseTasks declared in state.js)
 
 function renderReadyToCloseTasks() {
-  const countEl = document.getElementById("close-tasks-count");
-  const listEl  = document.getElementById("close-tasks-list");
-  const emptyEl = document.getElementById("close-tasks-empty");
-  const updEl   = document.getElementById("close-tasks-updated");
-  const copyBtn = document.getElementById("close-tasks-copy-btn");
+  const countEl     = document.getElementById("close-tasks-count");
+  const listEl      = document.getElementById("close-tasks-list");
+  const emptyEl     = document.getElementById("close-tasks-empty");
+  const updEl       = document.getElementById("close-tasks-updated");
+  const copyBtn     = document.getElementById("close-tasks-copy-btn");
+  const machineSel  = document.getElementById("close-tasks-filter-machine");
+  const pieceSel    = document.getElementById("close-tasks-filter-piece");
+  const waitSel     = document.getElementById("close-tasks-filter-wait");
   if (!listEl) return;
 
-  const data  = _readyToCloseTasks;
-  const tasks = data?.tasks || [];
+  const data     = _readyToCloseTasks;
+  const allTasks = data?.tasks || [];
 
-  if (countEl) countEl.textContent = tasks.length.toLocaleString();
+  // ── Keep filter option lists in sync with whatever's actually in the data, preserving the current selection ──
+  if (machineSel) {
+    const machines = [...new Set(allTasks.flatMap(t => t.machines || []))].sort();
+    const prev = machineSel.value;
+    machineSel.innerHTML = `<option value="">All Machines</option>` + machines.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+    if (machines.includes(prev)) machineSel.value = prev;
+  }
+  if (pieceSel) {
+    const pieceTypes = [...new Set(allTasks.map(t => t.pieceType).filter(Boolean))].sort();
+    const prev = pieceSel.value;
+    pieceSel.innerHTML = `<option value="">All Piece Types</option>` + pieceTypes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+    if (pieceTypes.includes(prev)) pieceSel.value = prev;
+  }
+
+  const machineFilter = machineSel?.value || "";
+  const pieceFilter   = pieceSel?.value || "";
+  const minWaitMs     = Number(waitSel?.value || 0) * 3600000;
+
+  const now = Date.now();
+  const tasks = allTasks.filter(t => {
+    if (machineFilter && !(t.machines || []).includes(machineFilter)) return false;
+    if (pieceFilter && t.pieceType !== pieceFilter) return false;
+    if (minWaitMs > 0) {
+      const readyMs = t.firstReadyAt ? now - new Date(t.firstReadyAt).getTime() : 0;
+      if (readyMs < minWaitMs) return false;
+    }
+    return true;
+  });
+  _closeTasksFiltered = tasks; // Copy Task List copies exactly this filtered set
+
+  const filtered = tasks.length !== allTasks.length;
+  if (countEl) countEl.textContent = tasks.length.toLocaleString() + (filtered ? ` of ${allTasks.length}` : "");
   if (copyBtn) copyBtn.disabled = tasks.length === 0;
 
   if (updEl) {
@@ -97,22 +131,24 @@ function renderReadyToCloseTasks() {
 
   if (tasks.length === 0) {
     listEl.innerHTML = "";
-    if (emptyEl) emptyEl.style.display = "";
+    if (emptyEl) { emptyEl.style.display = ""; emptyEl.textContent = allTasks.length === 0 ? "No tasks ready to close right now." : "No tasks match the current filters."; }
     return;
   }
   if (emptyEl) emptyEl.style.display = "none";
 
-  const now = Date.now();
   listEl.innerHTML = tasks.map(t => {
     const readyMs = t.firstReadyAt ? now - new Date(t.firstReadyAt).getTime() : null;
     const waitLabel = readyMs == null ? "" :
       readyMs < 3600000  ? Math.max(1, Math.round(readyMs/60000)) + "m waiting" :
       readyMs < 86400000 ? Math.round(readyMs/3600000) + "h waiting" :
                             Math.round(readyMs/86400000) + "d waiting";
+    const machineLabel = (t.machines || []).join(", ");
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:8px 14px;">
         <span style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;font-weight:700;">${esc(t.taskId)}</span>
         <div style="display:flex;gap:14px;align-items:center;">
+          ${t.pieceType ? `<span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#336644;">${esc(t.pieceType)}</span>` : ""}
+          ${machineLabel ? `<span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#4a7a5a;">${esc(machineLabel)}</span>` : ""}
           <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#4a7a5a;">${t.pjCount || 1} PJ${(t.pjCount||1) === 1 ? "" : "s"}</span>
           <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#996600;">${waitLabel}</span>
         </div>
@@ -121,7 +157,7 @@ function renderReadyToCloseTasks() {
 }
 
 function copyReadyToCloseTasks() {
-  const tasks = _readyToCloseTasks?.tasks || [];
+  const tasks = _closeTasksFiltered || [];
   if (tasks.length === 0) return;
   const text = tasks.map(t => t.taskId).join("\n");
   const btn = document.getElementById("close-tasks-copy-btn");
