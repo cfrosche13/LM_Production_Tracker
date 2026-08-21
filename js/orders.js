@@ -113,8 +113,8 @@ function renderReadyToCloseTasks() {
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:8px 14px;">
         <span style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;font-weight:700;">${esc(t.taskId)}</span>
         <div style="display:flex;gap:14px;align-items:center;">
-          <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#7aaa88;">${t.pjCount || 1} PJ${(t.pjCount||1) === 1 ? "" : "s"}</span>
-          <span style="font-family:'Josefin Slab',serif;font-size:10px;color:#aa7700;">${waitLabel}</span>
+          <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#4a7a5a;">${t.pjCount || 1} PJ${(t.pjCount||1) === 1 ? "" : "s"}</span>
+          <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#996600;">${waitLabel}</span>
         </div>
       </div>`;
   }).join("");
