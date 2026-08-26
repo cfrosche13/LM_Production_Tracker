@@ -102,19 +102,24 @@ function renderReadyToCloseTasks() {
 
   const machineFilter = machineSel?.value || "";
   const pieceFilter   = pieceSel?.value || "";
-  const maxWaitMs     = Number(waitSel?.value || 0) * 3600000;
+  const waitRaw       = waitSel?.value || "0";
+  // A "min###" value (e.g. "min168") means "at least this old" — the one
+  // inverted option (7+ Days Old) used to surface stale/neglected tasks.
+  // Every other value is "this recent or newer" (excludes older tasks).
+  const isMinFilter   = waitRaw.startsWith("min");
+  const waitMs        = Number(waitRaw.replace("min", "") || 0) * 3600000;
 
-  // Wait filter is "this recent or newer" (excludes older stale/dummy tasks),
-  // not a minimum threshold — a task with no firstReadyAt can't be aged, so
-  // it's excluded whenever a max-wait filter is active.
+  // A task with no firstReadyAt can't be aged either way, so it's excluded
+  // whenever any wait-time filter (max or min) is active.
   const now = Date.now();
   const tasks = allTasks.filter(t => {
     if (machineFilter && !(t.machines || []).includes(machineFilter)) return false;
     if (pieceFilter && t.pieceType !== pieceFilter) return false;
-    if (maxWaitMs > 0) {
+    if (waitMs > 0) {
       if (!t.firstReadyAt) return false;
       const readyMs = now - new Date(t.firstReadyAt).getTime();
-      if (readyMs > maxWaitMs) return false;
+      if (isMinFilter) { if (readyMs < waitMs) return false; }
+      else             { if (readyMs > waitMs) return false; }
     }
     return true;
   });
