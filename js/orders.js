@@ -93,11 +93,19 @@ function renderReadyToCloseTasks() {
     machineSel.innerHTML = `<option value="">All Machines</option>` + machines.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
     if (machines.includes(prev)) machineSel.value = prev;
   }
+  // Wallets never carry a machine or piece type (they're stamped, not printed
+  // — same reason the Operator Tracker never runs OEE for Wallets), so a task
+  // with no pieceType is reliably a wallet, not a data gap. Bucketed as their
+  // own "Wallets" sub-category rather than mixed into — or silently dropped
+  // from — the regular piece-type list.
+  const hasWallets = allTasks.some(t => !t.pieceType);
   if (pieceSel) {
     const pieceTypes = [...new Set(allTasks.map(t => t.pieceType).filter(Boolean))].sort();
     const prev = pieceSel.value;
-    pieceSel.innerHTML = `<option value="">All Piece Types</option>` + pieceTypes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
-    if (pieceTypes.includes(prev)) pieceSel.value = prev;
+    pieceSel.innerHTML = `<option value="">All Piece Types</option>`
+      + (hasWallets ? `<option value="__wallets__">Wallets</option>` : "")
+      + pieceTypes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+    if (prev === "__wallets__" || pieceTypes.includes(prev)) pieceSel.value = prev;
   }
 
   const machineFilter = machineSel?.value || "";
@@ -114,7 +122,12 @@ function renderReadyToCloseTasks() {
   const now = Date.now();
   const tasks = allTasks.filter(t => {
     if (machineFilter && !(t.machines || []).includes(machineFilter)) return false;
-    if (pieceFilter && t.pieceType !== pieceFilter) return false;
+    // "All Piece Types" (pieceFilter === "") deliberately excludes Wallets —
+    // they're reachable only by explicitly picking the Wallets sub-category,
+    // never mixed into the default/unfiltered view.
+    if (pieceFilter === "__wallets__") { if (t.pieceType) return false; }
+    else if (pieceFilter)              { if (t.pieceType !== pieceFilter) return false; }
+    else                                { if (!t.pieceType) return false; }
     if (waitMs > 0) {
       if (!t.firstReadyAt) return false;
       const readyMs = now - new Date(t.firstReadyAt).getTime();
@@ -152,11 +165,12 @@ function renderReadyToCloseTasks() {
       readyMs < 86400000 ? Math.round(readyMs/3600000) + "h waiting" :
                             Math.round(readyMs/86400000) + "d waiting";
     const machineLabel = (t.machines || []).join(", ");
+    const pieceLabel = t.pieceType || "Wallets"; // missing pieceType only ever means Wallets — see hasWallets note above
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:8px 14px;">
         <span style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;font-weight:700;">${esc(t.taskId)}</span>
         <div style="display:flex;gap:14px;align-items:center;">
-          ${t.pieceType ? `<span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#336644;">${esc(t.pieceType)}</span>` : ""}
+          <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#336644;">${esc(pieceLabel)}</span>
           ${machineLabel ? `<span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#4a7a5a;">${esc(machineLabel)}</span>` : ""}
           <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#4a7a5a;">${t.pjCount || 1} PJ${(t.pjCount||1) === 1 ? "" : "s"}</span>
           <span style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#996600;">${waitLabel}</span>
