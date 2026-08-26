@@ -971,10 +971,15 @@ function openAddProductModal(category, machine) {
   const qtyField = document.getElementById("aprod-qty");
   [lotField, expField, qtyField].forEach(f => { if (f) f.value = ""; });
   [lotField, expField, qtyField].forEach(f => { if (f) f.closest(".mf").style.display = category === "ink" ? "" : "none"; });
+  const btn = document.getElementById("aprod-submit-btn");
+  if (btn) { btn.disabled = false; btn.textContent = "✓ Add Product"; }
   openModal("inv-add-product-modal");
 }
 
-function submitAddProduct() {
+async function submitAddProduct() {
+  const btn = document.getElementById("aprod-submit-btn");
+  if (btn && btn.disabled) return; // already saving — ignore repeat clicks/taps
+
   const category = document.getElementById("aprod-category").value;
   const machine  = document.getElementById("aprod-machine").value;
   const name     = document.getElementById("aprod-name").value.trim();
@@ -991,28 +996,39 @@ function submitAddProduct() {
     if (qty <= 0) { alert("Please enter a quantity greater than 0."); return; }
   }
 
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+
   const id = [category, machine.replace(/\+/g,"p"), name.replace(/\s+/g,"_").toLowerCase(), Date.now()].join("_");
   const data = category === "parts" ? { name, partCode, location } : { name, partCode };
-  const newProd = { id, ...data };
-  if (!_invCatalogAdds[machine]) _invCatalogAdds[machine] = { ink:[], maint:[], parts:[] };
-  if (category === "ink")        _invCatalogAdds[machine].ink.push(newProd);
-  else if (category === "parts") _invCatalogAdds[machine].parts.push(newProd);
-  else                           _invCatalogAdds[machine].maint.push(newProd);
-  if (window._fb) _invFbGuard(window._fb.saveInvProduct(category, machine, id, data), name || "Add Product");
 
-  if (category === "ink") {
-    const now = new Date().toISOString();
-    const op  = document.getElementById("global-operator")?.value || "—";
-    const newLot = { machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qtyReceived:qty, qtyRemaining:qty, receivedAt:now, receivedBy:op };
-    const tmpKey = "_new_" + now;
-    _inkLots[tmpKey] = newLot;
-    if (window._fb) _invFbGuard(window._fb.saveInkLot(newLot), name || "Add Ink Product");
-    const tx = { type:"receive_ink", machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qty, op, timestamp:now, notes:"Added with new product", action:"new_lot" };
-    if (window._fb) window._fb.saveInvTransaction(tx);
+  try {
+    if (window._fb) await window._fb.saveInvProduct(category, machine, id, data);
+
+    let newLot = null;
+    if (category === "ink") {
+      const now = new Date().toISOString();
+      const op  = document.getElementById("global-operator")?.value || "—";
+      newLot = { machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qtyReceived:qty, qtyRemaining:qty, receivedAt:now, receivedBy:op };
+      if (window._fb) await window._fb.saveInkLot(newLot);
+      const tx = { type:"receive_ink", machine, category:"ink", productId:id, productName:name, partCode:partCode||"", lotNumber:lotNum, expDate, qty, op, timestamp:now, notes:"Added with new product", action:"new_lot" };
+      if (window._fb) window._fb.saveInvTransaction(tx);
+    }
+
+    // Only reflected locally — and the modal closed — once the save above is confirmed.
+    const newProd = { id, ...data };
+    if (!_invCatalogAdds[machine]) _invCatalogAdds[machine] = { ink:[], maint:[], parts:[] };
+    if (category === "ink")        _invCatalogAdds[machine].ink.push(newProd);
+    else if (category === "parts") _invCatalogAdds[machine].parts.push(newProd);
+    else                           _invCatalogAdds[machine].maint.push(newProd);
+    if (newLot) _inkLots["_new_" + newLot.receivedAt] = newLot;
+
+    closeModal("inv-add-product-modal");
+    renderInventory();
+  } catch (err) {
+    console.error("Inventory save failed: Add Product", err);
+    alert(`⚠️ "${name}" did not save — check your internet connection and try again. The window will stay open so you don't lose what you typed.`);
+    if (btn) { btn.disabled = false; btn.textContent = "✓ Add Product"; }
   }
-
-  closeModal("inv-add-product-modal");
-  renderInventory();
 }
 
 // ─── ADMIN: Adjust Lot ───────────────────────────────
