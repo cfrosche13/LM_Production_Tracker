@@ -10,7 +10,7 @@ const STATUS_COLORS = {
 };
 const PIECE_TYPES = {
   "Coir":          ["28x16 OC","28x16 FC","30x18 OC","30x18 FC","36x24 OC","36x24 FC","60x24 OC","60x24 FC","Flocked"],
-  "Non-Coir Mats": ["AF Large","AF Small","PVC"],
+  "Non-Coir Mats": ["AF Large","AF Small","PVC","Bamboo 36x48","Burlap 30x18 OC","Burlap 30x18 FC"],
   "Signs":         ["16x24","12x12","12x8 Plock","11x6 Plock","6x6 Plock","Leaner","Double Sided Leaner","Mantle Sign","18\" Circle","Yard Sign"],
   "Wallets":       ["Cross Body","Trifold Black","Trifold Brown","Bifold Black","Bifold Brown","Bifold Tumbled Leather","Wristlet Black","Wristlet Brown","Front Pocket Black","Front Pocket Brown","Toiletry Bag","Clock"],
   "Display Pieces": ["Vert. Yard Display","Horz. Yard Display","Leaner Display","Yard Sign Display"],
