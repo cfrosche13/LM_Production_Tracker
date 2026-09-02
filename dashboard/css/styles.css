@@ -38,6 +38,17 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 .dash-view { display: none; flex-direction: column; gap: 14px; min-height: 0; }
 .dash-view.active { display: flex; flex: 1; }
 
+/* ── VIEW PIN CONTROLS — per-browser (localStorage) override of the auto-rotation above.
+   Left off the TV on purpose since it's local per-device, not shared. ── */
+#view-pin-controls { display: flex; gap: 6px; justify-content: flex-end; margin: -2px 0 8px; flex: 0 0 auto; }
+.view-pin-btn {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  background: #fff; color: #6b6b6b; border: 1px solid #e0e3de; border-radius: 999px;
+  padding: 4px 11px; cursor: pointer;
+}
+.view-pin-btn.active { background: #0d6748; border-color: #0d6748; color: #fff; }
+
 /* ── SECTION TITLE ── */
 .section-title {
   font-size: 17px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;

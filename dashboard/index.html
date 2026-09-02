@@ -97,6 +97,15 @@
     <div class="exceptions-chips" id="exceptions-chips"></div>
   </div>
 
+  <!-- VIEW PIN — per-browser only (saved in this browser's storage), so a TV
+       left on Auto keeps rotating while someone here can pin one screen. -->
+  <div id="view-pin-controls">
+    <button class="view-pin-btn" data-view="auto" onclick="setDashViewPin('auto')">&#8635; Auto</button>
+    <button class="view-pin-btn" data-view="view-today" onclick="setDashViewPin('view-today')">Machine Summary</button>
+    <button class="view-pin-btn" data-view="view-weekly" onclick="setDashViewPin('view-weekly')">Weekly Performance</button>
+    <button class="view-pin-btn" data-view="view-shipping" onclick="setDashViewPin('view-shipping')">Shipping Status</button>
+  </div>
+
   <!-- VIEW 1: MACHINE SUMMARY -->
   <div class="dash-view active" id="view-today">
     <div class="section-title">Machine Summary — Today</div>

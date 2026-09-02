@@ -307,7 +307,7 @@ function renderWeekRow(gridId, dateStrs) {
       return `
         <div style="background:#f7f8f6;border-radius:6px;padding:5px 6px;min-width:0;">
           <div style="font-size:10px;font-weight:700;color:${MACHINE_COLORS[m]||'#555'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m}</div>
-          <div style="font-size:13px;font-weight:800;color:#232323;white-space:nowrap;">${plan!=null?plan.toLocaleString():"—"}/${actual.toLocaleString()}</div>
+          <div style="font-size:13px;font-weight:800;color:#232323;white-space:nowrap;">${actual.toLocaleString()}/${plan!=null?plan.toLocaleString():"—"}</div>
           <div style="font-size:9px;color:${pc?pc.text:'#9b9b9b'};">${pct!=null?pct+"% to plan":"no plan"}</div>
         </div>`;
     }).join("");
@@ -758,13 +758,48 @@ setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*
 window.addEventListener("resize", () => { if (Object.values(loaded).every(Boolean)) renderChart(today()); });
 
 // ── VIEW ROTATION — the chart stays fixed; this cycles the section below it every 20s ──
+// A view can be "pinned" per-browser (localStorage, not shared/synced) so one
+// coworker can park on a single screen — e.g. Weekly Performance on their own
+// laptop — while the TV (a separate browser/device) keeps rotating normally.
 const DASH_VIEWS = ["view-today", "view-weekly", "view-shipping"];
+const DASH_VIEW_PIN_KEY = "dashViewPin";
 let _dashViewIndex = 0;
+let _dashViewPin = "auto";
+try {
+  const saved = localStorage.getItem(DASH_VIEW_PIN_KEY);
+  if (saved === "auto" || DASH_VIEWS.includes(saved)) _dashViewPin = saved;
+} catch(e) {}
+
+function setDashViewPin(pin) {
+  _dashViewPin = pin;
+  try { localStorage.setItem(DASH_VIEW_PIN_KEY, pin); } catch(e) {}
+  _applyDashViewPin();
+  _renderViewPinButtons();
+}
+// Exposed on window: this is a module script, so top-level functions aren't
+// global by default, but index.html's view-pin buttons call this via inline onclick.
+window.setDashViewPin = setDashViewPin;
+function _applyDashViewPin() {
+  if (_dashViewPin === "auto") return; // rotation interval below takes it from here
+  DASH_VIEWS.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("active", id === _dashViewPin);
+    if (id === _dashViewPin) _dashViewIndex = i; // keeps rotation in sync if unpinned later
+  });
+}
+function _renderViewPinButtons() {
+  document.querySelectorAll(".view-pin-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.view === _dashViewPin);
+  });
+}
 function rotateDashView() {
+  if (_dashViewPin !== "auto") return; // pinned on this browser — don't rotate here
   const current = document.getElementById(DASH_VIEWS[_dashViewIndex]);
   if (current) current.classList.remove("active");
   _dashViewIndex = (_dashViewIndex + 1) % DASH_VIEWS.length;
   const next = document.getElementById(DASH_VIEWS[_dashViewIndex]);
   if (next) next.classList.add("active");
 }
+_applyDashViewPin();
+_renderViewPinButtons();
 setInterval(rotateDashView, 20000);
