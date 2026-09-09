@@ -247,6 +247,14 @@
         listenDeletedProducts:(cb)                              => onValue(ref(db, "inventory/deletedProducts"), snap => cb(snap.val() || {})),
         fetchDeletedProducts: ()                                => get(ref(db, "inventory/deletedProducts")).then(s => s.val() || {}),
 
+        // ── Print Heads ──
+        savePrintheadLog:        (entry)                     => push(ref(db, "printheads/log"), entry),
+        fetchPrintheadLog:       ()                          => get(ref(db, "printheads/log")).then(s => s.val() || {}),
+        listenPrintheadLog:      (cb)                        => onValue(ref(db, "printheads/log"), snap => cb(snap.val() || {})),
+        savePrintheadAllotment:  (machine, year, data)       => set(ref(db, `printheads/allotment/${machine}/${year}`), data),
+        fetchPrintheadAllotment: ()                          => get(ref(db, "printheads/allotment")).then(s => s.val() || {}),
+        listenPrintheadAllotment:(cb)                        => onValue(ref(db, "printheads/allotment"), snap => cb(snap.val() || {})),
+
       };
       window._fbReady = true;
       document.dispatchEvent(new Event("fbReady"));

@@ -768,3 +768,70 @@ const PARTS_INVENTORY_PRODUCTS = {
   "Drinkware": [],
   "Colex": [],
 };
+
+// ═══════════════════════════════════════
+// PRINT HEAD LOG — POSITION LISTS
+// ═══════════════════════════════════════
+// Placeholder labels, in physical installation order for each machine (position 1
+// first). These are stand-ins for real head model numbers — rename `label` once
+// known, but keep the array order matching the physical layout. `colors` drives
+// the swatch shown in the visual carriage (js/printheads.js) — 1 entry for a
+// single-color head, 2 for a head that shares two colors (see PH_COLOR_SWATCH).
+// `code` (optional) is the short badge text drawn on the head itself.
+function _mkPos(label, colors, code) { return { label, colors, code }; }
+
+// 30 / 30+ carriage is physically 6 columns x 2 rows — each column is one color,
+// with row "1" mounted lower and row "2" mounted higher (see js/printheads.js
+// _phRenderGridColumns, which pairs positions [2n, 2n+1] into column n).
+const PRINTHEAD_POSITIONS_30 = [
+  _mkPos("1 – White",   ["White"],   "W1"),
+  _mkPos("2 – White",   ["White"],   "W2"),
+  _mkPos("3 – Black",   ["Black"],   "K1"),
+  _mkPos("4 – Black",   ["Black"],   "K2"),
+  _mkPos("5 – Cyan",    ["Cyan"],    "C1"),
+  _mkPos("6 – Cyan",    ["Cyan"],    "C2"),
+  _mkPos("7 – Magenta", ["Magenta"], "M1"),
+  _mkPos("8 – Magenta", ["Magenta"], "M2"),
+  _mkPos("9 – Yellow",  ["Yellow"],  "Y1"),
+  _mkPos("10 – Yellow", ["Yellow"],  "Y2"),
+  _mkPos("11 – White",  ["White"],   "W1"),
+  _mkPos("12 – White",  ["White"],   "W2"),
+];
+
+// H5 has 5 print-head cartridges, each holding heads 1 (lowest) through 5
+// (highest), same layout/order shown on the machine's own Print Heads
+// diagnostics screen. Each head prints two ink channels (A/B). Confirmed
+// against a photo of that screen (2026-09-09): Cartridge 1 = Y/LM, 2 = K/LC,
+// 3 = White/White2, 4 = C/LK, 5 = M/LY (not C/LY as first described verbally).
+const PRINTHEAD_POSITIONS_H5 = [];
+[["Y","LM"], ["K","LC"], ["W","W"], ["C","LK"], ["M","LY"]].forEach(([a, b], cartIdx) => {
+  for (let head = 1; head <= 5; head++) {
+    PRINTHEAD_POSITIONS_H5.push(_mkPos(`Cartridge ${cartIdx + 1} – ${a}/${b} Head ${head}`, [a, b]));
+  }
+});
+
+const PRINTHEAD_POSITIONS_DRINKWARE = [
+  _mkPos("1 – WW", ["W","W"]),
+  _mkPos("2 – KC", ["K","C"]),
+  _mkPos("3 – MY", ["M","Y"]),
+  _mkPos("4 – VV", ["V","V"]),
+];
+
+// Keyed the same as PRINTED_MACHINES.
+const PRINTHEAD_POSITIONS = {
+  "30":           PRINTHEAD_POSITIONS_30,
+  "30+":          PRINTHEAD_POSITIONS_30,
+  "H5":           PRINTHEAD_POSITIONS_H5,
+  "Drinkware M1": PRINTHEAD_POSITIONS_DRINKWARE,
+  "Drinkware M2": PRINTHEAD_POSITIONS_DRINKWARE,
+};
+
+// Swatch colors for the carriage view. Single-letter codes cover the Drinkware/H5
+// shorthand (W/K/C/M/Y + light variants LC/LM/LY/LK), full words cover 30/30+.
+// "V" has no confirmed meaning yet (Drinkware "VV" position) — shown as a neutral
+// hatch-free placeholder until the owner confirms what ink it is.
+const PH_COLOR_SWATCH = {
+  White: "#f8f8f4", Black: "#8c8c8c", Cyan: "#8fdbe8", Magenta: "#f3b8d8", Yellow: "#f7e58a",
+  W: "#f8f8f4", K: "#8c8c8c", C: "#8fdbe8", M: "#f3b8d8", Y: "#f7e58a", V: "#dbe4ee",
+  LC: "#c9f0f5", LM: "#f9dced", LY: "#faf3c9", LK: "#b8b8b8",
+};

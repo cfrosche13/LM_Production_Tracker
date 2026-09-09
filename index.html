@@ -609,6 +609,9 @@
       <button class="maint-btn" id="maint-inventory" onclick="openInventoryPanel()">
         <span class="maint-icon">📦</span>Inventory
       </button>
+      <button class="maint-btn" id="maint-printheads" onclick="openPrintheadsPanel()">
+        <span class="maint-icon">🖨️</span>Print Heads
+      </button>
     </div>
   </div>
 
@@ -661,6 +664,29 @@
 
     <!-- Content (dynamically rendered by renderInventory) -->
     <div id="inv-content" style="padding:0 16px 32px;"></div>
+  </div>
+
+  <!-- Print Heads panel -->
+  <div id="maint-panel-printheads" style="display:none;width:100%;max-width:1000px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px 8px;flex-wrap:wrap;">
+      <button onclick="closePrintheadsPanel()"
+        style="font-family:'Josefin Slab',serif;font-size:12px;color:#888;background:none;border:none;cursor:pointer;padding:0;white-space:nowrap;">← Actions</button>
+      <div style="font-family:'Abril Fatface',serif;font-size:18px;color:#1a2e1c;flex:1;">Print Heads</div>
+    </div>
+
+    <!-- Machine tabs -->
+    <div style="display:flex;gap:6px;padding:6px 16px 12px;flex-wrap:wrap;">
+      <button id="ph-tab-30"          onclick="phSwitchMachine('30')"           class="inv-machine-tab">30</button>
+      <button id="ph-tab-30p"         onclick="phSwitchMachine('30+')"          class="inv-machine-tab">30+</button>
+      <button id="ph-tab-H5"          onclick="phSwitchMachine('H5')"           class="inv-machine-tab">H5</button>
+      <button id="ph-tab-DrinkwareM1" onclick="phSwitchMachine('Drinkware M1')" class="inv-machine-tab">Drinkware M1</button>
+      <button id="ph-tab-DrinkwareM2" onclick="phSwitchMachine('Drinkware M2')" class="inv-machine-tab">Drinkware M2</button>
+    </div>
+
+    <!-- Content (dynamically rendered by renderPrintheads) -->
+    <div id="ph-content" style="padding:0 16px 32px;"></div>
   </div>
 
   <!-- Log tab -->
@@ -860,6 +886,34 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('inv-adjust-lot-modal')">Cancel</button>
       <button class="btn-save" onclick="submitAdjustLot()">✓ Save Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PRINT HEAD DETAIL / HISTORY MODAL ══════════ -->
+<div class="modal-overlay" id="printhead-detail-modal">
+  <div class="modal-box" style="max-width:440px;max-height:80vh;overflow-y:auto;">
+    <div id="ph-detail-body"></div>
+    <div style="margin-top:16px;text-align:right;">
+      <button class="btn-cancel" onclick="closeModal('printhead-detail-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LOG PRINT HEAD REPLACEMENT MODAL ══════════ -->
+<div class="modal-overlay" id="printhead-log-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title">Log Head Replacement</div>
+    <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#888;margin-bottom:14px;">Machine: <strong id="ph-log-machine-display"></strong></div>
+    <div class="modal-form">
+      <div class="mf full"><label>Head Position</label><select id="ph-log-position"></select></div>
+      <div class="mf"><label>Date Replaced</label><input id="ph-log-date" type="date" /></div>
+      <div class="mf full"><label>Operator</label><input id="ph-log-operator" placeholder="Name" /></div>
+      <div class="mf full"><label>Notes (optional)</label><textarea id="ph-log-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('printhead-log-modal')">Cancel</button>
+      <button class="btn-save" onclick="submitPrintheadLog()">✓ Log Replacement</button>
     </div>
   </div>
 </div>
@@ -1201,7 +1255,7 @@
 </div>
 
 <!-- JS files in dependency order -->
-<script src="js/constants.js?v=9"></script>
+<script src="js/constants.js?v=14"></script>
 <script src="js/state.js?v=5"></script>
 <script src="js/utils.js?v=5"></script>
 <script src="js/oee.js?v=5"></script>
@@ -1348,6 +1402,7 @@ function stopAllTransitions() {
 </script>
 <script src="js/maintenance.js?v=4"></script>
 <script src="js/inventory.js?v=23"></script>
+<script src="js/printheads.js?v=7"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
 <script src="js/settings.js?v=9"></script>
