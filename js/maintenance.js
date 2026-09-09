@@ -225,7 +225,7 @@ function cleanRenderChecklist() {
     row.appendChild(label);
 
     const manualUrl = MACHINE_MANUALS[machine];
-    const manualPage = CLEANING_TASK_MANUAL_REF[task];
+    const manualPage = CLEANING_TASK_MANUAL_REF[machine]?.[task];
     if (manualUrl && manualPage) {
       const refLink = document.createElement("a");
       refLink.href = manualUrl + "#page=" + manualPage;
