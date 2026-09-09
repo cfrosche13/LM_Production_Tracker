@@ -810,11 +810,14 @@ const PRINTHEAD_POSITIONS_H5 = [];
   }
 });
 
+// Heads are seated horizontally (wider than tall) — colors are listed
+// left-to-right as they render in the carriage (js/printheads.js _phHeadHtml
+// puts colors[0] on the left, colors[1] on the right): C left of K, Y left of M.
 const PRINTHEAD_POSITIONS_DRINKWARE = [
-  _mkPos("1 – WW", ["W","W"]),
-  _mkPos("2 – KC", ["K","C"]),
-  _mkPos("3 – MY", ["M","Y"]),
-  _mkPos("4 – VV", ["V","V"]),
+  _mkPos("1 – WW", ["W","W"], "WW"),
+  _mkPos("2 – KC", ["C","K"], "KC"),
+  _mkPos("3 – MY", ["Y","M"], "MY"),
+  _mkPos("4 – VV", ["V","V"], "VV"),
 ];
 
 // Keyed the same as PRINTED_MACHINES.

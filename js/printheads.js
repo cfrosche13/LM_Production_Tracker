@@ -127,10 +127,15 @@ function _phHeadHtml(pos, idx, width, height) {
   const colors = (pos.colors || []).map(c => PH_COLOR_SWATCH[c] || "#999");
   const count  = _phCountForPosition(_phMachine, pos.label);
   const bands  = colors.length >= 2
-    ? `<div style="flex:1;background:${colors[0]};"></div><div style="flex:1;background:${colors[1]};"></div>`
+    ? `<div style="display:flex;flex-direction:row;flex:1;">
+         <div style="flex:1;background:${colors[0]};"></div>
+         <div style="flex:1;background:${colors[1]};"></div>
+       </div>`
     : `<div style="flex:1;background:${colors[0] || '#999'};"></div>`;
   const codeLabel = pos.code
-    ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:#2a2a2a;text-shadow:0 0 4px rgba(255,255,255,0.85);pointer-events:none;">${esc(pos.code)}</div>`
+    ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+         <span style="background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.15);border-radius:4px;padding:2px 7px;font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,0.3);">${esc(pos.code)}</span>
+       </div>`
     : "";
 
   return `
@@ -165,29 +170,29 @@ function _phHeadSegmentHtml(pos, idx, headNum, left, top, width, height, z) {
              box-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:${z};display:flex;">
       <div style="flex:1;background:${colorA};display:flex;align-items:center;justify-content:center;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#2a2a2a;">${esc(codes[0] || "")}</div>
       <div style="flex:1;background:${colorB};display:flex;align-items:center;justify-content:center;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;color:#2a2a2a;">${esc(codes[1] || "")}</div>
-      <div style="position:absolute;top:2px;left:4px;font-family:'Josefin Slab',serif;font-size:8px;font-weight:700;color:rgba(0,0,0,0.5);">H${headNum}</div>
+      <div style="position:absolute;top:2px;left:3px;background:#0d0f10;color:#fff;font-family:'Josefin Slab',serif;font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px;line-height:1.3;box-shadow:0 1px 2px rgba(0,0,0,0.4);">H${headNum}</div>
       ${count > 0 ? `<div style="position:absolute;top:2px;right:3px;background:#0d0f10;color:#8fe08f;font-family:'Josefin Slab',serif;font-size:8px;font-weight:700;border-radius:8px;padding:1px 4px;line-height:1.3;">${count}</div>` : ""}
     </div>
   `;
 }
 
 function _phRenderCartridgeStick(positions, cartIdx, segW, segH) {
-  const oddHeads  = [5, 3, 1]; // straight 3-row column, left-aligned
-  const evenHeads = [4, 2];    // 2-row column, nested between the odd rows, shifted right
+  const oddHeads  = [5, 3, 1]; // straight 3-row column, on the right
+  const evenHeads = [4, 2];    // 2-row column, nested between the odd rows, on the left
   const colGap  = 14;
-  const shiftX  = segW + colGap; // fully clear of column A, no overlap
+  const shiftX  = segW + colGap; // fully clear of the other column, no overlap
   const stackH  = segH * 3;
   const stickW  = shiftX + segW;
 
   let html = `<div style="position:relative;width:${stickW}px;height:${stackH}px;">`;
   oddHeads.forEach((head, i) => {
     const idx = cartIdx * 5 + (head - 1);
-    html += _phHeadSegmentHtml(positions[idx], idx, head, 0, i * segH, segW, segH, 1);
+    html += _phHeadSegmentHtml(positions[idx], idx, head, shiftX, i * segH, segW, segH, 1);
   });
   evenHeads.forEach((head, j) => {
     const idx = cartIdx * 5 + (head - 1);
     const top = segH / 2 + j * segH;
-    html += _phHeadSegmentHtml(positions[idx], idx, head, shiftX, top, segW, segH, 2);
+    html += _phHeadSegmentHtml(positions[idx], idx, head, 0, top, segW, segH, 2);
   });
   html += `</div>`;
   return html;
@@ -234,8 +239,10 @@ function _phRenderCarriageSection(machine) {
   } else if (isH5) {
     inner = _phRenderCartridgeColumns(positions, 56, 48);
   } else {
-    inner += `<div style="display:flex;gap:4px;">`;
-    positions.forEach((pos, idx) => { inner += _phHeadHtml(pos, idx, headW); });
+    // Drinkware: one row of 4 columns, White first through Varnish last.
+    // Each head is itself wider than tall (seated horizontally).
+    inner += `<div style="display:flex;align-items:flex-end;gap:10px;">`;
+    positions.forEach((pos, idx) => { inner += _phHeadHtml(pos, idx, 110, 56); });
     inner += `</div>`;
   }
 
