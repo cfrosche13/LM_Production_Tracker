@@ -222,6 +222,7 @@ function render() {
 
   renderChart(td);
   renderCards(td);
+  renderShiftProgress(td);
   renderWeeklySummary();
   if (shippingStatus) renderShipping();
   document.getElementById("loading").style.display = "none";
@@ -230,6 +231,10 @@ function render() {
 // ── PLAN LOOKUP ──
 function shiftHourRange(shift) {
   return shift === "day" ? [DAY_SHIFT_START_HOUR, DAY_SHIFT_END_HOUR] : [DAY_SHIFT_END_HOUR, 24];
+}
+function currentShift() {
+  const h = new Date().getHours();
+  return (h>=DAY_SHIFT_START_HOUR && h<DAY_SHIFT_END_HOUR) ? "day" : "night";
 }
 function findPlanRecord(dateStr, shift, group) {
   const suffix = group === "drinkware" ? "_drinkware" : "";
@@ -526,6 +531,51 @@ function renderShiftCards(gridId, td, shift) {
     `;
     grid.appendChild(card);
   });
+}
+
+// Pinned strip (shown on all 3 rotating views, below Needs Attention) — just
+// the % to plan bar for the shift currently running, no other card data.
+function renderShiftProgress(td) {
+  const wrap = document.getElementById("shift-progress-items");
+  if (!wrap) return;
+
+  const shift = currentShift();
+  const [hStart, hEnd] = shiftHourRange(shift);
+  const inShift = s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; };
+  const yd = yesterday();
+
+  wrap.innerHTML = "";
+  PLAN_MACHINES.forEach(machine => {
+    const sessions = (machineReports[machine]||[]).filter(s=>localDateStr(s.time)===td).filter(inShift);
+    const plan     = machinePlan(machine, td, shift);
+    const printed  = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
+    const pct      = (plan!=null && plan>0) ? Math.round(printed/plan*100) : null;
+    const pc       = pct!=null ? oeeColor(pct) : null;
+    const barColor = MACHINE_COLORS[machine] || "#aaaaaa"; // same color the hourly chart uses for this machine
+
+    // Same skip condition as renderShiftCards, so the same set of machines (in
+    // the same order) render here and in the card grid below — that's what
+    // keeps the grid columns lined up between the two.
+    const yTotal = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).filter(inShift).reduce((a,s)=>a+(s.qtyGood||0),0);
+    if (!sessions.length && plan==null && !yTotal) return;
+
+    const item = document.createElement("div");
+    item.className = "spg-item";
+    item.innerHTML = `
+      <div class="spg-name-row">
+        <div class="spg-name" style="color:${barColor};">${machine}</div>
+        <div class="spg-pct" style="color:${pct!=null?pc.text:'#9b9b9b'};">${pct!=null ? pct+"%" : "—"}</div>
+      </div>
+      <div class="spg-bar-wrap">
+        <div class="spg-bar" style="width:${pct!=null?Math.min(100,pct):0}%;background:${pct!=null?barColor:'transparent'};"></div>
+      </div>
+    `;
+    wrap.appendChild(item);
+  });
+
+  if (!wrap.children.length) {
+    wrap.innerHTML = `<div style="font-size:11px;color:#9b9b9b;">No sessions yet this shift.</div>`;
+  }
 }
 
 // Pieces printed this shift across the print-floor machines -- used as the
