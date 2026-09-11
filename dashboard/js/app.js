@@ -743,7 +743,6 @@ function renderShiftProgress(td) {
   const shift = currentShift();
   const [hStart, hEnd] = shiftHourRange(shift);
   const inShift = s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; };
-  const yd = yesterday();
 
   wrap.innerHTML = "";
   PLAN_MACHINES.forEach(machine => {
@@ -754,11 +753,10 @@ function renderShiftProgress(td) {
     const pc       = pct!=null ? oeeColor(pct) : null;
     const barColor = MACHINE_COLORS[machine] || "#aaaaaa"; // same color the hourly chart uses for this machine
 
-    // Same skip condition as renderShiftCards, so the same set of machines (in
-    // the same order) render here and in the card grid below — that's what
-    // keeps the grid columns lined up between the two.
-    const yTotal = (machineReports[machine]||[]).filter(s=>s.time&&localDateStr(s.time)===yd).filter(inShift).reduce((a,s)=>a+(s.qtyGood||0),0);
-    if (!sessions.length && plan==null && !yTotal) return;
+    // Always show all 5 machines — this banner is pinned above all 3 rotating
+    // views (Machine Summary, Weekly Performance, Shipping Status), not just
+    // Machine Summary, so hiding a machine to match that one view's card grid
+    // just looked like a missing bar on the other two.
 
     const item = document.createElement("div");
     item.className = "spg-item";
@@ -773,10 +771,6 @@ function renderShiftProgress(td) {
     `;
     wrap.appendChild(item);
   });
-
-  if (!wrap.children.length) {
-    wrap.innerHTML = `<div style="font-size:11px;color:#9b9b9b;">No sessions yet this shift.</div>`;
-  }
 }
 
 // VIEW: Pace slide — first pass (plain numbers/bars), "fun" visual TBD.
