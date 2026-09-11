@@ -48,6 +48,24 @@ let plansData = {};
 let shippingStatus = null;
 let loaded         = { sessions: false, maint: false, wait: false, targets: false, shipConfirm: false, plans: false };
 
+// ── DEMO TIME OVERRIDE ──
+// Lets this dashboard be previewed as if it were a different time of day
+// today (e.g. "show me 11am" when it's actually early/low-production) without
+// touching real data. Pass ?demoTime=HH:MM (24h) in the URL — the live TV
+// never has this param, so it always uses the real clock. Not persisted.
+let _demoNowMs = null;
+(function() {
+  const dt = new URLSearchParams(window.location.search).get("demoTime");
+  if (dt && /^\d{1,2}:\d{2}$/.test(dt)) {
+    const [hh, mm] = dt.split(":").map(Number);
+    const d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    _demoNowMs = d.getTime();
+  }
+})();
+function _now() { return _demoNowMs!=null ? _demoNowMs : Date.now(); }
+function _nowDate() { return new Date(_now()); }
+
 function fmt(s) {
   return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 }
@@ -55,7 +73,7 @@ function localDateStr(d) {
   const dt = d instanceof Date ? d : new Date(d);
   return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 }
-function today() { return localDateStr(new Date()); }
+function today() { return localDateStr(_nowDate()); }
 function oeeColor(pct) {
   if (pct >= 85) return { bar:"#0d6748", text:"#0d6748" };
   if (pct >= 65) return { bar:"#568e7b", text:"#568e7b" };
@@ -64,7 +82,7 @@ function oeeColor(pct) {
 }
 
 function yesterday() {
-  const d = new Date(); d.setDate(d.getDate()-1);
+  const d = _nowDate(); d.setDate(d.getDate()-1);
   return localDateStr(d);
 }
 
@@ -120,7 +138,7 @@ function parseDashOrders(buffer) {
   console.log("Dashboard orders: total rows read =", rows.length);
   if (rows.length > 0) console.log("First row keys:", Object.keys(rows[0]));
 
-  const today = new Date();
+  const today = _nowDate();
   const byMachine = {};
   let total = 0, aged8plus = 0, skipped = 0, fbaTotal = 0;
 
@@ -217,12 +235,14 @@ function render() {
   document.getElementById("h-drinkware").textContent     = totalDrinkware.toLocaleString();
   document.getElementById("h-drinkware-bad").textContent = badDrinkware ? badDrinkware+" bad" : "";
   document.getElementById("h-ship-confirm").textContent  = ((shipConfirmData[td]||{}).total||0).toLocaleString();
-  document.getElementById("last-updated").textContent  = "Updated " + new Date().toLocaleTimeString();
-  document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  document.getElementById("last-updated").textContent  = "Updated " + _nowDate().toLocaleTimeString() + (_demoNowMs!=null ? " (demo time)" : "");
+  document.getElementById("today-date").textContent = _nowDate().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
   renderChart(td);
   renderCards(td);
   renderShiftProgress(td);
+  renderPace(td);
+  renderShippingPace();
   renderWeeklySummary();
   if (shippingStatus) renderShipping();
   document.getElementById("loading").style.display = "none";
@@ -233,8 +253,189 @@ function shiftHourRange(shift) {
   return shift === "day" ? [DAY_SHIFT_START_HOUR, DAY_SHIFT_END_HOUR] : [DAY_SHIFT_END_HOUR, 24];
 }
 function currentShift() {
-  const h = new Date().getHours();
+  const h = _nowDate().getHours();
   return (h>=DAY_SHIFT_START_HOUR && h<DAY_SHIFT_END_HOUR) ? "day" : "night";
+}
+
+// ── PACE (% to plan, scaled to elapsed shift time) ──
+// Same underlying metric as the LM_Print_Track_Report reporting app's "pace"
+// feature: compare actual production to what SHOULD be done by now (full
+// target scaled by how much of the shift has elapsed) instead of the full
+// shift target, which always looks like a miss early in a shift.
+// Computed per group (Print Floor machines share one elapsed-time clock,
+// Drinkware machines share their own) — matches the reporting app's math —
+// but displayed per machine on this dashboard.
+const PACE_GROUPS = {
+  standard:  PLAN_MACHINES.filter(m => !DRINKWARE_MACHINES.includes(m)), // 30, 30+, H5
+  drinkware: DRINKWARE_MACHINES,                                         // Drinkware M1, M2
+};
+function paceGroupFor(machine) {
+  return DRINKWARE_MACHINES.includes(machine) ? "drinkware" : "standard";
+}
+// Shift's normal clock-end hour (fractional allowed) — the far edge of the
+// pace clock. Elapsed fraction is capped at 1 once this passes, so extended/
+// overtime hours just compare actual to the full target, same as before.
+function shiftClockEndHour(shift) {
+  return shift === "day" ? DAY_SHIFT_END_HOUR : 23.5; // 3pm Day / 11:30pm Night
+}
+// Earliest session across every machine in a pace group, for the given date
+// + shift — the pace clock's "0%" anchor (first real tally, not scheduled
+// start time).
+function groupFirstTallyMs(group, td, shift) {
+  const [hStart, hEnd] = shiftHourRange(shift);
+  let earliest = null;
+  PACE_GROUPS[group].forEach(machine => {
+    (machineReports[machine]||[]).forEach(s => {
+      if (!s.time || localDateStr(s.time)!==td) return;
+      const t = new Date(s.time);
+      const h = t.getHours();
+      if (h<hStart || h>=hEnd) return;
+      const ms = t.getTime();
+      if (earliest==null || ms<earliest) earliest = ms;
+    });
+  });
+  return earliest;
+}
+// 0..1 fraction of the shift elapsed so far, or null if this group hasn't
+// tallied anything yet this shift (pace is neutral/unavailable until then).
+function shiftElapsedFraction(group, td, shift) {
+  const startMs = groupFirstTallyMs(group, td, shift);
+  if (startMs==null) return null;
+  const dayStart = new Date(td+"T00:00:00").getTime();
+  const endMs = dayStart + shiftClockEndHour(shift)*3600*1000;
+  const now = Math.min(_now(), endMs);
+  if (now<=startMs) return 0;
+  return Math.min(1, (now-startMs)/(endMs-startMs));
+}
+// 5-tier color scale matching the reporting app's thresholds (lower-tier
+// inclusive: <=60 red, 61-70 orange, 71-80 yellow, 81-90 yellow-green, 91+ green).
+function paceColor(pct) {
+  if (pct<=60) return "#c4770a";
+  if (pct<=70) return "#d69a4a";
+  if (pct<=80) return "#c9b93a";
+  if (pct<=90) return "#8aaa44";
+  return "#0d6748";
+}
+// Animation duration in seconds — shorter = faster/more energetic motion.
+// Scales continuously with pct (clamped 15-140%) so the motion itself reads
+// as a real speed gauge, not a stepped swap between states.
+function paceAnimDuration(pct) {
+  const p = Math.max(15, Math.min(140, pct==null ? 15 : pct));
+  const t = (p-15)/(140-15);
+  return (2.6 - t*(2.6-0.45)).toFixed(2);
+}
+// ── FLAME GAUGE ──
+// Replaces the earlier "which animal" approach (turtle/hare/horse) — a
+// single 🔥 icon that continuously grows and heats up with pace instead of
+// swapping characters, so there's no species left to misread as not-fast-enough.
+// Explicit calibration checkpoints (owner-specified, 2026-09-11), interpolated
+// piecewise-linear between them — a real color-temperature journey rather
+// than one smooth gradient, so the shift actually reads as distinct zones:
+//   100%+ : full hot orange flame, largest size
+//   75%   : still orange, but only as big/bright as the OLD curve showed at
+//           41% — the mid-high range was too generous before
+//   60%   : mid-transition into purple/cold
+//   50%   : blue, tiny
+//   <=25% : fully gray/desaturated — smoldering, near-out
+// (hue is a hue-rotate() degree applied to the flame's natural orange-red;
+// gray/sat/bright are grayscale()/saturate()/brightness() percentages/factors)
+const FLAME_STOPS = [
+  { pct: 100, size: 112, hue: 0,   gray: 0,   sat: 1.8, bright: 1.4  },
+  { pct: 75,  size: 50,  hue: 0,   gray: 45,  sat: 0.9, bright: 0.9  },
+  { pct: 60,  size: 40,  hue: 280, gray: 25,  sat: 1.0, bright: 0.85 },
+  { pct: 50,  size: 32,  hue: 200, gray: 15,  sat: 1.0, bright: 0.85 },
+  { pct: 25,  size: 24,  hue: 200, gray: 100, sat: 0,   bright: 0.7  },
+];
+function _flameLerp(pctIn) {
+  const pct = pctIn==null ? 0 : pctIn;
+  if (pct >= FLAME_STOPS[0].pct) return FLAME_STOPS[0];
+  if (pct <= FLAME_STOPS[FLAME_STOPS.length-1].pct) return FLAME_STOPS[FLAME_STOPS.length-1];
+  for (let i=0; i<FLAME_STOPS.length-1; i++) {
+    const a = FLAME_STOPS[i], b = FLAME_STOPS[i+1];
+    if (pct<=a.pct && pct>=b.pct) {
+      const t = (a.pct-pct)/(a.pct-b.pct); // 0 at a, 1 at b
+      const lerp = (x,y) => x+(y-x)*t;
+      return { size:lerp(a.size,b.size), hue:lerp(a.hue,b.hue), gray:lerp(a.gray,b.gray), sat:lerp(a.sat,b.sat), bright:lerp(a.bright,b.bright) };
+    }
+  }
+  return FLAME_STOPS[FLAME_STOPS.length-1];
+}
+function flameSize(pct) { return Math.round(_flameLerp(pct).size); }
+// Color-only (no size) — reused for both the flame icon itself and its glow
+// halo behind it, so the halo always matches the flame's current color.
+function flameFilter(pct) {
+  const f = _flameLerp(pct);
+  return `hue-rotate(${f.hue.toFixed(0)}deg) grayscale(${f.gray.toFixed(0)}%) saturate(${f.sat.toFixed(2)}) brightness(${f.bright.toFixed(2)})`;
+}
+
+// ── SHIPPING PACE (bottom half of the takeover) ──
+// Shipping has no committed plan to compare against, so the "expected by
+// now" baseline is the 5-day same-shift average for that station
+// (shippingStatus.shiftBreakdown.avg5, already computed server-side by
+// shipping_status_sync.py) scaled down by how much of the SCHEDULED shift
+// has elapsed — same scaling technique as the production pace cards above,
+// just anchored to the shift's clock start/end rather than a first tally
+// (collation/assembly/sorting/ready-to-ship don't have a clean "first tally"
+// of their own to anchor to).
+const SHIP_STATIONS = [
+  { key: "collation",   label: "Collated" },
+  { key: "assembly",    label: "Assembled" },
+  { key: "sorting",     label: "Sorted" },
+  { key: "readyToShip", label: "Ready to Ship" },
+];
+function shipElapsedFraction(shift) {
+  const [hStart] = shiftHourRange(shift);
+  const dayStart = new Date(today()+"T00:00:00").getTime();
+  const startMs = dayStart + hStart*3600*1000;
+  const endMs   = dayStart + shiftClockEndHour(shift)*3600*1000;
+  const now = Math.min(_now(), endMs);
+  if (now<=startMs) return 0;
+  return Math.min(1, (now-startMs)/(endMs-startMs));
+}
+function renderShippingPace() {
+  const grid  = document.getElementById("ship2-grid");
+  const title = document.getElementById("ship2-shift-title");
+  if (!grid) return;
+
+  const sb = shippingStatus && shippingStatus.shiftBreakdown;
+  if (!sb) { grid.innerHTML = `<div style="font-size:12px;color:#9b9b9b;grid-column:1/-1;">Waiting on shipping data…</div>`; return; }
+
+  const shift = sb.shift === "night" ? "night" : "day";
+  if (title) title.textContent = shift==="day" ? "Day Shift" : "Night Shift";
+  const frac = shipElapsedFraction(shift);
+
+  grid.innerHTML = "";
+  SHIP_STATIONS.forEach(({key,label}) => {
+    const actual   = (sb.current && sb.current[key]) || 0;
+    const avg5     = sb.avg5 && sb.avg5[key];
+    const expected = (avg5!=null) ? Math.round(avg5*frac) : null;
+    const pct      = (expected!=null && expected>0) ? Math.round(actual/expected*100) : null;
+    const color    = pct!=null ? paceColor(pct) : "#c8cbc6";
+    const dur      = paceAnimDuration(pct);
+    const size     = flameSize(pct);
+    const filt     = flameFilter(pct);
+    const label2   = pct!=null ? pct+"%" : (avg5==null ? "No History" : "0%");
+    const accessory = (pct==null || pct<=25)
+      ? '<div class="ship2-smoke">💨</div>'
+      : (pct>=100 ? '<div class="ship2-sparks"><span></span><span></span><span></span></div>' : "");
+
+    const card = document.createElement("div");
+    card.className = "ship2-card";
+    card.style.setProperty("--pc-color", color);
+    card.style.setProperty("--dur", dur+"s");
+    card.innerHTML = `
+      <div class="ship2-name" style="color:#0d6748;">${label}</div>
+      <div class="ship2-icon-wrap">
+        ${accessory}
+        <div class="ship2-glow" style="width:${Math.round(size*1.3)}px;height:${Math.round(size*1.3)}px;filter:blur(8px) ${filt};"></div>
+        <div class="ship2-icon" style="font-size:${size}px;filter:${filt};">🔥</div>
+      </div>
+      <div class="ship2-actual">${actual.toLocaleString()}</div>
+      <div class="ship2-of">of ${expected!=null ? expected.toLocaleString() : "—"} typical by now</div>
+      <div class="ship2-pct">${label2}</div>
+    `;
+    grid.appendChild(card);
+  });
 }
 function findPlanRecord(dateStr, shift, group) {
   const suffix = group === "drinkware" ? "_drinkware" : "";
@@ -280,7 +481,7 @@ function weekDates(monday) {
 }
 
 function renderWeeklySummary() {
-  const thisMonday = mondayOf(new Date());
+  const thisMonday = mondayOf(_nowDate());
   const lastMonday = new Date(thisMonday); lastMonday.setDate(lastMonday.getDate()-7);
   renderWeekRow("week-this-grid", weekDates(thisMonday));
   renderWeekRow("week-last-grid", weekDates(lastMonday));
@@ -353,7 +554,7 @@ function renderChart(td) {
   // never extends earlier than CHART_HOURS_START (6am), since 12am-6am is
   // never a working window. Early in the day this just shows fewer columns
   // (e.g. only 6-7am at 7am) rather than padding with dead hours.
-  const effectiveEnd = Math.min(CHART_HOURS_END, Math.max(CHART_HOURS_START, new Date().getHours()));
+  const effectiveEnd = Math.min(CHART_HOURS_END, Math.max(CHART_HOURS_START, _nowDate().getHours()));
   const windowStart = Math.max(CHART_HOURS_START, effectiveEnd - (CHART_WINDOW_HOURS - 1));
   const hours = [];
   for (let h=windowStart; h<=effectiveEnd; h++) hours.push(h);
@@ -578,6 +779,63 @@ function renderShiftProgress(td) {
   }
 }
 
+// VIEW: Pace slide — first pass (plain numbers/bars), "fun" visual TBD.
+function renderPace(td) {
+  const grid  = document.getElementById("pace2-grid");
+  const title = document.getElementById("pace2-shift-title");
+  if (!grid) return;
+
+  const shift = currentShift();
+  const [hStart, hEnd] = shiftHourRange(shift);
+  const inShift = s => { const h = new Date(s.time).getHours(); return h>=hStart && h<hEnd; };
+  if (title) title.textContent = shift==="day" ? "Day Shift" : "Night Shift";
+
+  grid.innerHTML = "";
+  PLAN_MACHINES.forEach(machine => {
+    const group    = paceGroupFor(machine);
+    const frac     = shiftElapsedFraction(group, td, shift);
+    const plan     = machinePlan(machine, td, shift);
+    const sessions = (machineReports[machine]||[]).filter(s=>localDateStr(s.time)===td).filter(inShift);
+    const printed  = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
+    const expected = (plan!=null && frac!=null) ? Math.round(plan*frac) : null;
+    const pct      = (expected!=null && expected>0) ? Math.round(printed/expected*100) : null;
+    const color    = pct!=null ? paceColor(pct) : "#c8cbc6";
+    const dur      = paceAnimDuration(pct);
+    const size     = flameSize(pct);
+    const filt     = flameFilter(pct);
+    const leading  = leadingPieceType(sessions);
+    const accessory = (pct==null || pct<=25)
+      ? '<div class="pace2-smoke">💨</div>'
+      : (pct>=100 ? '<div class="pace2-sparks"><span></span><span></span><span></span></div>' : "");
+
+    // Bottom badge is the raw % to the FULL shift plan (not pace) — the icon/
+    // animation above stays pace-driven; this number answers a different
+    // question ("how's the whole shift looking") side by side with it.
+    const planPct = (plan!=null && plan>0) ? Math.round(printed/plan*100) : null;
+    const planLabel = planPct!=null ? planPct+"% to plan" : (plan==null ? "No Plan" : "0% to plan");
+
+    const card = document.createElement("div");
+    card.className = "pace2-card";
+    card.style.setProperty("--pc-color", color);
+    card.style.setProperty("--dur", dur+"s");
+    card.innerHTML = `
+      <div class="pace2-name" style="color:${MACHINE_COLORS[machine]||'#555'};">${machine}</div>
+      <div class="pace2-icon-wrap">
+        ${accessory}
+        <div class="pace2-glow" style="width:${Math.round(size*1.3)}px;height:${Math.round(size*1.3)}px;filter:blur(8px) ${filt};"></div>
+        <div class="pace2-icon" style="font-size:${size}px;filter:${filt};">🔥</div>
+      </div>
+      <div class="pace2-nums">
+        <span class="pace2-actual">${printed.toLocaleString()}</span>
+        <span class="pace2-of">of ${expected!=null ? expected.toLocaleString() : "—"} expected by now</span>
+      </div>
+      <div class="pace2-leading">${leading ? "Leading: "+leading.label+" ("+leading.qty+")" : ""}</div>
+      <div class="pace2-pct">${planLabel}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
 // Pieces printed this shift across the print-floor machines -- used as the
 // "input" side of the Collation completion bar (Collation's own output feeds
 // Assembly, Assembly's feeds Sorting, Sorting's feeds Ready to Ship).
@@ -797,6 +1055,7 @@ onValue(ref(db,"dashboardOpenOrders"), snap => {
 onValue(ref(db,"shippingStatus"), snap => {
   shippingStatus = snap.val();
   renderShipping();
+  renderShippingPace();
   // The hourly chart's shipping-pipeline stack depends on this data too, but
   // this listener is independent of the main "loaded" gate, so the chart
   // needs an explicit redraw here rather than waiting on the next render().
@@ -807,11 +1066,12 @@ onValue(ref(db,"shippingStatus"), snap => {
 setInterval(() => { if (Object.values(loaded).every(Boolean)) render(); }, 5*60*1000);
 window.addEventListener("resize", () => { if (Object.values(loaded).every(Boolean)) renderChart(today()); });
 
-// ── VIEW ROTATION — the chart stays fixed; this cycles the section below it every 20s ──
+// ── VIEW ROTATION — the chart stays fixed; this cycles the section below it every 10s ──
 // A view can be "pinned" per-browser (localStorage, not shared/synced) so one
 // coworker can park on a single screen — e.g. Weekly Performance on their own
 // laptop — while the TV (a separate browser/device) keeps rotating normally.
-const DASH_VIEWS = ["view-today", "view-weekly", "view-shipping"];
+// Pace repeats between every other slide (MS, Pace, Weekly, Pace, Shipping, Pace).
+const DASH_VIEWS = ["view-today", "view-pace", "view-weekly", "view-pace", "view-shipping", "view-pace"];
 const DASH_VIEW_PIN_KEY = "dashViewPin";
 let _dashViewIndex = 0;
 let _dashViewPin = "auto";
@@ -829,13 +1089,30 @@ function setDashViewPin(pin) {
 // Exposed on window: this is a module script, so top-level functions aren't
 // global by default, but index.html's view-pin buttons call this via inline onclick.
 window.setDashViewPin = setDashViewPin;
+// Pace isn't a real "view-*" element — it's a full swap of #content-main
+// (chart, Needs Attention, Shift Progress, view-pin controls, the 3 regular
+// views) for #content-pace. #sidebar is a sibling of #content, so it's
+// untouched either way.
+function _setPaceActive(active) {
+  const main = document.getElementById("content-main");
+  const pace = document.getElementById("content-pace");
+  if (main) main.style.display = active ? "none" : "";
+  if (pace) pace.classList.toggle("active", active);
+  // The hourly chart's canvas measures its own size (offsetWidth/clientHeight)
+  // to draw — those are 0 while #content-main is display:none, so any data
+  // refresh that lands while Pace is showing draws an empty/broken chart that
+  // then stays broken (nothing else redraws it) until this fires again.
+  // Redraw as soon as the chart is visible again to guarantee a real size.
+  if (!active && Object.values(loaded).every(Boolean)) renderChart(today());
+}
 function _applyDashViewPin() {
   if (_dashViewPin === "auto") return; // rotation interval below takes it from here
   DASH_VIEWS.forEach((id, i) => {
-    const el = document.getElementById(id);
+    const el = document.getElementById(id); // null for "view-pace" — no-ops below
     if (el) el.classList.toggle("active", id === _dashViewPin);
     if (id === _dashViewPin) _dashViewIndex = i; // keeps rotation in sync if unpinned later
   });
+  _setPaceActive(_dashViewPin === "view-pace");
 }
 function _renderViewPinButtons() {
   document.querySelectorAll(".view-pin-btn").forEach(btn => {
@@ -844,12 +1121,25 @@ function _renderViewPinButtons() {
 }
 function rotateDashView() {
   if (_dashViewPin !== "auto") return; // pinned on this browser — don't rotate here
-  const current = document.getElementById(DASH_VIEWS[_dashViewIndex]);
+  const currentId = DASH_VIEWS[_dashViewIndex];
+  const current = document.getElementById(currentId); // null when currentId is "view-pace"
   if (current) current.classList.remove("active");
+
   _dashViewIndex = (_dashViewIndex + 1) % DASH_VIEWS.length;
-  const next = document.getElementById(DASH_VIEWS[_dashViewIndex]);
+  const nextId = DASH_VIEWS[_dashViewIndex];
+  const next = document.getElementById(nextId); // null when nextId is "view-pace"
   if (next) next.classList.add("active");
+
+  _setPaceActive(nextId === "view-pace");
 }
 _applyDashViewPin();
 _renderViewPinButtons();
-setInterval(rotateDashView, 20000);
+// Asymmetric timing: 13s on each real view (Machine Summary/Weekly/Shipping
+// Status), 7s on each Pace interlude — self-rescheduling instead of a fixed
+// setInterval so each slide can get its own duration.
+function _scheduleDashRotate() {
+  const currentId = DASH_VIEWS[_dashViewIndex];
+  const delay = currentId === "view-pace" ? 7000 : 13000;
+  setTimeout(() => { rotateDashView(); _scheduleDashRotate(); }, delay);
+}
+_scheduleDashRotate();

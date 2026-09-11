@@ -33,6 +33,9 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 
 /* ── MAIN CONTENT ── */
 #content { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 14px 20px; overflow-y: auto; min-width: 0; min-height: 0; }
+#content-main { flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+#content-pace { flex: 1; display: none; flex-direction: column; gap: 14px; min-height: 0; }
+#content-pace.active { display: flex; }
 
 /* ── ROTATING VIEWS — chart above stays fixed; this part cycles every 20s ── */
 .dash-view { display: none; flex-direction: column; gap: 14px; min-height: 0; }
@@ -158,3 +161,118 @@ body { background: #f7f8f6; font-family: 'Helvetica Neue', Helvetica, Arial, san
 .spg-pct  { font-size: 11px; font-weight: 700; white-space: nowrap; }
 .spg-bar-wrap { background: #e0e3de; border-radius: 99px; height: 14px; overflow: hidden; }
 .spg-bar { height: 100%; border-radius: 99px; transition: width 0.6s; }
+
+/* ── PACE TAKEOVER — full right-side replacement, FLAME GAUGE per machine.
+   One consistent 🔥 icon per card — size, color intensity (grayscale/
+   brightness/saturate) and flicker speed all scale continuously with pace %
+   (set inline per card in JS via flameSize()/flameFilter()/--dur), instead of
+   swapping between different characters. Split top (Production Pace, vs.
+   plan) / bottom (Shipping Pace, vs. a 5-day historical baseline). ── */
+.pace-split-top, .pace-split-bottom {
+  flex: 1; display: flex; flex-direction: column; min-height: 0;
+}
+.pace-split-bottom { border-top: 2px solid #e0e3de; padding-top: 12px; margin-top: 2px; }
+
+#pace2-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 14px;
+  flex: 1; align-items: stretch;
+}
+.pace2-card {
+  background: #fff; border: 2.5px solid var(--pc-color, #e0e3de); border-radius: 16px;
+  padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-width: 0; box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+}
+.pace2-name { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 28px; white-space: nowrap; }
+.pace2-icon-wrap {
+  flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 0;
+}
+.pace2-nums { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pace2-actual { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 40px; color: #232323; line-height: 1; }
+.pace2-of { font-size: 16px; color: #6b6b6b; text-align: center; }
+.pace2-leading { font-size: 16px; color: #6b6b6b; min-height: 20px; text-align: center; }
+.pace2-pct {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 22px;
+  color: var(--pc-color, #6b6b6b); padding: 4px 14px; border-radius: 99px;
+  background: #f7f8f6; border: 1.5px solid var(--pc-color, #e0e3de);
+}
+
+/* ── SHIPPING PACE (bottom half) — same flame-gauge language, 4 pipeline
+   stations, vs. a 5-day same-shift historical average (scaled by elapsed
+   shift time) instead of a committed plan, since shipping has no plan. ── */
+#ship2-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  flex: 1; align-items: stretch;
+}
+.ship2-card {
+  background: #fff; border: 2px solid var(--pc-color, #e0e3de); border-radius: 14px;
+  padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-width: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.ship2-name { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 24px; white-space: nowrap; }
+.ship2-icon-wrap {
+  flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 0;
+}
+.ship2-actual { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 34px; color: #232323; line-height: 1; }
+.ship2-of { font-size: 15px; color: #6b6b6b; text-align: center; }
+.ship2-pct {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 18px;
+  color: var(--pc-color, #6b6b6b); padding: 3px 12px; border-radius: 99px;
+  background: #f7f8f6; border: 1.5px solid var(--pc-color, #e0e3de);
+}
+
+/* ── Flame icon itself — font-size and filter (grayscale/brightness/
+   saturate) are set inline per card; only the flicker MOTION is CSS, kept
+   separate (transform-only) so it doesn't fight the inline filter. ── */
+.pace2-icon, .ship2-icon {
+  position: relative; line-height: 1; display: inline-block; will-change: transform;
+  animation: flame-flicker var(--dur, 1.4s) ease-in-out infinite;
+  transition: font-size 0.6s ease, filter 0.6s ease;
+}
+@keyframes flame-flicker {
+  0%   { transform: scale(1) rotate(0deg); }
+  25%  { transform: scale(1.07) rotate(-3deg); }
+  50%  { transform: scale(0.96) rotate(2deg); }
+  75%  { transform: scale(1.05) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+/* Glow behind the flame — a soft colored halo (same --pc-color as the card
+   border/badge) that pulses independently of the flame's own filter. */
+.pace2-glow, .ship2-glow {
+  position: absolute; border-radius: 50%;
+  /* Base gradient is a fixed warm orange — the inline filter (set in JS,
+     same value as the flame icon's own filter) is what actually recolors it
+     to match the flame's current temperature, so the halo always tracks. */
+  background: radial-gradient(circle, #ff6a00 0%, transparent 72%);
+  opacity: 0.5;
+  animation: flame-glow-pulse var(--dur, 1.4s) ease-in-out infinite;
+}
+@keyframes flame-glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.88); }
+  50%      { opacity: 0.6; transform: scale(1.08); }
+}
+/* Barely-lit / no-data state — a wisp of smoke instead of a visible flame. */
+.pace2-smoke, .ship2-smoke {
+  position: absolute; top: 4%; font-size: 22px; opacity: 0.55; z-index: 2;
+  animation: smoke-drift 3s ease-in-out infinite;
+}
+@keyframes smoke-drift {
+  0%   { transform: translateY(6px) translateX(0) scale(0.8); opacity: 0.45; }
+  50%  { transform: translateY(-10px) translateX(5px) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-24px) translateX(-3px) scale(1.15); opacity: 0; }
+}
+/* Roaring/ahead-of-pace state — sparks flying off the top of the flame. */
+.pace2-sparks, .ship2-sparks { position: absolute; top: 10%; z-index: 2; }
+.pace2-sparks span, .ship2-sparks span {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--pc-color, #ffb347);
+  animation: spark-rise var(--dur, 0.6s) ease-out infinite;
+}
+.pace2-sparks span:nth-child(1), .ship2-sparks span:nth-child(1) { left: -18px; animation-delay: 0s; }
+.pace2-sparks span:nth-child(2), .ship2-sparks span:nth-child(2) { left: 0;     animation-delay: 0.15s; }
+.pace2-sparks span:nth-child(3), .ship2-sparks span:nth-child(3) { left: 18px;  animation-delay: 0.3s; }
+@keyframes spark-rise {
+  0%   { transform: translateY(0) scale(1);   opacity: 0.95; }
+  100% { transform: translateY(-38px) scale(0.3); opacity: 0; }
+}

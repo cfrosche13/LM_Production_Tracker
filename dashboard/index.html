@@ -84,6 +84,24 @@
 <!-- MAIN CONTENT -->
 <div id="content">
 
+<!-- NORMAL MODE — chart + pinned banners + the 3 regular rotating views.
+     Hidden entirely (not just the rotating slot) while the Pace takeover
+     below is showing, per the owner's "everything to the right is different"
+     request — only the far-left #sidebar stays visible throughout. -->
+<!-- VIEW PIN — always visible regardless of rotation state (including during
+     the Pace takeover), so there's always a way to navigate. Per-browser only
+     (saved in this browser's storage), so a TV left on Auto keeps rotating
+     while someone here can pin one screen. -->
+<div id="view-pin-controls">
+  <button class="view-pin-btn" data-view="auto" onclick="setDashViewPin('auto')">&#8635; Auto</button>
+  <button class="view-pin-btn" data-view="view-today" onclick="setDashViewPin('view-today')">Machine Summary</button>
+  <button class="view-pin-btn" data-view="view-pace" onclick="setDashViewPin('view-pace')">Pace</button>
+  <button class="view-pin-btn" data-view="view-weekly" onclick="setDashViewPin('view-weekly')">Weekly Performance</button>
+  <button class="view-pin-btn" data-view="view-shipping" onclick="setDashViewPin('view-shipping')">Shipping Status</button>
+</div>
+
+<div id="content-main">
+
   <!-- HOURLY CHART — pinned above all rotating views -->
   <div id="chart-section">
     <div class="section-title">Production by Hour — Today</div>
@@ -102,15 +120,6 @@
        even while the Weekly/Shipping views are on screen. -->
   <div class="shift-progress-banner" id="shift-progress-banner">
     <div class="shift-progress-items" id="shift-progress-items"></div>
-  </div>
-
-  <!-- VIEW PIN — per-browser only (saved in this browser's storage), so a TV
-       left on Auto keeps rotating while someone here can pin one screen. -->
-  <div id="view-pin-controls">
-    <button class="view-pin-btn" data-view="auto" onclick="setDashViewPin('auto')">&#8635; Auto</button>
-    <button class="view-pin-btn" data-view="view-today" onclick="setDashViewPin('view-today')">Machine Summary</button>
-    <button class="view-pin-btn" data-view="view-weekly" onclick="setDashViewPin('view-weekly')">Weekly Performance</button>
-    <button class="view-pin-btn" data-view="view-shipping" onclick="setDashViewPin('view-shipping')">Shipping Status</button>
   </div>
 
   <!-- VIEW 1: MACHINE SUMMARY -->
@@ -226,6 +235,23 @@
 
     <div id="shipping-updated"></div>
   </div>
+
+</div><!-- /content-main -->
+
+<!-- PACE TAKEOVER — replaces the entire area above (chart, Needs Attention,
+     Shift Progress, view-pin controls, all 3 regular views) while showing.
+     Sidebar (#sidebar) is a sibling of #content, so it's untouched by this.
+     Split top/bottom: Production Pace (5 machines) / Shipping Pace (4 stations). -->
+<div id="content-pace">
+  <div class="pace-split-top">
+    <div class="section-title">Pace — <span id="pace2-shift-title">Shift</span></div>
+    <div id="pace2-grid"></div>
+  </div>
+  <div class="pace-split-bottom">
+    <div class="section-title">Shipping Pace — <span id="ship2-shift-title">Shift</span></div>
+    <div id="ship2-grid"></div>
+  </div>
+</div>
 
 </div>
 
