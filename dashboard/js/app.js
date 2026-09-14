@@ -440,7 +440,16 @@ function renderShippingPace() {
 function findPlanRecord(dateStr, shift, group) {
   const suffix = group === "drinkware" ? "_drinkware" : "";
   const baseKey = `committed-plan_${dateStr}_${shift}${suffix}`;
-  return plansData[baseKey] || plansData[baseKey+"_mid"] || null;
+  // Prefer a committed midshift snapshot over the original morning plan
+  // whenever one exists (found 2026-09-14, same fix already applied twice
+  // in the LM_Print_Track_Report reporting app: its Shift Summary Report
+  // and Daily Recap both force this same preference via
+  // _resolvePlanForShiftGroup's wantMid logic). This dashboard had it
+  // backwards — always showing the stale original plan if one existed,
+  // only falling back to the midshift snapshot when there was no original
+  // at all — which is why its numbers could disagree with the reporting
+  // app even after machinePlan()'s own formula bug was fixed.
+  return plansData[baseKey+"_mid"] || plansData[baseKey] || null;
 }
 // Full-shift plan target for one machine. Was returning the raw open load
 // (rec.machineLoad[machine]) with no capacity cap and no credit for pieces
