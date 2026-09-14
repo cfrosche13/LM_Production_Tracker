@@ -469,6 +469,20 @@ function machinePlan(machine, dateStr, shift) {
   const group = DRINKWARE_MACHINES.includes(machine) ? "drinkware" : "standard";
   const rec = findPlanRecord(dateStr, shift, group);
   if (!rec || !rec.machineLoad || rec.machineLoad[machine]==null) return null;
+  // machineLivePlan (checked first) is the Planning tab's own already-
+  // computed snapshot of "planned" per machine, taken at commit time — it
+  // accounts for rollover distribution and capacity locks that machineCap/
+  // machineActualCap alone don't fully capture (found 2026-09-14 via a
+  // direct Firebase read: machineActualCap['30+'] was 588, a real but
+  // different intermediate number, while machineLivePlan['30+'].planned was
+  // the correct 490 the reporting app actually shows). This must be checked
+  // first, exactly like _savedMachineStat does in the reporting app's
+  // index.html — falling straight to the min(load,cap)+actual formula below
+  // (which is only a fallback for older records with no machineLivePlan)
+  // is what gave 588 instead of 490 even after that formula was corrected.
+  if (rec.machineLivePlan && rec.machineLivePlan[machine]) {
+    return Math.round(rec.machineLivePlan[machine].planned || 0);
+  }
   const open = rec.machineLoad[machine] || 0;
   const cap = (rec.machineActualCap && rec.machineActualCap[machine] != null)
     ? rec.machineActualCap[machine]
