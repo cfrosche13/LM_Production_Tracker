@@ -442,11 +442,30 @@ function findPlanRecord(dateStr, shift, group) {
   const baseKey = `committed-plan_${dateStr}_${shift}${suffix}`;
   return plansData[baseKey] || plansData[baseKey+"_mid"] || null;
 }
+// Full-shift plan target for one machine. Was returning the raw open load
+// (rec.machineLoad[machine]) with no capacity cap and no credit for pieces
+// already made at the moment the plan was committed — found 2026-09-14 when
+// the owner compared these numbers against the LM_Print_Track_Report
+// reporting app's Shift Summary Report, which computes this correctly via
+// the same underlying committed-plan record (synced here through Firebase
+// at printtrack-plans/). Two symptoms from that one bug: a machine loaded
+// beyond its capacity showed a wildly inflated "Plan" (raw load, e.g. 704
+// instead of the true capacity-capped 490), and any machine that already
+// had production logged before the plan was committed showed a plan that
+// was too low by exactly that amount (e.g. 551 instead of 565, a 14-piece
+// gap). Both the Machine Summary cards and the Pace tab read this same
+// function, so both were affected together. Matches _savedMachineStat in
+// the reporting app's index.html exactly, so the two apps agree.
 function machinePlan(machine, dateStr, shift) {
   const group = DRINKWARE_MACHINES.includes(machine) ? "drinkware" : "standard";
   const rec = findPlanRecord(dateStr, shift, group);
   if (!rec || !rec.machineLoad || rec.machineLoad[machine]==null) return null;
-  return rec.machineLoad[machine];
+  const open = rec.machineLoad[machine] || 0;
+  const cap = (rec.machineActualCap && rec.machineActualCap[machine] != null)
+    ? rec.machineActualCap[machine]
+    : ((rec.machineCap||{})[machine] || 0);
+  const actual = (rec.machineActualToday && rec.machineActualToday[machine]) || 0;
+  return Math.round(Math.min(open, cap) + actual);
 }
 function machinePlanWholeDay(machine, dateStr) {
   const day = machinePlan(machine, dateStr, "day");
