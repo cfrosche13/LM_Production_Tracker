@@ -704,6 +704,25 @@
         style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid #c0d0e0;background:#fff;color:#2d6b3d;cursor:pointer;letter-spacing:0.05em;">⚠️ Defective</button>
     </div>
 
+    <!-- Machine + date search -->
+    <div style="display:flex;gap:8px;padding:0 16px 12px;flex-wrap:wrap;align-items:center;">
+      <select id="maint-log-machine-filter" onchange="maintLogMachineFilterChange(this.value)"
+        style="font-family:'Josefin Slab',serif;font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c0d0e0;background:#fff;color:#1a2e1c;">
+        <option value="all">All Machines</option>
+        <option value="30">30</option>
+        <option value="30+">30+</option>
+        <option value="H5">H5</option>
+        <option value="Colex">Colex</option>
+        <option value="Wallets">Wallets</option>
+        <option value="Drinkware M1">Drinkware M1</option>
+        <option value="Drinkware M2">Drinkware M2</option>
+      </select>
+      <input type="date" id="maint-log-date-filter" onchange="maintLogDateFilterChange(this.value)"
+        style="font-family:'Josefin Slab',serif;font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #c0d0e0;background:#fff;color:#1a2e1c;" />
+      <button onclick="maintLogClearDateFilter()"
+        style="font-family:'Josefin Slab',serif;font-size:11px;color:#888;background:none;border:none;cursor:pointer;padding:4px 6px;">✕ Clear date</button>
+    </div>
+
     <div id="maint-log-list" style="padding:8px 16px 24px;"><div class="empty-log">No entries yet.</div></div>
   </div>
 

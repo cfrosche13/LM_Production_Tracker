@@ -657,6 +657,23 @@ function maintSwitchTab(tab) {
   if (tab === 'reports') renderMaintReports();
 }
 
+function maintLogDateFilterChange(value) {
+  _maintLogDateFilter = value || null;
+  renderMaintLog();
+}
+
+function maintLogMachineFilterChange(value) {
+  _maintLogMachineFilter = value || 'all';
+  renderMaintLog();
+}
+
+function maintLogClearDateFilter() {
+  _maintLogDateFilter = null;
+  const input = document.getElementById("maint-log-date-filter");
+  if (input) input.value = "";
+  renderMaintLog();
+}
+
 function renderMaintLog() {
   const list = document.getElementById("maint-log-list");
   if (!list) return;
@@ -667,18 +684,25 @@ function renderMaintLog() {
     defective:  "Defective Material"
   };
   const f = filterMap[_maintLogFilter] || null;
-  const filtered = f
+  let filtered = f
     ? maintLog.filter(e => Array.isArray(f) ? f.includes(e.type) : e.type === f)
     : maintLog;
+  if (_maintLogMachineFilter && _maintLogMachineFilter !== 'all') {
+    filtered = filtered.filter(e => (e.machine || "Unassigned") === _maintLogMachineFilter);
+  }
+  if (_maintLogDateFilter) {
+    filtered = filtered.filter(e => e.time && localDateStr(e.time) === _maintLogDateFilter);
+  }
   if (!filtered.length) { list.innerHTML = '<div class="empty-log">No entries yet.</div>'; return; }
   list.innerHTML = "";
+  const showMachine = _maintLogMachineFilter === 'all';
   filtered.forEach(e => {
     const div = document.createElement("div"); div.className = "log-entry";
     div.innerHTML = `
       <div class="log-dot" style="background:${e.color}"></div>
       <div style="flex:1">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <span class="log-type" style="color:${e.color}">${e.type}</span>
+          <span class="log-type" style="color:${e.color}">${e.type}${showMachine && e.machine ? ` &middot; ${esc(e.machine)}` : ""}</span>
           <span class="log-time">${fmtDate(e.time)}</span>
         </div>
         ${e.detail ? `<div class="log-duration" style="color:${e.color}">${e.detail}</div>` : ""}

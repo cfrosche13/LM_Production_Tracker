@@ -44,6 +44,8 @@ let reportEditMode = new Set(); // machines currently in edit mode
 let _cleanChecks = {}; // { taskLabel: true/false }
 
 let _maintLogFilter = 'all';
+let _maintLogDateFilter = null;    // 'YYYY-MM-DD' or null for all dates
+let _maintLogMachineFilter = 'all'; // machine name or 'all'
 
 let _qsMachine = null;
 let _qsMode    = null;

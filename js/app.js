@@ -173,6 +173,9 @@ function init() {
       _applyTallyRestore(_localTallyDraft());
     });
 
+    // Deep link from the daily maintenance report email — ?machine=H5&date=2026-07-27
+    // jumps straight to that machine + day in the Maintenance Log tab.
+    applyMaintDeepLinkFromURL();
   };
 
   // Set default date filter to today
@@ -194,6 +197,31 @@ function init() {
   // Quick-start: pre-select machine & default mode
   qsInitMachine();
   runDetailsPanelInit();
+}
+
+// Reads ?machine=H5&date=2026-07-27 from the URL (used by links in the daily
+// maintenance report email) and jumps straight to that machine + day in the
+// Maintenance Log tab. No-op if neither param is present.
+function applyMaintDeepLinkFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const machine = params.get("machine");
+  const date    = params.get("date");
+  if (!machine && !date) return;
+
+  switchView('maintenance');
+  maintSwitchTab('log');
+
+  if (machine) {
+    const sel = document.getElementById("maint-log-machine-filter");
+    if (sel) sel.value = machine;
+    maintLogMachineFilterChange(machine);
+    selectMachineByName(machine);
+  }
+  if (date) {
+    const dateInput = document.getElementById("maint-log-date-filter");
+    if (dateInput) dateInput.value = date;
+    maintLogDateFilterChange(date);
+  }
 }
 
 function selectMachine(btn) {
