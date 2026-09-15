@@ -373,13 +373,6 @@ const CLEANING_CHECKLISTS = {
       "Oil fitting beside Station 2 (right side)",
       "Oil fitting beside Station 3 (left side)",
       "Rotate W motor CW and CCW to spread oil evenly"
-    ],
-    "As Needed": [
-      "Clean measuring device before every use",
-      "Wipe limit sensors when buildup is visible",
-      "Clean rails (Y, X1, X2, Z) when debris is present",
-      "Clean table surface between every job",
-      "Verify air pressure is at least 65 psi before each job"
     ]
   }
 };
@@ -390,7 +383,7 @@ const CLEANING_SHIFT_TYPES_DEFAULT = ["Start of Shift","Mid Shift","End of Shift
 const CLEANING_SHIFT_TYPES = {
   "Drinkware M1": ["Start of Shift","Mid Shift","End of Shift","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"],
   "Drinkware M2": ["Start of Shift","Mid Shift","End of Shift","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"],
-  "Colex": ["Start of Shift","Mid Shift","End of Shift","Weekly","Monthly","As Needed"]
+  "Colex": ["Start of Shift","Mid Shift","End of Shift","Weekly","Monthly"]
 };
 
 // Per-machine manual PDF (deep-linked via "#page=N"), used by cleanRenderChecklist()
@@ -613,11 +606,8 @@ const CLEANING_TASK_MANUAL_REF = {
     "Oil fitting beside Station 2 (right side)": 5,
     "Oil fitting beside Station 3 (left side)": 5,
     "Rotate W motor CW and CCW to spread oil evenly": 5,
-    "Clean measuring device before every use": 2,
     "Wipe limit sensors when buildup is visible": 2,
-    "Clean rails (Y, X1, X2, Z) when debris is present": 4,
-    "Clean table surface between every job": 2,
-    "Verify air pressure is at least 65 psi before each job": 8
+    "Clean rails (Y, X1, X2, Z) when debris is present": 4
   }
 };
 
