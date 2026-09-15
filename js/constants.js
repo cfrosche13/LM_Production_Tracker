@@ -332,6 +332,55 @@ const CLEANING_CHECKLISTS = {
       "Replace the one-way valve in the ink channel (ECCO001029-A)",
       "Replace the ink tube assembly — contact technical support (MBIA000074-A / MBIA000073-A)"
     ]
+  },
+  "Colex": {
+    "Start of Shift": [
+      "Turn machine and computer on (black switch, red switch, computer button)",
+      "Check and empty debris collector if full",
+      "Inspect equipment for irregularities",
+      "Install all the necessary bits and blades needed",
+      "Run Machine Restart and initialize all tools"
+    ],
+    "Mid Shift": [
+      "Sweep around station",
+      "Clean collet",
+      "Check debris collector, empty if needed",
+      "Remove all trash and debris as needed",
+      "Organize materials cart"
+    ],
+    "End of Shift": [
+      "Clean and vacuum all debris off router from top down",
+      "Wipe limit sensors when buildup is visible",
+      "Clean rails (Y, X1, X2, Z) when debris is present",
+      "Empty debris collector if needed",
+      "Sweep entire surrounding station",
+      "Remove all trash on and around station",
+      "Organize materials cart"
+    ],
+    "Weekly": [
+      "Clean guide-ways and bearings, lightly re-oil after",
+      "Check air pressure valve — water should auto-drain on startup (clean bowl if auto-drain fails)",
+      "Oil all 4 sides of tools in stations 2 & 3 (1–2 drops kit oil on clean cloth)",
+      "Remove scratches from tool sides with fine sandpaper, then re-oil"
+    ],
+    "Monthly": [
+      "Grease Y axis — 4 fittings, max 2 pumps",
+      "Grease X1 & X2 axis — 4 fittings, max 2 pumps",
+      "Grease Z axis — 4 fittings, max 2 pumps",
+      "Clean debris off rails on Y, X1, X2, Z axes before lubricating",
+      "Apply White Lithium Spray to X and Y rack & pinion",
+      "Lubricate Z axis ball screw behind tool head",
+      "Oil fitting beside Station 2 (right side)",
+      "Oil fitting beside Station 3 (left side)",
+      "Rotate W motor CW and CCW to spread oil evenly"
+    ],
+    "As Needed": [
+      "Clean measuring device before every use",
+      "Wipe limit sensors when buildup is visible",
+      "Clean rails (Y, X1, X2, Z) when debris is present",
+      "Clean table surface between every job",
+      "Verify air pressure is at least 65 psi before each job"
+    ]
   }
 };
 
@@ -340,7 +389,8 @@ const CLEANING_CHECKLISTS = {
 const CLEANING_SHIFT_TYPES_DEFAULT = ["Start of Shift","Mid Shift","End of Shift","40 Hour","Monthly","Quarterly","Semi-Annual"];
 const CLEANING_SHIFT_TYPES = {
   "Drinkware M1": ["Start of Shift","Mid Shift","End of Shift","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"],
-  "Drinkware M2": ["Start of Shift","Mid Shift","End of Shift","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"]
+  "Drinkware M2": ["Start of Shift","Mid Shift","End of Shift","Weekly","Biweekly","Monthly","Quarterly","Semi-Annual","Annual"],
+  "Colex": ["Start of Shift","Mid Shift","End of Shift","Weekly","Monthly","As Needed"]
 };
 
 // Per-machine manual PDF (deep-linked via "#page=N"), used by cleanRenderChecklist()
@@ -350,7 +400,8 @@ const MACHINE_MANUALS = {
   "Drinkware M2": "manuals/MagicSpin-Pro-Maintenance-Guide.pdf",
   "30":  "manuals/EFI-Pro-30f-30fplus-Maintenance-Guide.pdf",
   "30+": "manuals/EFI-Pro-30f-30fplus-Maintenance-Guide.pdf",
-  "H5":  "manuals/EFI-VUTEk-h-Series-Maintenance-Guide.pdf"
+  "H5":  "manuals/EFI-VUTEk-h-Series-Maintenance-Guide.pdf",
+  "Colex": "manuals/Colex-SharpCut-Maintenance-Manual.pdf"
 };
 
 // Task text -> page number in that machine's manual (MACHINE_MANUALS above),
@@ -547,6 +598,26 @@ const CLEANING_TASK_MANUAL_REF = {
     "Calibrate media measure sensor (MMS)": 46,
     "Confirm carriage collision detector height": 46,
     "Clean Meech bar": 59
+  },
+  "Colex": {
+    "Clean guide-ways and bearings, lightly re-oil after": 4,
+    "Check air pressure valve — water should auto-drain on startup (clean bowl if auto-drain fails)": 8,
+    "Oil all 4 sides of tools in stations 2 & 3 (1–2 drops kit oil on clean cloth)": 8,
+    "Remove scratches from tool sides with fine sandpaper, then re-oil": 8,
+    "Grease Y axis — 4 fittings, max 2 pumps": 3,
+    "Grease X1 & X2 axis — 4 fittings, max 2 pumps": 3,
+    "Grease Z axis — 4 fittings, max 2 pumps": 3,
+    "Clean debris off rails on Y, X1, X2, Z axes before lubricating": 4,
+    "Apply White Lithium Spray to X and Y rack & pinion": 4,
+    "Lubricate Z axis ball screw behind tool head": 4,
+    "Oil fitting beside Station 2 (right side)": 5,
+    "Oil fitting beside Station 3 (left side)": 5,
+    "Rotate W motor CW and CCW to spread oil evenly": 5,
+    "Clean measuring device before every use": 2,
+    "Wipe limit sensors when buildup is visible": 2,
+    "Clean rails (Y, X1, X2, Z) when debris is present": 4,
+    "Clean table surface between every job": 2,
+    "Verify air pressure is at least 65 psi before each job": 8
   }
 };
 
