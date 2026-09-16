@@ -34,7 +34,6 @@ const STATION_STACK = [
   { key: "readyToShip", label: "Ready to Ship", color: "#5a8ebd" },
   { key: "sorting",     label: "Sorted",      color: "#82abd0" },
   { key: "assembly",    label: "Assembled",   color: "#aecbe3" },
-  { key: "collation",   label: "Collated",    color: "#d6e6f2" },
 ];
 
 // ── STATE ──
@@ -252,6 +251,32 @@ function render() {
 function shiftHourRange(shift) {
   return shift === "day" ? [DAY_SHIFT_START_HOUR, DAY_SHIFT_END_HOUR] : [DAY_SHIFT_END_HOUR, 24];
 }
+
+// ── SHIP CONFIRM SHIFT STATS ──
+// Ship Confirm has no Postgres-backed shiftBreakdown of its own (it comes from
+// the XLSX-based ship_confirm_sync.py, not shipping_status_sync.py) — but
+// shipConfirmData already holds a byHour breakdown per date, going back weeks,
+// so current/previous/5-day-avg can be derived client-side the same way
+// shipping_status_sync.py derives them server-side for the other stations.
+function dateNDaysAgo(n) {
+  const d = new Date(_nowDate());
+  d.setDate(d.getDate() - n);
+  return localDateStr(d);
+}
+function shipConfirmHourSum(dateStr, startHour, endHour) {
+  const byHour = (shipConfirmData[dateStr] && shipConfirmData[dateStr].byHour) || [];
+  let sum = 0;
+  for (let h = startHour; h < endHour; h++) sum += (byHour[h] || 0);
+  return sum;
+}
+function shipConfirmShiftStats(shift) {
+  const [startHour, endHour] = shiftHourRange(shift);
+  const current  = shipConfirmHourSum(today(), startHour, endHour);
+  const previous = shipConfirmHourSum(dateNDaysAgo(1), startHour, endHour);
+  const last5 = [1,2,3,4,5].map(n => shipConfirmHourSum(dateNDaysAgo(n), startHour, endHour));
+  const avg5 = Math.round(last5.reduce((a,b)=>a+b,0) / last5.length);
+  return { current, previous, avg5 };
+}
 function currentShift() {
   const h = _nowDate().getHours();
   return (h>=DAY_SHIFT_START_HOUR && h<DAY_SHIFT_END_HOUR) ? "day" : "night";
@@ -370,18 +395,21 @@ function flameFilter(pct) {
 
 // ── SHIPPING PACE (bottom half of the takeover) ──
 // Shipping has no committed plan to compare against, so the "expected by
-// now" baseline is the 5-day same-shift average for that station
-// (shippingStatus.shiftBreakdown.avg5, already computed server-side by
-// shipping_status_sync.py) scaled down by how much of the SCHEDULED shift
-// has elapsed — same scaling technique as the production pace cards above,
-// just anchored to the shift's clock start/end rather than a first tally
-// (collation/assembly/sorting/ready-to-ship don't have a clean "first tally"
-// of their own to anchor to).
+// now" baseline is the 5-day same-shift average for that station — for
+// assembly/sorting/readyToShip that's shippingStatus.shiftBreakdown.avg5
+// (computed server-side by shipping_status_sync.py from Postgres); for
+// shipConfirm it's shipConfirmShiftStats() above, computed client-side from
+// shipConfirmData since that station is synced separately from an XLSX
+// report, not Postgres. Both get scaled down by how much of the SCHEDULED
+// shift has elapsed — same scaling technique as the production pace cards
+// above, just anchored to the shift's clock start/end rather than a first
+// tally (these stations don't have a clean "first tally" of their own to
+// anchor to).
 const SHIP_STATIONS = [
-  { key: "collation",   label: "Collated" },
   { key: "assembly",    label: "Assembled" },
   { key: "sorting",     label: "Sorted" },
   { key: "readyToShip", label: "Ready to Ship" },
+  { key: "shipConfirm", label: "Ship Confirm" },
 ];
 function shipElapsedFraction(shift) {
   const [hStart] = shiftHourRange(shift);
@@ -403,11 +431,12 @@ function renderShippingPace() {
   const shift = sb.shift === "night" ? "night" : "day";
   if (title) title.textContent = shift==="day" ? "Day Shift" : "Night Shift";
   const frac = shipElapsedFraction(shift);
+  const shipConfirmStats = shipConfirmShiftStats(shift);
 
   grid.innerHTML = "";
   SHIP_STATIONS.forEach(({key,label}) => {
-    const actual   = (sb.current && sb.current[key]) || 0;
-    const avg5     = sb.avg5 && sb.avg5[key];
+    const actual   = key === "shipConfirm" ? shipConfirmStats.current : ((sb.current && sb.current[key]) || 0);
+    const avg5     = key === "shipConfirm" ? shipConfirmStats.avg5    : (sb.avg5 && sb.avg5[key]);
     const expected = (avg5!=null) ? Math.round(avg5*frac) : null;
     const pct      = (expected!=null && expected>0) ? Math.round(actual/expected*100) : null;
     const color    = pct!=null ? paceColor(pct) : "#c8cbc6";
@@ -665,7 +694,7 @@ function renderChart(td) {
       cumulative += val;
     });
 
-    // Shipping pipeline bar — stacked, light-to-dark blue, Collated at bottom up to Shipped
+    // Shipping pipeline bar — stacked, light-to-dark blue, Shipped at bottom up to Assembled
     let shipCumulative = 0;
     STATION_STACK.forEach(s => {
       const val = stackForHour(s.key, h);
@@ -974,8 +1003,8 @@ function renderShipping() {
   renderExceptions();
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (val||0).toLocaleString(); };
 
-  // Today's top piece types per station (whole day, not shift-scoped)
-  renderTopMaterials("collation",   shippingStatus.collation);
+  // Today's top piece types per station (whole day, not shift-scoped) —
+  // Ship Confirm has no material breakdown of its own, so it's skipped here.
   renderTopMaterials("assembly",    shippingStatus.assembly);
   renderTopMaterials("sorting",     shippingStatus.sorting);
   renderTopMaterials("readyToShip", shippingStatus.readyToShip);
@@ -988,28 +1017,30 @@ function renderShipping() {
     const curLabelEl = document.getElementById("ship-cur-label");
     if (curLabelEl) curLabelEl.textContent = shiftName + " · Today vs. Yesterday";
 
-    setVal("ship-cur-collation", sb.current.collation);
-    setVal("ship-cur-assembly",  sb.current.assembly);
-    setVal("ship-cur-sorting",   sb.current.sorting);
-    setVal("ship-cur-ready",     sb.current.readyToShip);
+    const shipConfirmStats = shipConfirmShiftStats(sb.shift);
 
-    setVal("ship-prev-collation", sb.previous.collation);
-    setVal("ship-prev-assembly",  sb.previous.assembly);
-    setVal("ship-prev-sorting",   sb.previous.sorting);
-    setVal("ship-prev-ready",     sb.previous.readyToShip);
+    setVal("ship-cur-assembly",     sb.current.assembly);
+    setVal("ship-cur-sorting",      sb.current.sorting);
+    setVal("ship-cur-ready",        sb.current.readyToShip);
+    setVal("ship-cur-shipConfirm",  shipConfirmStats.current);
+
+    setVal("ship-prev-assembly",    sb.previous.assembly);
+    setVal("ship-prev-sorting",     sb.previous.sorting);
+    setVal("ship-prev-ready",       sb.previous.readyToShip);
+    setVal("ship-prev-shipConfirm", shipConfirmStats.previous);
 
     const printedShift = printedThisShift(sb.shift);
-    renderCompletionBar("collation",   printedShift,        sb.current.collation);
-    renderCompletionBar("assembly",    sb.current.collation, sb.current.assembly);
-    renderCompletionBar("sorting",     sb.current.assembly,  sb.current.sorting);
-    renderCompletionBar("readyToShip", sb.current.sorting,   sb.current.readyToShip);
+    renderCompletionBar("assembly",    printedShift,          sb.current.assembly);
+    renderCompletionBar("sorting",     sb.current.assembly,   sb.current.sorting);
+    renderCompletionBar("readyToShip", sb.current.sorting,    sb.current.readyToShip);
+    renderCompletionBar("shipConfirm", sb.current.readyToShip, shipConfirmStats.current);
 
     if (sb.avg5) {
-      renderAvg5Cell("collation",   sb.avg5.collation);
       renderAvg5Cell("assembly",    sb.avg5.assembly);
       renderAvg5Cell("sorting",     sb.avg5.sorting);
       renderAvg5Cell("readyToShip", sb.avg5.readyToShip);
     }
+    renderAvg5Cell("shipConfirm", shipConfirmStats.avg5);
   }
 
   const updatedEl = document.getElementById("shipping-updated");
