@@ -198,22 +198,22 @@ const CLEANING_CHECKLISTS = {
     ],
     "Mid Shift": [
       "Check ink supply and waste levels",
-      "Print check nozzle chart and inspect nozzle status",
+      "Perform auto clean",
       "Clear any clogged nozzles",
       "Clean the UV lamp face"
     ],
     "End of Shift": [
+      "Perform auto clean",
       "Clean the head plate and PWC",
       "Clean the wiping blades with flushing fluid",
       "Clean the sealing rubber strip",
       "Clean the UV lamp face",
-      "Perform auto clean",
-      "Maintain heads and power off printer",
-      "Switch manual 3-way valve to OFF",
       "Clean the UV emitting window",
       "Clean the UV light sensor",
       "Clean the UV light shield sensor",
-      "Clean the media height sensors"
+      "Clean the media height sensors",
+      "Maintain heads and power off printer",
+      "Switch manual 3-way valve to OFF"
     ],
     "Weekly": [
       "Clean the wiping tray",
@@ -267,22 +267,22 @@ const CLEANING_CHECKLISTS = {
     ],
     "Mid Shift": [
       "Check ink supply and waste levels",
-      "Print check nozzle chart and inspect nozzle status",
+      "Perform auto clean",
       "Clear any clogged nozzles",
       "Clean the UV lamp face"
     ],
     "End of Shift": [
+      "Perform auto clean",
       "Clean the head plate and PWC",
       "Clean the wiping blades with flushing fluid",
       "Clean the sealing rubber strip",
       "Clean the UV lamp face",
-      "Perform auto clean",
-      "Maintain heads and power off printer",
-      "Switch manual 3-way valve to OFF",
       "Clean the UV emitting window",
       "Clean the UV light sensor",
       "Clean the UV light shield sensor",
-      "Clean the media height sensors"
+      "Clean the media height sensors",
+      "Maintain heads and power off printer",
+      "Switch manual 3-way valve to OFF"
     ],
     "Weekly": [
       "Clean the wiping tray",

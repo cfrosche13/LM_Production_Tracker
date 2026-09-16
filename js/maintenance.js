@@ -463,6 +463,45 @@ function maintLogFilter(filter) {
 
 
 // ── MAINTENANCE REPORTS ──
+function renderMonthlyMaintReport() {
+  const wrap = document.getElementById("maint-monthly-report");
+  if (!wrap) return;
+
+  const monthlyEntries = maintLog.filter(e => e.type === "Cleaning" && e.detail && e.detail.startsWith("Monthly"));
+  const byMachine = {};
+  monthlyEntries.forEach(e => {
+    const m = e.machine || "Unassigned";
+    if (!byMachine[m]) byMachine[m] = [];
+    byMachine[m].push(e);
+  });
+
+  // Only show machines whose checklist actually offers a "Monthly" tier.
+  const machines = MACHINES.filter(m => (CLEANING_SHIFT_TYPES[m] || CLEANING_SHIFT_TYPES_DEFAULT).includes("Monthly"));
+
+  let html = `<div style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#5599cc;margin-bottom:10px;">📅 Monthly Maintenance — Who &amp; When</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">`;
+
+  machines.forEach(machine => {
+    const entries = (byMachine[machine] || []).slice().sort((a,b) => new Date(b.time) - new Date(a.time));
+    html += `<div style="background:#fff;border:1px solid #d8eef8;border-radius:10px;padding:12px 14px;">
+      <div style="font-family:'Abril Fatface',serif;font-size:15px;color:#1a1a2e;margin-bottom:8px;">${machine}</div>`;
+    if (!entries.length) {
+      html += `<div style="font-family:'Josefin Slab',serif;font-size:11px;color:#ccc;font-style:italic;">Not yet logged</div>`;
+    } else {
+      entries.forEach(e => {
+        html += `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #f5faff;">
+          <span style="font-family:'Josefin Slab',serif;font-size:12px;color:#336699;font-weight:700;">${e.op || "—"}</span>
+          <span style="font-family:'Josefin Slab',serif;font-size:11px;color:#aaa;">${e.time ? new Date(e.time).toLocaleString() : ""}</span>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
 function renderMaintReports() {
   const grid = document.getElementById("maint-reports-grid");
   if (!grid) return;
@@ -654,7 +693,7 @@ function maintSwitchTab(tab) {
     btn.style.borderBottomColor = active ? "#e87820" : "transparent";
   });
   if (tab === 'log')     renderMaintLog();
-  if (tab === 'reports') renderMaintReports();
+  if (tab === 'reports') { renderMonthlyMaintReport(); renderMaintReports(); }
 }
 
 function maintLogDateFilterChange(value) {
