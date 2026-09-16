@@ -34,10 +34,7 @@ const CLEANING_CHECKLISTS = {
       "Purge and wipe heads",
       "Check ink supply levels",
       "Check ink waste level",
-      "Clean purge tray and vacuum knife",
-      "Clean print heads and platen",
       "Clean cure lamps",
-      "Clean cyclonic vacuum",
       "Check lamp filters and change if needed"
     ],
     "End of Shift": [
@@ -88,10 +85,7 @@ const CLEANING_CHECKLISTS = {
       "Purge and wipe heads",
       "Check ink supply levels",
       "Check ink waste level",
-      "Clean purge tray and vacuum knife",
-      "Clean print heads and platen",
       "Clean cure lamps",
-      "Clean cyclonic vacuum",
       "Check lamp filters and change if needed"
     ],
     "End of Shift": [
@@ -140,14 +134,11 @@ const CLEANING_CHECKLISTS = {
     ],
     "Mid Shift": [
       "Clean on and around print heads and platen",
-      "Wipe top and bottom of carriage rails",
-      "Clean waste tray",
       "Check ink levels",
-      "Clean/empty waste tank",
       "Clean LED lamp and nitrogen applicators",
       "Check and replace LED lamp filters as needed",
-      "Clean UV light deflectors and datum bar",
-      "Clean media roller"
+      "Clean media roller",
+      "Purge and wipe nozzles"
     ],
     "End of Shift": [
       "Clean on and around print heads and platen",
