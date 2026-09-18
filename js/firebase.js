@@ -202,6 +202,13 @@
           err  => { console.error("listenMachineProfiles denied/failed:", err); if (onError) onError(err); }
         ),
 
+        saveCleaningChecklists:   (data) => set(ref(db, "cleaningChecklists"), data),
+        listenCleaningChecklists: (cb, onError) => onValue(
+          ref(db, "cleaningChecklists"),
+          snap => cb(snap.val() || null),
+          err  => { console.error("listenCleaningChecklists denied/failed:", err); if (onError) onError(err); }
+        ),
+
         saveChecklistProgress:  (key, data) => set(ref(db, `checklistProgress/${key}`), data),
         clearChecklistProgress: (key)       => set(ref(db, `checklistProgress/${key}`), null),
         listenChecklistProgress:(cb)        => onValue(ref(db, "checklistProgress"), snap => cb(snap.val() || {})),

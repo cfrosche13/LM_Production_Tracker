@@ -1,3 +1,12 @@
+// Reads the live, admin-editable checklist (Settings → Cleaning Checklists) when
+// available, falling back to the built-in CLEANING_CHECKLISTS defaults before the
+// Firebase sync has loaded.
+function getCleaningTasks(machine, shift) {
+  const live = window._cleaningChecklists;
+  if (live && live[machine] && Array.isArray(live[machine][shift])) return live[machine][shift];
+  return CLEANING_CHECKLISTS[machine]?.[shift] || [];
+}
+
 // ═══════════════════════════════════════
 // MAINTENANCE — MECHANICAL
 // ═══════════════════════════════════════
@@ -181,7 +190,7 @@ function cleanRenderChecklist() {
   const body    = document.getElementById("clean-checklist-body");
   if (!body) return;
 
-  const tasks = CLEANING_CHECKLISTS[machine]?.[shift] || [];
+  const tasks = getCleaningTasks(machine, shift);
   _cleanChecks = {};
 
   if (!machine) {

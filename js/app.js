@@ -115,6 +115,42 @@ function init() {
       }
     );
 
+    // Cleaning Checklists — only re-render settings if the cleaning panel is open
+    let _ccTimeoutFired = false;
+    const _ccLoadTimeout = setTimeout(() => {
+      if (window._cleaningChecklistsLoaded) return;
+      _ccTimeoutFired = true;
+      window._cleaningChecklists = _ccNormalize(null);
+      window._cleaningChecklistsLoaded = true;
+      window._cleaningChecklistsSyncError = "timed out waiting for a response";
+      const panel = document.getElementById("settings-panel-cleaning");
+      const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+      if (settingsActive && panel && panel.style.display !== "none") renderCleaningChecklists();
+    }, 8000);
+
+    window._fb.listenCleaningChecklists(
+      data => {
+        clearTimeout(_ccLoadTimeout);
+        if (_ccTimeoutFired) return; // already fell back; don't fight the user's edits
+        window._cleaningChecklists = _ccNormalize(data);
+        window._cleaningChecklistsLoaded = true;
+        window._cleaningChecklistsSyncError = null;
+        const panel = document.getElementById("settings-panel-cleaning");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderCleaningChecklists();
+      },
+      err => {
+        clearTimeout(_ccLoadTimeout);
+        if (_ccTimeoutFired) return;
+        window._cleaningChecklists = _ccNormalize(null);
+        window._cleaningChecklistsLoaded = true;
+        window._cleaningChecklistsSyncError = (err && err.message) || String(err);
+        const panel = document.getElementById("settings-panel-cleaning");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderCleaningChecklists();
+      }
+    );
+
     // Open Orders — sync across all devices when any device uploads a file
     window._fb.listenOrders(data => {
       if (!data) return;

@@ -774,7 +774,46 @@ input[type="number"]::-webkit-outer-spin-button {
 .settings-mp-field input { cursor: text; }
 .settings-mp-field input:focus, .settings-mp-field select:focus { border-color: #2e8b57; background: #fff; }
 
+.settings-cc-tab {
+  font-family: 'Josefin Slab', serif; font-size: 12px; font-weight: 700;
+  padding: 8px 20px; border: none; cursor: pointer; letter-spacing: 0.05em;
+  background: #f0f7fb; color: #7aaa88; border-bottom: none;
+}
+.settings-cc-tab.active { background: #fff; color: #2e8b57; border-bottom: 3px solid #2e8b57; margin-bottom: -2px; }
 
+.settings-cc-subtab {
+  font-family: 'Josefin Slab', serif; font-size: 11px; font-weight: 700;
+  padding: 6px 14px; border: 1.5px solid #d0e4ee; border-radius: 20px; cursor: pointer;
+  background: #fff; color: #7aaa88; letter-spacing: 0.04em;
+}
+.settings-cc-subtab.active { background: #2e8b57; color: #fff; border-color: #2e8b57; }
+
+.settings-cc-task-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.settings-cc-task-num {
+  flex: 0 0 20px; text-align: right; font-family: 'Josefin Slab', serif; font-size: 11px; color: #b8ccd8;
+}
+.settings-cc-task-input {
+  flex: 1; min-width: 0; font-family: 'Josefin Slab', serif; font-size: 12.5px; color: #224466;
+  background: #f8fbfd; border: 1px solid #d0e4ee; border-radius: 6px; padding: 8px 10px; outline: none;
+}
+.settings-cc-task-input:focus { border-color: #2e8b57; background: #fff; }
+.settings-cc-task-move, .settings-cc-task-remove {
+  flex: 0 0 auto; background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px; color: #90a8b8;
+}
+.settings-cc-task-move:hover { color: #2e8b57; }
+.settings-cc-task-move:disabled { opacity: 0.25; cursor: default; }
+.settings-cc-task-remove { color: #cc6688; font-size: 17px; }
+.settings-cc-task-remove:hover { color: #cc3355; }
+
+.settings-cc-add-row { display: flex; gap: 8px; margin-top: 10px; }
+.settings-cc-add-row input {
+  flex: 1; font-family: 'Josefin Slab', serif; font-size: 12.5px;
+  background: #fff; border: 1.5px dashed #b8d8ee; border-radius: 6px; padding: 8px 10px; outline: none; color: #224466;
+}
+.settings-cc-add-row button {
+  font-family: 'Josefin Slab', serif; font-size: 11px; font-weight: 700;
+  background: #2e8b57; color: #fff; border: none; border-radius: 6px; padding: 0 16px; cursor: pointer; white-space: nowrap;
+}
 
 
 

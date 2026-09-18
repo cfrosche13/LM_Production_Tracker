@@ -78,6 +78,7 @@ function settingsShowPanel(name) {
   const saveBtn = document.getElementById("settings-save-btn");
   if (saveBtn) saveBtn.style.display = _SETTINGS_TARGETS_PANELS.includes(name) ? "" : "none";
   if (name === "profiles") renderMachineProfiles();
+  if (name === "cleaning") renderCleaningChecklists();
   window.scrollTo({ top: 0 });
 }
 
@@ -492,6 +493,16 @@ window._machineProfiles          = [];
 window._machineProfilesLoaded    = false;
 window._machineProfilesSyncError = null;
 
+// Stored in Firebase at cleaningChecklists (machine -> shift -> array of task strings).
+// Defaults come from CLEANING_CHECKLISTS in constants.js; Firebase overrides layer on top
+// per machine/shift so a brand-new machine or tier added later in code still shows up.
+window._cleaningChecklists          = null;
+window._cleaningChecklistsLoaded    = false;
+window._cleaningChecklistsSyncError = null;
+let _settingsCCMachine = MACHINES[0];
+let _settingsCCShift   = null;
+let _ccAutoSaveTimer   = null;
+
 const _MP_DEFAULTS = [
   { rm:"Coir 28x16", sub:"OC", machine:"30", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
   { rm:"Coir 28x16", sub:"FC", machine:"30", ppt:"16", style:"Printed Jig", biUni:"bi", stepping:"light", strike:"double", cut:"none", workflow:"", printMode:"4 pass max double strike", verified:"no" },
@@ -832,6 +843,225 @@ function mpSaveNow() {
     })
     .finally(() => {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓ Save Machine Profiles"; }
+    });
+}
+
+// ═══════════════════════════════════════
+// SETTINGS — CLEANING CHECKLISTS
+// ═══════════════════════════════════════
+
+function _ccNormalize(data) {
+  const base = JSON.parse(JSON.stringify(CLEANING_CHECKLISTS));
+  if (!data) return base;
+  Object.keys(data).forEach(machine => {
+    if (!base[machine]) base[machine] = {};
+    const shifts = data[machine] || {};
+    Object.keys(shifts).forEach(shift => {
+      const tasks = shifts[shift];
+      if (Array.isArray(tasks)) base[machine][shift] = tasks.filter(t => typeof t === "string");
+    });
+  });
+  return base;
+}
+
+function _ccScheduleSave() {
+  clearTimeout(_ccAutoSaveTimer);
+  _ccAutoSaveTimer = setTimeout(() => {
+    if (window._fb && window._cleaningChecklistsLoaded && !window._cleaningChecklistsSyncError) {
+      window._fb.saveCleaningChecklists(window._cleaningChecklists).catch(err => {
+        console.error("Cleaning checklist autosave failed:", err);
+      });
+    }
+  }, 800);
+}
+
+function _ccShiftOptions(machine) {
+  return CLEANING_SHIFT_TYPES[machine] || CLEANING_SHIFT_TYPES_DEFAULT;
+}
+
+function renderCleaningChecklists() {
+  const machineTabsEl = document.getElementById("settings-cc-machine-tabs");
+  const shiftTabsEl    = document.getElementById("settings-cc-shift-tabs");
+  const listEl         = document.getElementById("settings-cc-tasklist");
+  if (!machineTabsEl || !shiftTabsEl || !listEl) return;
+
+  if (!window._cleaningChecklistsLoaded) {
+    machineTabsEl.innerHTML = "";
+    shiftTabsEl.innerHTML   = "";
+    listEl.innerHTML = `<div style="font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:32px 0;">⏳ Loading cleaning checklists…</div>`;
+    return;
+  }
+
+  machineTabsEl.innerHTML = "";
+  shiftTabsEl.innerHTML   = "";
+  listEl.innerHTML = "";
+
+  if (window._cleaningChecklistsSyncError) {
+    const warn = document.createElement("div");
+    warn.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;color:#a85400;background:#fff3e0;border:1px solid #f0c896;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;";
+    warn.textContent = "⚠ Couldn't sync checklists with the cloud (" + window._cleaningChecklistsSyncError + "). Showing your built-in defaults — edits here won't save online until this is fixed.";
+    listEl.appendChild(warn);
+  }
+
+  // Machine tabs
+  MACHINES.forEach(m => {
+    const tab = document.createElement("button");
+    tab.className = "settings-cc-tab" + (m === _settingsCCMachine ? " active" : "");
+    tab.textContent = m;
+    tab.onclick = () => {
+      _settingsCCMachine = m;
+      _settingsCCShift = null;
+      renderCleaningChecklists();
+    };
+    machineTabsEl.appendChild(tab);
+  });
+
+  // Shift/tier sub-tabs for the selected machine
+  const shiftOptions = _ccShiftOptions(_settingsCCMachine);
+  if (!_settingsCCShift || !shiftOptions.includes(_settingsCCShift)) {
+    _settingsCCShift = shiftOptions[0];
+  }
+  shiftOptions.forEach(s => {
+    const tab = document.createElement("button");
+    tab.className = "settings-cc-subtab" + (s === _settingsCCShift ? " active" : "");
+    tab.textContent = s;
+    tab.onclick = () => { _settingsCCShift = s; renderCleaningChecklists(); };
+    shiftTabsEl.appendChild(tab);
+  });
+
+  // Task list for machine + shift
+  const tasks = (window._cleaningChecklists[_settingsCCMachine] && window._cleaningChecklists[_settingsCCMachine][_settingsCCShift]) || [];
+
+  if (!tasks.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:18px 0;";
+    empty.textContent = "No tasks yet for " + _settingsCCMachine + " — " + _settingsCCShift + ". Add one below.";
+    listEl.appendChild(empty);
+  } else {
+    tasks.forEach((task, i) => {
+      const row = document.createElement("div");
+      row.className = "settings-cc-task-row";
+
+      const num = document.createElement("span");
+      num.className = "settings-cc-task-num";
+      num.textContent = (i + 1) + ".";
+      row.appendChild(num);
+
+      const input = document.createElement("input");
+      input.className = "settings-cc-task-input";
+      input.value = task;
+      input.addEventListener("input", () => ccBufferTask(_settingsCCMachine, _settingsCCShift, i, input.value));
+      row.appendChild(input);
+
+      const upBtn = document.createElement("button");
+      upBtn.className = "settings-cc-task-move";
+      upBtn.textContent = "↑";
+      upBtn.title = "Move up";
+      upBtn.disabled = i === 0;
+      upBtn.onclick = () => ccMoveTask(_settingsCCMachine, _settingsCCShift, i, -1);
+      row.appendChild(upBtn);
+
+      const downBtn = document.createElement("button");
+      downBtn.className = "settings-cc-task-move";
+      downBtn.textContent = "↓";
+      downBtn.title = "Move down";
+      downBtn.disabled = i === tasks.length - 1;
+      downBtn.onclick = () => ccMoveTask(_settingsCCMachine, _settingsCCShift, i, 1);
+      row.appendChild(downBtn);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "settings-cc-task-remove";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove this task";
+      removeBtn.onclick = () => ccRemoveTask(_settingsCCMachine, _settingsCCShift, i);
+      row.appendChild(removeBtn);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  const addRow = document.createElement("div");
+  addRow.className = "settings-cc-add-row";
+  const addInput = document.createElement("input");
+  addInput.placeholder = "Add a task…";
+  addInput.id = "settings-cc-add-input";
+  addInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); ccAddTask(); }
+  });
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "+ Add";
+  addBtn.onclick = () => ccAddTask();
+  addRow.appendChild(addInput);
+  addRow.appendChild(addBtn);
+  listEl.appendChild(addRow);
+}
+
+function ccBufferTask(machine, shift, index, value) {
+  if (!window._cleaningChecklists[machine]) window._cleaningChecklists[machine] = {};
+  if (!window._cleaningChecklists[machine][shift]) window._cleaningChecklists[machine][shift] = [];
+  window._cleaningChecklists[machine][shift][index] = value;
+  _ccScheduleSave();
+}
+
+function ccAddTask() {
+  const input = document.getElementById("settings-cc-add-input");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+  if (!window._cleaningChecklists[_settingsCCMachine]) window._cleaningChecklists[_settingsCCMachine] = {};
+  if (!window._cleaningChecklists[_settingsCCMachine][_settingsCCShift]) window._cleaningChecklists[_settingsCCMachine][_settingsCCShift] = [];
+  window._cleaningChecklists[_settingsCCMachine][_settingsCCShift].push(text);
+  renderCleaningChecklists();
+  _ccScheduleSave();
+}
+
+function ccRemoveTask(machine, shift, index) {
+  window._cleaningChecklists[machine][shift].splice(index, 1);
+  renderCleaningChecklists();
+  _ccScheduleSave();
+}
+
+function ccMoveTask(machine, shift, index, dir) {
+  const arr = window._cleaningChecklists[machine][shift];
+  const target = index + dir;
+  if (target < 0 || target >= arr.length) return;
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  renderCleaningChecklists();
+  _ccScheduleSave();
+}
+
+function ccSaveNow() {
+  const confirmEl = document.getElementById("settings-cc-save-confirm");
+  const saveBtn   = document.getElementById("settings-cc-save-btn");
+  if (!window._fb) {
+    if (confirmEl) {
+      confirmEl.textContent  = "✗ Not connected — please log in again.";
+      confirmEl.style.color  = "#cc3333";
+      confirmEl.style.display = "block";
+      setTimeout(() => { confirmEl.style.display = "none"; }, 3000);
+    }
+    return;
+  }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
+  window._fb.saveCleaningChecklists(window._cleaningChecklists)
+    .then(() => {
+      if (confirmEl) {
+        confirmEl.textContent  = "✓ Checklist saved successfully";
+        confirmEl.style.color  = "#228844";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 2500);
+      }
+    })
+    .catch(err => {
+      console.error("ccSaveNow failed:", err);
+      if (confirmEl) {
+        confirmEl.textContent  = "✗ Save failed: " + (err.message || err);
+        confirmEl.style.color  = "#cc3333";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 5000);
+      }
+    })
+    .finally(() => {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓ Save Checklist"; }
     });
 }
 

@@ -16,7 +16,7 @@
 
 <!-- Firebase -->
 <script type="module" src="js/firebase.js"></script>
-<link rel="stylesheet" href="css/styles.css?v=8" />
+<link rel="stylesheet" href="css/styles.css?v=9" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -1420,18 +1420,18 @@ function stopAllTransitions() {
 }
 
 </script>
-<script src="js/maintenance.js?v=4"></script>
+<script src="js/maintenance.js?v=5"></script>
 <script src="js/inventory.js?v=23"></script>
 <script src="js/printheads.js?v=11"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
-<script src="js/settings.js?v=9"></script>
+<script src="js/settings.js?v=10"></script>
 <script src="js/printing.js?v=6"></script>
 <script src="js/stamped.js?v=4"></script>
 <script src="js/tally2.js?v=1"></script>
 <script src="js/colex.js?v=4"></script>
 <script src="js/tally.js?v=8"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/app.js?v=10"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -1729,6 +1729,11 @@ function sessionGateAdmin() {
           <span class="settings-card-title">Machine Profiles</span>
           <span class="settings-card-desc">Per-product production settings for each machine</span>
         </button>
+        <button class="settings-card" onclick="settingsShowPanel('cleaning')">
+          <span class="settings-card-icon">🧹</span>
+          <span class="settings-card-title">Cleaning Checklists</span>
+          <span class="settings-card-desc">Add, edit, reorder, or remove maintenance tasks per machine &amp; shift</span>
+        </button>
       </div>
     </div>
 
@@ -1799,6 +1804,24 @@ function sessionGateAdmin() {
             style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;">✓ Save Machine Profiles</button>
         </div>
         <div id="settings-mp-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:10px;text-align:center;"></div>
+      </div>
+
+      <!-- Cleaning Checklists -->
+      <div id="settings-panel-cleaning" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
+          Cleaning Checklists
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+          Pick a machine, then a shift/tier, to add, edit, reorder, or remove its cleaning tasks. Changes save automatically.
+        </div>
+        <div id="settings-cc-machine-tabs" style="display:flex;flex-wrap:wrap;gap:0;border-bottom:2px solid #d0e4ee;margin-bottom:12px;"></div>
+        <div id="settings-cc-shift-tabs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>
+        <div id="settings-cc-tasklist"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+          <button onclick="ccSaveNow()" id="settings-cc-save-btn"
+            style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;">✓ Save Checklist</button>
+        </div>
+        <div id="settings-cc-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:10px;text-align:center;"></div>
       </div>
     </div>
 
