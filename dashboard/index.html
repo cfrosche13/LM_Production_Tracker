@@ -62,17 +62,23 @@
 
     <!-- FBA orders (separate) -->
     <div style="width:60%;height:1px;background:#e0e3de;margin:4px auto;border-radius:2px;"></div>
-    <div class="counter-block" style="background:#fff5eb;border-color:#e8b07a;border-width:1.5px;">
-      <span class="counter-label" style="color:#b86a1a;letter-spacing:0.12em;">FBA Orders</span>
-      <span class="counter-value" id="h-fba-total" style="color:#c4770a;font-size:28px;">—</span>
-      <span style="font-size:8px;color:#c4770a;letter-spacing:0.06em;opacity:0.7;">Fulfilled by Amazon</span>
+    <div class="counter-block">
+      <span class="counter-label">FBA Orders</span>
+      <span class="counter-value" id="h-fba-total" style="font-size:28px;">—</span>
+      <span style="font-size:8px;color:#9b9b9b;letter-spacing:0.06em;opacity:0.7;">Fulfilled by Amazon</span>
     </div>
 
-    <!-- Ship confirm (separate) -->
+    <!-- Ship confirm (separate bubbles) — units and unique containers, since
+         one container/box can hold several different products (several rows
+         in the source spreadsheet), so the two numbers are expected to differ. -->
     <div style="width:60%;height:1px;background:#e0e3de;margin:4px auto;border-radius:2px;"></div>
     <div class="counter-block">
-      <span class="counter-label">Shipped Today</span>
+      <span class="counter-label">Units Confirmed Today</span>
       <span class="counter-value" id="h-ship-confirm">—</span>
+    </div>
+    <div class="counter-block">
+      <span class="counter-label">Containers Confirmed Today</span>
+      <span class="counter-value" id="h-ship-confirm-containers">—</span>
     </div>
 
     <!-- Upload button -->

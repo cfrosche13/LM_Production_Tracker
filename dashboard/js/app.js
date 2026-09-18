@@ -234,6 +234,7 @@ function render() {
   document.getElementById("h-drinkware").textContent     = totalDrinkware.toLocaleString();
   document.getElementById("h-drinkware-bad").textContent = badDrinkware ? badDrinkware+" bad" : "";
   document.getElementById("h-ship-confirm").textContent  = ((shipConfirmData[td]||{}).total||0).toLocaleString();
+  document.getElementById("h-ship-confirm-containers").textContent = ((shipConfirmData[td]||{}).containers||0).toLocaleString();
   document.getElementById("last-updated").textContent  = "Updated " + _nowDate().toLocaleTimeString() + (_demoNowMs!=null ? " (demo time)" : "");
   document.getElementById("today-date").textContent = _nowDate().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
