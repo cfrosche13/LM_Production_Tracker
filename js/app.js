@@ -151,6 +151,45 @@ function init() {
       }
     );
 
+    // Piece Types — unlike the two above, this mutates the shared PIECE_TYPES
+    // object IN PLACE (via _ptApplyFirebaseData) rather than pointing a
+    // separate window._* var at new data. Every print-run/tally/stamped/
+    // maintenance dropdown across the app reads PIECE_TYPES[...] directly at
+    // the moment it's opened, so keeping the same object identity means they
+    // all automatically pick up Firebase-synced edits with no other changes.
+    let _ptTimeoutFired = false;
+    const _ptLoadTimeout = setTimeout(() => {
+      if (window._pieceTypesLoaded) return;
+      _ptTimeoutFired = true;
+      window._pieceTypesLoaded = true;
+      window._pieceTypesSyncError = "timed out waiting for a response";
+      const panel = document.getElementById("settings-panel-piecetypes");
+      const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+      if (settingsActive && panel && panel.style.display !== "none") renderPieceTypes();
+    }, 8000);
+
+    window._fb.listenPieceTypes(
+      data => {
+        clearTimeout(_ptLoadTimeout);
+        if (_ptTimeoutFired) return; // already fell back; don't fight the user's edits
+        _ptApplyFirebaseData(data);
+        window._pieceTypesLoaded = true;
+        window._pieceTypesSyncError = null;
+        const panel = document.getElementById("settings-panel-piecetypes");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderPieceTypes();
+      },
+      err => {
+        clearTimeout(_ptLoadTimeout);
+        if (_ptTimeoutFired) return;
+        window._pieceTypesLoaded = true;
+        window._pieceTypesSyncError = (err && err.message) || String(err);
+        const panel = document.getElementById("settings-panel-piecetypes");
+        const settingsActive = document.getElementById("view-settings")?.classList.contains("active");
+        if (settingsActive && panel && panel.style.display !== "none") renderPieceTypes();
+      }
+    );
+
     // Open Orders — sync across all devices when any device uploads a file
     window._fb.listenOrders(data => {
       if (!data) return;

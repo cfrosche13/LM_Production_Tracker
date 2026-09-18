@@ -1275,7 +1275,7 @@
 </div>
 
 <!-- JS files in dependency order -->
-<script src="js/constants.js?v=16"></script>
+<script src="js/constants.js?v=17"></script>
 <script src="js/state.js?v=5"></script>
 <script src="js/utils.js?v=5"></script>
 <script src="js/oee.js?v=5"></script>
@@ -1734,6 +1734,11 @@ function sessionGateAdmin() {
           <span class="settings-card-title">Cleaning Checklists</span>
           <span class="settings-card-desc">Add, edit, reorder, or remove maintenance tasks per machine &amp; shift</span>
         </button>
+        <button class="settings-card" onclick="settingsShowPanel('piecetypes')">
+          <span class="settings-card-icon">📦</span>
+          <span class="settings-card-title">Piece Types</span>
+          <span class="settings-card-desc">Add, edit, reorder, or remove the piece types operators can select</span>
+        </button>
       </div>
     </div>
 
@@ -1822,6 +1827,23 @@ function sessionGateAdmin() {
             style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;">✓ Save Checklist</button>
         </div>
         <div id="settings-cc-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:10px;text-align:center;"></div>
+      </div>
+
+      <!-- Piece Types -->
+      <div id="settings-panel-piecetypes" class="settings-panel" style="display:none;">
+        <div style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;padding-bottom:6px;border-bottom:2px solid #d0e4ee;margin-bottom:8px;">
+          Piece Types
+        </div>
+        <div style="font-family:'Josefin Slab',serif;font-size:11px;color:#90a8b8;margin-bottom:14px;line-height:1.6;">
+          Pick a category to add, edit, reorder, or remove the piece types operators can select there — or add a whole new category. Changes save automatically.
+        </div>
+        <div id="settings-pt-cat-tabs" style="display:flex;flex-wrap:wrap;gap:0;border-bottom:2px solid #d0e4ee;margin-bottom:12px;"></div>
+        <div id="settings-pt-list"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+          <button onclick="ptSaveNow()" id="settings-pt-save-btn"
+            style="font-family:'Josefin Slab',serif;font-size:12px;font-weight:700;background:#2e8b57;color:#fff;border:none;border-radius:8px;padding:8px 22px;cursor:pointer;letter-spacing:0.06em;">✓ Save Piece Types</button>
+        </div>
+        <div id="settings-pt-save-confirm" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;color:#1e6b40;margin-top:10px;text-align:center;"></div>
       </div>
     </div>
 

@@ -15,7 +15,7 @@ const PIECE_TYPES = {
   "Wallets":       ["Cross Body","Trifold Black","Trifold Brown","Bifold Black","Bifold Brown","Bifold Tumbled Leather","Wristlet Black","Wristlet Brown","Front Pocket Black","Front Pocket Brown","Toiletry Bag","Clock"],
   "Display Pieces": ["Vert. Yard Display","Horz. Yard Display","Leaner Display","Yard Sign Display"],
   "Roll Media":     ["Small Canvas","Large Canvas","Drying Mat"],
-  "Drinkware":      ["Pint Glass"],
+  "Drinkware":      ["Pint Glass CV", "Pint Glass CWCV", "Pint Glass WCV", "Stemless Wine Glass CV", "Stemless Wine Glass CWCV", "Stemless Wine Glass WCV", "Acrylic Cup CV", "Acrylic Cup CWCV", "Acrylic Cup WCV", "Stainless Steel Tumbler CV", "Stainless Steel Tumbler CWCV", "Stainless Steel Tumbler WCV"],
 };
 // ═══════════════════════════════════════
 // CLEANING CHECKLISTS
@@ -648,7 +648,18 @@ const TABLE_CAPACITY_DEFAULTS = {
   "Roll Media · Drying Mat": 8,
   "Roll Media · Small Canvas": 2,
   "Roll Media · Large Canvas": 1,
-  "Drinkware · Pint Glass": 1,
+  "Drinkware · Pint Glass CV": 1,
+  "Drinkware · Pint Glass CWCV": 1,
+  "Drinkware · Pint Glass WCV": 1,
+  "Drinkware · Stemless Wine Glass CV": 1,
+  "Drinkware · Stemless Wine Glass CWCV": 1,
+  "Drinkware · Stemless Wine Glass WCV": 1,
+  "Drinkware · Acrylic Cup CV": 1,
+  "Drinkware · Acrylic Cup CWCV": 1,
+  "Drinkware · Acrylic Cup WCV": 1,
+  "Drinkware · Stainless Steel Tumbler CV": 1,
+  "Drinkware · Stainless Steel Tumbler CWCV": 1,
+  "Drinkware · Stainless Steel Tumbler WCV": 1,
 };
 
 const MACHINE_COLORS = {

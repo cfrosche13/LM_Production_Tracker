@@ -209,6 +209,13 @@
           err  => { console.error("listenCleaningChecklists denied/failed:", err); if (onError) onError(err); }
         ),
 
+        savePieceTypes:   (data) => set(ref(db, "pieceTypes"), data),
+        listenPieceTypes: (cb, onError) => onValue(
+          ref(db, "pieceTypes"),
+          snap => cb(snap.val() || null),
+          err  => { console.error("listenPieceTypes denied/failed:", err); if (onError) onError(err); }
+        ),
+
         saveChecklistProgress:  (key, data) => set(ref(db, `checklistProgress/${key}`), data),
         clearChecklistProgress: (key)       => set(ref(db, `checklistProgress/${key}`), null),
         listenChecklistProgress:(cb)        => onValue(ref(db, "checklistProgress"), snap => cb(snap.val() || {})),

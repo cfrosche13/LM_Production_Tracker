@@ -79,6 +79,7 @@ function settingsShowPanel(name) {
   if (saveBtn) saveBtn.style.display = _SETTINGS_TARGETS_PANELS.includes(name) ? "" : "none";
   if (name === "profiles") renderMachineProfiles();
   if (name === "cleaning") renderCleaningChecklists();
+  if (name === "piecetypes") renderPieceTypes();
   window.scrollTo({ top: 0 });
 }
 
@@ -1062,6 +1063,258 @@ function ccSaveNow() {
     })
     .finally(() => {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓ Save Checklist"; }
+    });
+}
+
+// ═══════════════════════════════════════
+// SETTINGS — PIECE TYPES
+// ═══════════════════════════════════════
+// Unlike Cleaning Checklists/Machine Profiles, this edits the shared
+// PIECE_TYPES object (constants.js) IN PLACE rather than a separate
+// window._* var — see the app.js loader comment for why: every print-run,
+// tally, stamped, and maintenance dropdown in the app reads PIECE_TYPES[...]
+// directly, so keeping the same object identity means all of them
+// automatically pick up edits with no other code changes.
+window._pieceTypesLoaded    = false;
+window._pieceTypesSyncError = null;
+let _settingsPTCategory = Object.keys(PIECE_TYPES)[0];
+let _ptAutoSaveTimer    = null;
+
+// Replaces PIECE_TYPES's contents with a saved Firebase snapshot. Once she's
+// saved once via this panel, Firebase holds the complete, authoritative set
+// of categories/sub-types (a full replace, not a merge) — this is what lets
+// removing a whole category actually stick instead of reappearing from the
+// code defaults on the next page load.
+function _ptApplyFirebaseData(data) {
+  if (!data) return; // nothing saved yet — PIECE_TYPES already holds the code defaults
+  Object.keys(PIECE_TYPES).forEach(k => delete PIECE_TYPES[k]);
+  Object.keys(data).forEach(cat => {
+    const subs = data[cat];
+    if (Array.isArray(subs)) PIECE_TYPES[cat] = subs.filter(s => typeof s === "string");
+  });
+}
+
+function _ptScheduleSave() {
+  clearTimeout(_ptAutoSaveTimer);
+  _ptAutoSaveTimer = setTimeout(() => {
+    if (window._fb && window._pieceTypesLoaded && !window._pieceTypesSyncError) {
+      window._fb.savePieceTypes(PIECE_TYPES).catch(err => {
+        console.error("Piece Types autosave failed:", err);
+      });
+    }
+  }, 800);
+}
+
+function renderPieceTypes() {
+  const catTabsEl = document.getElementById("settings-pt-cat-tabs");
+  const listEl    = document.getElementById("settings-pt-list");
+  if (!catTabsEl || !listEl) return;
+
+  if (!window._pieceTypesLoaded) {
+    catTabsEl.innerHTML = "";
+    listEl.innerHTML = `<div style="font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:32px 0;">⏳ Loading piece types…</div>`;
+    return;
+  }
+
+  const categories = Object.keys(PIECE_TYPES);
+  if (!categories.includes(_settingsPTCategory)) _settingsPTCategory = categories[0];
+
+  catTabsEl.innerHTML = "";
+  listEl.innerHTML = "";
+
+  if (window._pieceTypesSyncError) {
+    const warn = document.createElement("div");
+    warn.style.cssText = "font-family:'Josefin Slab',serif;font-size:11px;color:#a85400;background:#fff3e0;border:1px solid #f0c896;border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.5;";
+    warn.textContent = "⚠ Couldn't sync piece types with the cloud (" + window._pieceTypesSyncError + "). Showing your built-in defaults — edits here won't save online until this is fixed.";
+    listEl.appendChild(warn);
+  }
+
+  // Category tabs
+  categories.forEach(cat => {
+    const tab = document.createElement("button");
+    tab.className = "settings-cc-tab" + (cat === _settingsPTCategory ? " active" : "");
+    tab.textContent = cat;
+    tab.onclick = () => { _settingsPTCategory = cat; renderPieceTypes(); };
+    catTabsEl.appendChild(tab);
+  });
+
+  // Remove-category control, next to the tabs
+  const removeCatBtn = document.createElement("button");
+  removeCatBtn.textContent = "🗑 Remove \"" + _settingsPTCategory + "\" category";
+  removeCatBtn.style.cssText = "font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;background:#fff;color:#cc3355;border:1.5px solid #eecccc;border-radius:6px;padding:6px 12px;cursor:pointer;margin-bottom:14px;white-space:nowrap;";
+  removeCatBtn.onclick = () => ptRemoveCategory(_settingsPTCategory);
+  listEl.appendChild(removeCatBtn);
+
+  // Sub-type list for the selected category
+  const subs = PIECE_TYPES[_settingsPTCategory] || [];
+  if (!subs.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "font-family:'Josefin Slab',serif;font-size:12px;color:#90a8b8;text-align:center;padding:18px 0;";
+    empty.textContent = "No piece types yet in " + _settingsPTCategory + ". Add one below.";
+    listEl.appendChild(empty);
+  } else {
+    subs.forEach((sub, i) => {
+      const row = document.createElement("div");
+      row.className = "settings-cc-task-row";
+
+      const num = document.createElement("span");
+      num.className = "settings-cc-task-num";
+      num.textContent = (i + 1) + ".";
+      row.appendChild(num);
+
+      const input = document.createElement("input");
+      input.className = "settings-cc-task-input";
+      input.value = sub;
+      input.addEventListener("input", () => ptBufferSubtype(_settingsPTCategory, i, input.value));
+      row.appendChild(input);
+
+      const upBtn = document.createElement("button");
+      upBtn.className = "settings-cc-task-move";
+      upBtn.textContent = "↑";
+      upBtn.title = "Move up";
+      upBtn.disabled = i === 0;
+      upBtn.onclick = () => ptMoveSubtype(_settingsPTCategory, i, -1);
+      row.appendChild(upBtn);
+
+      const downBtn = document.createElement("button");
+      downBtn.className = "settings-cc-task-move";
+      downBtn.textContent = "↓";
+      downBtn.title = "Move down";
+      downBtn.disabled = i === subs.length - 1;
+      downBtn.onclick = () => ptMoveSubtype(_settingsPTCategory, i, 1);
+      row.appendChild(downBtn);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "settings-cc-task-remove";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove this piece type";
+      removeBtn.onclick = () => ptRemoveSubtype(_settingsPTCategory, i);
+      row.appendChild(removeBtn);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  const addRow = document.createElement("div");
+  addRow.className = "settings-cc-add-row";
+  const addInput = document.createElement("input");
+  addInput.placeholder = "Add a piece type…";
+  addInput.id = "settings-pt-add-input";
+  addInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); ptAddSubtype(); }
+  });
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "+ Add";
+  addBtn.onclick = () => ptAddSubtype();
+  addRow.appendChild(addInput);
+  addRow.appendChild(addBtn);
+  listEl.appendChild(addRow);
+
+  // Add-new-category row, at the bottom
+  const addCatRow = document.createElement("div");
+  addCatRow.className = "settings-cc-add-row";
+  addCatRow.style.marginTop = "22px";
+  addCatRow.style.borderTop = "2px solid #d0e4ee";
+  addCatRow.style.paddingTop = "16px";
+  const addCatInput = document.createElement("input");
+  addCatInput.placeholder = "Add a new category…";
+  addCatInput.id = "settings-pt-add-cat-input";
+  addCatInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); ptAddCategory(); }
+  });
+  const addCatBtn = document.createElement("button");
+  addCatBtn.textContent = "+ Add Category";
+  addCatBtn.onclick = () => ptAddCategory();
+  addCatRow.appendChild(addCatInput);
+  addCatRow.appendChild(addCatBtn);
+  listEl.appendChild(addCatRow);
+}
+
+function ptBufferSubtype(cat, index, value) {
+  if (!PIECE_TYPES[cat]) return;
+  PIECE_TYPES[cat][index] = value;
+  _ptScheduleSave();
+}
+
+function ptAddSubtype() {
+  const input = document.getElementById("settings-pt-add-input");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+  if (!PIECE_TYPES[_settingsPTCategory]) PIECE_TYPES[_settingsPTCategory] = [];
+  PIECE_TYPES[_settingsPTCategory].push(text);
+  renderPieceTypes();
+  _ptScheduleSave();
+}
+
+function ptRemoveSubtype(cat, index) {
+  PIECE_TYPES[cat].splice(index, 1);
+  renderPieceTypes();
+  _ptScheduleSave();
+}
+
+function ptMoveSubtype(cat, index, dir) {
+  const arr = PIECE_TYPES[cat];
+  const target = index + dir;
+  if (target < 0 || target >= arr.length) return;
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  renderPieceTypes();
+  _ptScheduleSave();
+}
+
+function ptAddCategory() {
+  const input = document.getElementById("settings-pt-add-cat-input");
+  const name = (input?.value || "").trim();
+  if (!name) return;
+  if (PIECE_TYPES[name]) { alert('"' + name + '" already exists.'); return; }
+  PIECE_TYPES[name] = [];
+  _settingsPTCategory = name;
+  renderPieceTypes();
+  _ptScheduleSave();
+}
+
+function ptRemoveCategory(cat) {
+  if (!confirm('Remove the entire "' + cat + '" category and all ' + (PIECE_TYPES[cat] || []).length + ' piece type(s) in it? Operators will no longer be able to select any of them.')) return;
+  delete PIECE_TYPES[cat];
+  const remaining = Object.keys(PIECE_TYPES);
+  _settingsPTCategory = remaining[0] || "";
+  if (!remaining.length) PIECE_TYPES["Uncategorized"] = []; // keep at least one category so dropdowns never end up empty
+  renderPieceTypes();
+  _ptScheduleSave();
+}
+
+function ptSaveNow() {
+  const confirmEl = document.getElementById("settings-pt-save-confirm");
+  const saveBtn   = document.getElementById("settings-pt-save-btn");
+  if (!window._fb) {
+    if (confirmEl) {
+      confirmEl.textContent  = "✗ Not connected — please log in again.";
+      confirmEl.style.color  = "#cc3333";
+      confirmEl.style.display = "block";
+      setTimeout(() => { confirmEl.style.display = "none"; }, 3000);
+    }
+    return;
+  }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
+  window._fb.savePieceTypes(PIECE_TYPES)
+    .then(() => {
+      if (confirmEl) {
+        confirmEl.textContent  = "✓ Piece types saved successfully";
+        confirmEl.style.color  = "#228844";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 2500);
+      }
+    })
+    .catch(err => {
+      console.error("ptSaveNow failed:", err);
+      if (confirmEl) {
+        confirmEl.textContent  = "✗ Save failed: " + (err.message || err);
+        confirmEl.style.color  = "#cc3333";
+        confirmEl.style.display = "block";
+        setTimeout(() => { confirmEl.style.display = "none"; }, 5000);
+      }
+    })
+    .finally(() => {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓ Save Piece Types"; }
     });
 }
 
