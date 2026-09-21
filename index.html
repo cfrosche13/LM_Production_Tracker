@@ -1106,7 +1106,7 @@
       <!-- Shift type -->
       <div style="display:flex;flex-direction:column;gap:3px;">
         <span style="font-family:'Josefin Slab',serif;font-size:9px;color:#2e8b57;text-transform:uppercase;letter-spacing:0.1em;">Shift Type</span>
-        <select id="clean-shift" onchange="cleanRenderChecklist()"
+        <select id="clean-shift" onchange="cleanApplyShiftTimerRule();cleanRenderChecklist()"
           style="font-family:'Josefin Slab',serif;font-size:13px;background:#0d1824;border:1px solid #1e4d2b;border-radius:6px;color:#a8d8b8;padding:6px 10px;outline:none;cursor:pointer;">
           <option value="Start of Shift">Start of Shift</option>
           <option value="Mid Shift">Mid Shift</option>
@@ -1420,7 +1420,7 @@ function stopAllTransitions() {
 }
 
 </script>
-<script src="js/maintenance.js?v=5"></script>
+<script src="js/maintenance.js?v=6"></script>
 <script src="js/inventory.js?v=23"></script>
 <script src="js/printheads.js?v=11"></script>
 <script src="js/reports.js?v=5"></script>

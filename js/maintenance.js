@@ -147,8 +147,6 @@ function openCleanModal() {
   cleanReset();
   _cleanChecks = {};
   document.getElementById("clean-notes").value = "";
-  document.getElementById("clean-start-btn").style.display = "inline-block";
-  document.getElementById("clean-stop-btn").style.display  = "none";
   document.getElementById("clean-submit-btn").disabled = true;
   document.getElementById("clean-submit-btn").style.background = "#ccddee";
   document.getElementById("clean-submit-btn").style.color = "#6699aa";
@@ -164,12 +162,31 @@ function openCleanModal() {
   const machSel = document.getElementById("clean-machine");
   if (activeMachine && machSel) machSel.value = activeMachine;
   cleanUpdateShiftOptions();
+  cleanApplyShiftTimerRule();
   cleanRenderChecklist();
   openModal("clean-modal");
 }
 
+// Only Start of Shift auto-starts the timer (tracking how long it takes to
+// get going after a break) — Mid/End of Shift stay fully manual (Start
+// button, same as before this existed), so switching the shift dropdown
+// re-evaluates which mode applies.
+function cleanApplyShiftTimerRule() {
+  const shift = document.getElementById("clean-shift")?.value || "";
+  if (shift === "Start of Shift") {
+    if (!cleanRunning) cleanStart();
+  } else if (cleanRunning || cleanSec > 0) {
+    cleanReset();
+  }
+  const startBtn = document.getElementById("clean-start-btn");
+  const stopBtn  = document.getElementById("clean-stop-btn");
+  if (startBtn) startBtn.style.display = cleanRunning ? "none" : "inline-block";
+  if (stopBtn)  stopBtn.style.display  = cleanRunning ? "inline-block" : "none";
+}
+
 function cleanMachineChanged() {
   cleanUpdateShiftOptions();
+  cleanApplyShiftTimerRule();
   cleanRenderChecklist();
 }
 
