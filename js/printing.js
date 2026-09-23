@@ -787,15 +787,34 @@ function waitStop() {
   const machine = document.querySelector(".machine-btn.active")?.dataset.machine || "Unassigned";
   const notes = document.getElementById("wait-notes").value.trim();
   const waitEntry = {duration:waitSec, op, machine, notes, time:new Date().toISOString()};
-  waitLog.unshift({...waitEntry, time: new Date()});
+  const localWaitEntry = {...waitEntry, time: new Date()};
+  waitLog.unshift(localWaitEntry);
   if (!machineEvents[machine]) machineEvents[machine] = [];
-  machineEvents[machine].unshift({ category: "waiting", type: "Waiting", detail: fmt(waitSec), notes, color: "#3355cc", time: waitEntry.time });
-  if (window._fb) {
-    window._fb.saveWaitEntry(waitEntry);
-    window._fb.saveMachineEvent(machine, { category:"waiting", type:"Waiting", detail:fmt(waitSec), notes, color:"#3355cc", time:waitEntry.time });
-  }
+  const localMachineEvent = { category: "waiting", type: "Waiting", detail: fmt(waitSec), notes, color: "#3355cc", time: waitEntry.time };
+  machineEvents[machine].unshift(localMachineEvent);
   document.getElementById("wait-notes").value = "";
   renderWaitLog();
+
+  // Owner report 2026-09-23: this fired both Firebase writes with no error
+  // handling at all, so a failed save looked identical to a successful one
+  // (timer resets, entry shows in the list either way) -- a real save
+  // failure would go completely unnoticed, same silent-data-loss pattern
+  // found in the Missing Files save flow. Now awaits both writes and rolls
+  // the optimistic local entries back + alerts if either one fails.
+  if (window._fb) {
+    Promise.all([
+      window._fb.saveWaitEntry(waitEntry),
+      window._fb.saveMachineEvent(machine, localMachineEvent)
+    ]).catch(function(err) {
+      console.error('waitStop save failed:', err);
+      var idx = waitLog.indexOf(localWaitEntry);
+      if (idx !== -1) waitLog.splice(idx, 1);
+      var midx = machineEvents[machine].indexOf(localMachineEvent);
+      if (midx !== -1) machineEvents[machine].splice(midx, 1);
+      renderWaitLog();
+      alert('✗ Save failed — this wait time was NOT saved: ' + (err && err.message ? err.message : err) + '. Please try logging it again.');
+    });
+  }
 }
 function waitReset() {
   clearInterval(waitInterval); waitRunning = false; waitSec = 0; waitStartWall = 0;
