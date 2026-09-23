@@ -1,0 +1,180 @@
+// ══════════════════════════════════════════
+//  FALL DECORATIONS for EGDash (goes with css/fall.css)
+//  Motion stays in open space (the sidebar edge, the gaps above and below cards)
+//  and always passes BEHIND the cards, so it never covers the numbers.
+//  - Sidebar:          a spider drops down on its thread now and then
+//  - Machine Summary:  every so often a squirrel pops up from behind a random card, facing left
+//                      or right, looks around, and ducks back down (no running, no turning)
+//  - Weekly:           two dancing skeletons at the right end of the title line
+//                      (img/dancing-skeletons.gif, Pixabay, by MXJ_files, free under the Pixabay Content License)
+//  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
+//                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
+//                      free under the Pixabay Content License)
+//  Self-contained: remove this file + its <script> tag to take it out.
+// ══════════════════════════════════════════
+(function () {
+  const style = document.createElement("style");
+  style.textContent = `
+  /* Sidebar spider */
+  #fall-spider { position: fixed; left: 19px; top: -26px; width: 1px; height: 0; background: rgba(74,44,23,0.55);
+    pointer-events: none; z-index: 60; animation: fall-spider-drop 16s ease-in-out infinite; }
+  #fall-spider svg { position: absolute; left: -15px; bottom: -27px; width: 30px; }
+  #fall-spider .legs { animation: fall-wiggle 0.5s ease-in-out infinite alternate; transform-origin: 16px 14px; }
+  @keyframes fall-spider-drop {
+    0%, 12%   { height: 0; }
+    35%       { height: 42vh; }
+    40%       { height: 39vh; }
+    45%, 68%  { height: 41vh; }
+    88%, 100% { height: 0; }
+  }
+  @keyframes fall-wiggle { from { transform: scaleX(1); } to { transform: scaleX(0.85); } }
+
+  /* Machine Summary: squirrel — travels behind the cards */
+  #view-today { position: relative; }
+  #view-today .machine-card { position: relative; z-index: 1; }            /* cards sit in front of him */
+  #fall-squirrel-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  #fall-squirrel { position: absolute; left: 0; top: 0; width: 58px; visibility: hidden; }
+  #fall-squirrel.show { visibility: visible; }
+  #fall-squirrel.left .face { transform: scaleX(-1); }
+  #fall-squirrel svg { display: block; width: 100%; overflow: visible; }
+  #fall-squirrel .whole { transform-origin: 40px 56px; transition: transform 0.35s ease; }
+  #fall-squirrel .tail { transform-origin: 22px 42px; }
+  #fall-squirrel.sitting .whole { transform: rotate(-16deg); }               /* sits up on its haunches */
+  #fall-squirrel.sitting .tail { animation: fall-tail-sit 1.4s ease-in-out infinite alternate; }
+  #fall-squirrel.sitting .head { animation: fall-look 1.5s ease-in-out infinite; transform-origin: 56px 36px; }
+  @keyframes fall-tail-sit { from { transform: rotate(-4deg); } to { transform: rotate(6deg); } }
+  @keyframes fall-look { 0%,60%,100% { transform: rotate(0deg); } 70%,90% { transform: rotate(-10deg); } }
+
+  /* Shipping Status: kitten on a pumpkin, in the bottom-right corner of the open space under the cards */
+  #fall-pumpkin-cat { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; }
+  #fall-pumpkin-cat img { height: 100%; max-height: 380px; width: auto; }
+
+  /* Weekly: dancing skeletons standing on the right end of the title line */
+  #view-weekly > .section-title { position: relative; }
+  #fall-skeletons { position: absolute; right: 6px; bottom: 1px; height: 58px; width: auto; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) { #fall-spider, #fall-pumpkin-cat, #fall-skeletons { display: none; } }`;
+  document.head.appendChild(style);
+
+  const SPIDER_SVG = `
+  <svg viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg">
+    <g class="legs" stroke="#2b1a10" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M12 12 L4 6 L1 12"/><path d="M12 14 L3 13 L0 19"/>
+      <path d="M12 16 L4 19 L2 26"/><path d="M13 18 L7 24 L6 29"/>
+      <path d="M20 12 L28 6 L31 12"/><path d="M20 14 L29 13 L32 19"/>
+      <path d="M20 16 L28 19 L30 26"/><path d="M19 18 L25 24 L26 29"/>
+    </g>
+    <ellipse cx="16" cy="18" rx="6" ry="7" fill="#2b1a10"/>
+    <circle cx="16" cy="10" r="4" fill="#2b1a10"/>
+    <circle cx="14.5" cy="10" r="1" fill="#ff7a1a"/><circle cx="17.5" cy="10" r="1" fill="#ff7a1a"/>
+  </svg>`;
+
+  const SQUIRREL_SVG = `<div class="face">
+  <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg"><g class="whole"><g class="hop">
+    <path class="tail" d="M24 44 C4 44 0 22 10 11 C18 2 32 7 29 17 C26 25 16 24 19 34 Z" fill="#9a4f24"/>
+    <ellipse cx="38" cy="43" rx="16" ry="11" fill="#b8652e"/>
+    <ellipse cx="43" cy="47" rx="9" ry="6" fill="#f0c89a"/>
+    <ellipse cx="28" cy="51" rx="8" ry="5" fill="#9a4f24"/>
+    <path d="M48 50 L54 57 M44 52 L47 58" stroke="#9a4f24" stroke-width="3.5" stroke-linecap="round"/>
+    <g class="head">
+      <circle cx="56" cy="32" r="9.5" fill="#b8652e"/>
+      <path d="M51 25 L53 15 L58 23 Z" fill="#9a4f24"/>
+      <ellipse cx="61" cy="35" rx="4" ry="3" fill="#f0c89a"/>
+      <circle cx="59" cy="29.5" r="1.7" fill="#2b1a10"/>
+      <circle cx="65" cy="34" r="1.4" fill="#2b1a10"/>
+    </g>
+  </g></g></svg></div>`;
+
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+
+  const isActive = (id) => document.getElementById(id)?.classList.contains("active")
+    && !document.getElementById("content-pace")?.classList.contains("active");
+
+  // ── Machine Summary: pop up behind a random card → look around → duck down → next card ──
+  function addSquirrel() {
+    const view = document.getElementById("view-today");
+    if (!view) return;
+    const layer = document.createElement("div");
+    layer.id = "fall-squirrel-layer";
+    layer.setAttribute("aria-hidden", "true");
+    const sq = document.createElement("div");
+    sq.id = "fall-squirrel";
+    sq.innerHTML = SQUIRREL_SVG;
+    layer.appendChild(sq);
+    view.prepend(layer);
+
+    const POP = "cubic-bezier(.3,1.6,.5,1)";   // springy pop
+    let timer = null, running = false, lastCard = null;
+    function place(x, y, seconds, easing) {
+      sq.style.transition = seconds ? `transform ${seconds}s ${easing}` : "none";
+      sq.style.transform = `translate(${x}px, ${y}px)`;
+    }
+    function stop() {
+      clearTimeout(timer); running = false; lastCard = null;
+      sq.className = "";
+    }
+    function next() {
+      if (!running) return;
+      const cards = [...view.querySelectorAll(".machine-card")];
+      const choices = cards.length > 1 ? cards.filter(c => c !== lastCard) : cards;
+      if (!choices.length) { timer = setTimeout(next, 1500); return; }
+      const card = choices[Math.floor(Math.random() * choices.length)];
+      lastCard = card;
+
+      const box = view.getBoundingClientRect(), r = card.getBoundingClientRect();
+      const W = sq.offsetWidth || 58, H = sq.offsetHeight || 44;
+      const x = r.left - box.left + rand(0.1, 0.9) * Math.max(0, r.width - W);
+      const hidden = r.top - box.top + 12, up = r.top - box.top - H + 4;
+
+      place(x, hidden, 0);                                     // move into place behind the card, unseen
+      sq.classList.add("show", "sitting");
+      sq.classList.toggle("left", Math.random() < 0.5);       // faces left or right the whole time
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!running) return;                                  // screen changed meanwhile
+        place(x, up, 0.45, POP);                               // pop up
+        timer = setTimeout(() => {
+          place(x, hidden, 0.3, "ease-in");                    // duck back down
+          timer = setTimeout(next, rand(3000, 6000));          // stay away a little while before the next peek
+        }, rand(2200, 3000));                                  // look around
+      }));
+    }
+    setInterval(() => {
+      const active = isActive("view-today");
+      if (active && !running) { running = true; timer = setTimeout(next, rand(800, 4000)); } // short random start so he shows up most rotations
+      if (!active && running) stop();
+    }, 250);
+  }
+
+  // ── Shipping Status: kitten on a pumpkin under the station cards ──
+  function addPumpkin() {
+    const updated = document.getElementById("shipping-updated");
+    if (!updated) return;
+    const box = document.createElement("div");
+    box.id = "fall-pumpkin-cat";
+    box.setAttribute("aria-hidden", "true");
+    box.innerHTML = `<img src="img/pumpkin-cat.gif" alt="">`;
+    updated.insertAdjacentElement("beforebegin", box);
+  }
+
+  // ── Weekly: dancing skeletons ──
+  function addSkeletons() {
+    const title = document.querySelector("#view-weekly > .section-title");
+    if (!title) return;
+    title.insertAdjacentHTML("beforeend", `<img id="fall-skeletons" src="img/dancing-skeletons.gif" alt="" aria-hidden="true">`);
+  }
+
+  function start() {
+    addSquirrel();
+    addSkeletons();
+    addPumpkin();
+    const spider = document.createElement("div");
+    spider.id = "fall-spider";
+    spider.setAttribute("aria-hidden", "true");
+    spider.innerHTML = SPIDER_SVG;
+    document.body.appendChild(spider);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();
