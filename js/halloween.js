@@ -108,7 +108,7 @@
 
   // Pick which witch shows up: "sweeper", "silhouette" or "kitty".
   // (Add ?witch=kitty etc. to the URL to try one out on localhost.)
-  const WITCH_CHOICE = "sweeper";
+  const WITCH_CHOICE = "kitty";
 
   const WITCHES = {
     // A: green-faced witch, orange hair
