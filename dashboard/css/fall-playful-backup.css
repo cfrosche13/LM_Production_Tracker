@@ -1,0 +1,84 @@
+/* ══════════════════════════════════════════
+   FALL THEME for EGDash — SAVED "PLAYFUL" VERSION (Sofia + Mali fonts), 2026-09-23.
+   Owner loved these fonts but wanted something more professional; kept here in case they revert.
+   To restore: copy this file over css/fall.css and make sure index.html loads
+   https://fonts.googleapis.com/css2?family=Sofia&family=Mali:wght@400;600;700&display=swap
+   Remove this file's <link> tags from index.html to go back to normal.
+
+   Palette
+     page background   soft orange   #fbe0c2
+     frame + headers   dark red      #7a1f1a
+     text              brown         #6b4226 / dark brown #4a2c17
+     content bubbles   soft brown    #ecd6bb
+     inner bubbles     soft yellow   #fff1c7
+   Fonts
+     headers  "Sofia"  (Google stand-in for Pumpkin Sofia)
+     body     "Mali"   (Google stand-in for Cinnamon Cake)
+
+   Status colors (green = on track, orange = behind / down, chart bars,
+   % colors) are set inline by the dashboard code and are left untouched.
+══════════════════════════════════════════ */
+
+:root {
+  --fall-bg: #fbe0c2;
+  --fall-red: #7a1f1a;
+  --fall-brown: #6b4226;
+  --fall-dkbrown: #4a2c17;
+  --fall-bubble: #ecd6bb;
+  --fall-inner: #fff1c7;
+  --fall-head: 'Sofia', cursive;
+  --fall-body: 'Mali', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* ── Page + text ── */
+body, #loading { background: var(--fall-bg); color: var(--fall-dkbrown); font-family: var(--fall-body); }
+body * { font-family: var(--fall-body) !important; }
+
+/* ── Outer frame ── */
+#sidebar { background: var(--fall-bg); border-right-color: var(--fall-red); box-shadow: 4px 0 28px rgba(122,31,26,0.18); }
+#sidebar-divider { background: var(--fall-red); opacity: 0.35; }
+
+/* ── Headers: script font, dark red ── */
+.section-title, .card-machine-name, .pace2-name, .ship2-name, .spg-name, .counter-label, .shift-row-label {
+  font-family: var(--fall-head) !important; color: var(--fall-red) !important;
+  text-transform: none; letter-spacing: 0.01em; font-weight: 400;
+}
+.section-title { font-size: 26px; border-bottom-color: var(--fall-red); }
+.card-machine-name { font-size: 27px; }
+.pace2-name { font-size: 32px; }
+.ship2-name { font-size: 27px; }
+.spg-name { font-size: 16px; }
+.counter-label { font-size: 15px; }
+.shift-row-label { font-size: 18px; }
+
+/* ── Body text: brown ── */
+.legend-item, .open-machine-name, .top-materials-name { color: var(--fall-dkbrown); }
+.card-oee-label, .apq-label, .stat-label, .pace2-of, .pace2-leading, .ship2-of,
+.top-materials-qty, #sidebar-date, #last-updated, #shipping-updated, .no-data { color: var(--fall-brown); }
+.counter-value, .counter-value.stamped, .stat-val, .open-machine-qty,
+.pace2-actual, .ship2-actual { color: var(--fall-dkbrown); }
+
+/* ── Content bubbles: soft brown with dark red outline ── */
+.counter-block, .counter-block.stamped, #chart-section, .machine-card,
+.shift-progress-banner, .pace2-card, .ship2-card {
+  background: var(--fall-bubble) !important;
+}
+.counter-block, .counter-block.stamped, #chart-section, .machine-card:not(.has-down), .shift-progress-banner {
+  border-color: var(--fall-red) !important;
+}
+
+/* ── Inner bubbles: soft yellow ── */
+.apq-cell, .stat-cell, .open-machine-row, .pace2-pct, .ship2-pct {
+  background: var(--fall-inner); border-color: #e6c98f;
+}
+.oee-bar-wrap, .spg-bar-wrap { background: #e2c7a4; }
+
+/* Weekly Performance boxes are styled inline by the dashboard code */
+#content [style*="background:#ffffff"] { background: var(--fall-bubble) !important; border-color: var(--fall-red) !important; }
+#content [style*="background:#f7f8f6"],
+#content [style*="background:#eef3f8"] { background: var(--fall-inner) !important; }
+
+/* ── Buttons ── */
+.view-pin-btn { background: var(--fall-bubble); color: var(--fall-brown); border-color: #d9b88f; }
+.view-pin-btn.active { background: var(--fall-red); border-color: var(--fall-red); color: #fff; }
+.spinner { border-color: #e2c7a4; border-top-color: var(--fall-red); }
