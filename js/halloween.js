@@ -3,8 +3,8 @@
 //  Self-contained: remove this file + its <script> tag to take it all out.
 //  - Pumpkin next to the logo
 //  - Home screen:      a bat flies across every so often
-//  - Tally screens:    a spider drops down on a web line (left side)
-//  - Maintenance timer: a witch sweeps with her broom (bottom-left)
+//  - Tally screens:    a spider drops down on a web line (right side)
+//  - Maintenance timer: a witch sweeps with her broom (bottom-left, fills the side space)
 //  Turns itself off after Halloween (Nov 1).
 // ══════════════════════════════════════════
 (function () {
@@ -19,7 +19,7 @@
 
   /* Bat */
   #hw-bat { top: 30%; left: -90px; width: 70px; display: none; }
-  #hw-bat.fly { display: block; animation: hw-bat-fly 7s linear forwards; }
+  #hw-bat.fly { display: block; animation: hw-bat-fly 12s linear forwards; }
   #hw-bat .wing-l, #hw-bat .wing-r { animation: hw-flap 0.22s ease-in-out infinite alternate; }
   #hw-bat .wing-l { transform-origin: 34px 20px; }
   #hw-bat .wing-r { transform-origin: 36px 20px; }
@@ -34,29 +34,32 @@
   }
 
   /* Spider */
-  #hw-spider-wrap { left: 0; top: 0; width: 120px; display: none; }
+  #hw-spider-wrap { right: 0; top: 0; width: 160px; display: none; }
   #hw-spider-wrap.show { display: block; }
-  #hw-web { position: absolute; left: 0; top: 0; width: 110px; opacity: 0.55; }
-  #hw-thread { position: absolute; left: 34px; top: 18px; width: 1px; height: 0; background: #555;
+  #hw-web { position: absolute; right: 0; top: 0; width: 150px; opacity: 0.55; transform: scaleX(-1); }
+  #hw-thread { position: absolute; right: 46px; top: 24px; width: 1.5px; height: 0; background: #555;
     animation: hw-drop 9s ease-in-out infinite; }
-  #hw-spider { position: absolute; left: -15px; bottom: -26px; width: 32px; }
+  #hw-spider { position: absolute; left: -23px; bottom: -40px; width: 48px; }
   #hw-spider .legs { animation: hw-wiggle 0.5s ease-in-out infinite alternate; transform-origin: 16px 14px; }
   @keyframes hw-drop {
     0%, 8%   { height: 0; }
-    30%      { height: 210px; }
-    36%      { height: 190px; }
-    42%, 70% { height: 205px; }
+    30%      { height: 260px; }
+    36%      { height: 235px; }
+    42%, 70% { height: 255px; }
     92%,100% { height: 0; }
   }
   @keyframes hw-wiggle { from { transform: scaleX(1); } to { transform: scaleX(0.85); } }
 
   /* Witch */
-  #hw-witch { left: 12px; bottom: 8px; width: 150px; display: none; }
+  /* Sized to fill the empty space left of the ~560px-wide maintenance popup */
+  #hw-witch { left: 24px; bottom: 12px; width: clamp(0px, calc(50vw - 330px), 400px); display: none; }
   #hw-witch.show { display: block; }
-  #hw-witch .body { animation: hw-bob 1.2s ease-in-out infinite; }
-  #hw-witch .broom { animation: hw-sweep 1.2s ease-in-out infinite; transform-origin: 78px 70px; }
-  #hw-witch .dust { animation: hw-dust 1.2s ease-out infinite; }
-  #hw-witch .dust2 { animation-delay: 0.6s; }
+  .hw-witch-art .body { animation: hw-bob 1.2s ease-in-out infinite; }
+  .hw-witch-art .broom { animation: hw-sweep 1.2s ease-in-out infinite; }
+  .hw-witch-art .dust { animation: hw-dust 1.2s ease-out infinite; }
+  .hw-witch-art .dust2 { animation-delay: 0.6s; }
+  .hw-witch-art .tail { animation: hw-tail 1.6s ease-in-out infinite; }
+  @keyframes hw-tail { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
   @keyframes hw-bob   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
   @keyframes hw-sweep { 0%,100% { transform: rotate(-14deg); } 50% { transform: rotate(10deg); } }
   @keyframes hw-dust  { 0% { opacity: 0; transform: translate(0,0) scale(0.4); }
@@ -65,7 +68,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     #hw-pumpkin, #hw-bat .wing-l, #hw-bat .wing-r, #hw-spider .legs,
-    #hw-witch .body, #hw-witch .broom, #hw-witch .dust { animation: none; }
+    .hw-witch-art .body, .hw-witch-art .broom, .hw-witch-art .dust, .hw-witch-art .tail { animation: none; }
   }`;
   const style = document.createElement("style");
   style.textContent = css;
@@ -103,12 +106,18 @@
     <circle cx="14.5" cy="10" r="1" fill="#ff7a1a"/><circle cx="17.5" cy="10" r="1" fill="#ff7a1a"/>
   </svg>`;
 
-  const WITCH_SVG = `
-  <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+  // Pick which witch shows up: "sweeper", "silhouette" or "kitty".
+  // (Add ?witch=kitty etc. to the URL to try one out on localhost.)
+  const WITCH_CHOICE = "sweeper";
+
+  const WITCHES = {
+    // A: green-faced witch, orange hair
+    sweeper: `
+  <svg class="hw-witch-art" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="70" cy="144" rx="44" ry="4" fill="rgba(0,0,0,0.12)"/>
     <g class="dust"><circle cx="40" cy="138" r="5" fill="#c9b8a0"/><circle cx="32" cy="134" r="3" fill="#c9b8a0"/></g>
     <g class="dust dust2"><circle cx="48" cy="140" r="4" fill="#c9b8a0"/><circle cx="38" cy="132" r="2.5" fill="#c9b8a0"/></g>
-    <g class="broom">
+    <g class="broom" style="transform-origin:78px 70px">
       <line x1="112" y1="40" x2="44" y2="128" stroke="#8a5a2b" stroke-width="4" stroke-linecap="round"/>
       <path d="M48 122 L26 142 L36 146 L44 144 L52 146 L58 130 Z" fill="#d9a441"/>
       <path d="M49 124 L55 131" stroke="#8a5a2b" stroke-width="3"/>
@@ -134,7 +143,84 @@
       <circle cx="84" cy="86" r="3.5" fill="#8fcf6a"/>
       <path d="M80 68 L78 80 L84 86" stroke="#3b2352" stroke-width="7" fill="none" stroke-linecap="round"/>
     </g>
-  </svg>`;
+  </svg>`,
+
+    // B: classic black silhouette in front of a harvest moon
+    silhouette: `
+  <svg class="hw-witch-art" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="96" cy="58" r="44" fill="#ffb84d" opacity="0.35"/>
+    <ellipse cx="72" cy="144" rx="46" ry="4" fill="rgba(0,0,0,0.14)"/>
+    <g class="dust"><circle cx="38" cy="138" r="5" fill="#b8a890"/><circle cx="30" cy="133" r="3" fill="#b8a890"/></g>
+    <g class="dust dust2"><circle cx="46" cy="140" r="4" fill="#b8a890"/><circle cx="36" cy="131" r="2.5" fill="#b8a890"/></g>
+    <g class="broom" style="transform-origin:82px 74px">
+      <line x1="114" y1="42" x2="42" y2="128" stroke="#1b1424" stroke-width="4" stroke-linecap="round"/>
+      <path d="M46 122 L22 142 L32 147 L42 144 L50 147 L57 130 Z" fill="#1b1424"/>
+    </g>
+    <g class="body" fill="#1b1424">
+      <path d="M82 60 C70 76 62 110 52 142 L112 142 C106 114 100 80 92 60 Z"/>
+      <path d="M52 142 L58 134 L64 142 L71 133 L78 142 L85 134 L92 142 L99 133 L106 142 L112 142 Z"/>
+      <path d="M92 64 C104 80 116 104 122 128 C112 118 104 110 96 100 Z"/>
+      <circle cx="86" cy="48" r="10"/>
+      <path d="M94 45 L110 52 L95 53 Z"/>
+      <path d="M83 55 L90 63 L91 55 Z"/>
+      <path d="M77 42 C70 55 71 66 65 74 L81 53 Z"/>
+      <ellipse cx="86" cy="38" rx="25" ry="4"/>
+      <path d="M73 37 L99 37 L92 18 L104 2 L84 14 Z"/>
+      <path d="M86 66 L96 80 L103 72" stroke="#1b1424" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M80 68 L78 80 L85 86" stroke="#1b1424" stroke-width="7" fill="none" stroke-linecap="round"/>
+    </g>
+    <circle cx="90" cy="45" r="1.5" fill="#ffb84d"/>
+  </svg>`,
+
+    // C: cute little witch in striped stockings, with her black cat
+    kitty: `
+  <svg class="hw-witch-art" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="hw-stripe" width="8" height="6" patternUnits="userSpaceOnUse">
+        <rect width="8" height="6" fill="#1b1424"/><rect width="8" height="3" fill="#ff7a1a"/>
+      </pattern>
+    </defs>
+    <ellipse cx="80" cy="144" rx="56" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <g class="dust"><circle cx="38" cy="138" r="5" fill="#d8c8f0"/><circle cx="30" cy="133" r="3" fill="#d8c8f0"/></g>
+    <g class="dust dust2"><circle cx="46" cy="140" r="4" fill="#d8c8f0"/><circle cx="36" cy="131" r="2.5" fill="#d8c8f0"/></g>
+    <g class="broom" style="transform-origin:84px 84px">
+      <line x1="112" y1="52" x2="44" y2="128" stroke="#8a5a2b" stroke-width="4" stroke-linecap="round"/>
+      <path d="M48 122 L24 142 L34 147 L44 144 L52 147 L59 130 Z" fill="#e8c05a"/>
+      <path d="M49 124 L56 131" stroke="#6b3fa0" stroke-width="3"/>
+    </g>
+    <g class="body">
+      <rect x="75" y="116" width="7" height="22" fill="url(#hw-stripe)"/>
+      <rect x="89" y="116" width="7" height="22" fill="url(#hw-stripe)"/>
+      <ellipse cx="76" cy="140" rx="7" ry="3.5" fill="#1b1424"/>
+      <ellipse cx="95" cy="140" rx="7" ry="3.5" fill="#1b1424"/>
+      <path d="M78 66 L64 120 L106 120 L94 66 Z" fill="#6b3fa0"/>
+      <path d="M64 120 L71 113 L78 120 L85 113 L92 120 L99 113 L106 120 Z" fill="#8fcf6a"/>
+      <path d="M71 44 C64 58 66 70 72 76 L76 54 Z M100 44 C106 58 104 70 98 76 L95 54 Z" fill="#9b59d0"/>
+      <circle cx="86" cy="52" r="14" fill="#ffd9b8"/>
+      <circle cx="80" cy="52" r="1.8" fill="#1b1424"/><circle cx="92" cy="52" r="1.8" fill="#1b1424"/>
+      <circle cx="77" cy="57" r="2.4" fill="#ff9eb5" opacity="0.8"/><circle cx="95" cy="57" r="2.4" fill="#ff9eb5" opacity="0.8"/>
+      <path d="M82 58 Q86 62 90 58" stroke="#1b1424" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="86" cy="40" rx="28" ry="5" fill="#3b2352"/>
+      <path d="M71 39 L101 39 L92 14 L108 6 L86 8 Z" fill="#3b2352"/>
+      <rect x="73" y="33" width="26" height="5" fill="#8fcf6a"/>
+      <path d="M86 22 L88 27 L93 27 L89 30 L90 35 L86 32 L82 35 L83 30 L79 27 L84 27 Z" fill="#ffd34d" transform="translate(0 -4) scale(1)"/>
+      <path d="M90 72 L100 84 L105 76" stroke="#6b3fa0" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <circle cx="105" cy="75" r="3.5" fill="#ffd9b8"/>
+      <path d="M82 74 L80 86 L86 91" stroke="#6b3fa0" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <circle cx="87" cy="91" r="3.5" fill="#ffd9b8"/>
+    </g>
+    <g class="cat">
+      <path class="tail" style="transform-origin:136px 138px" d="M136 138 C148 134 150 120 142 112" stroke="#1b1424" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <ellipse cx="128" cy="132" rx="11" ry="10" fill="#1b1424"/>
+      <circle cx="126" cy="116" r="8" fill="#1b1424"/>
+      <path d="M119 112 L120 103 L125 109 Z M133 112 L132 103 L127 109 Z" fill="#1b1424"/>
+      <ellipse cx="123" cy="116" rx="1.6" ry="2.2" fill="#c6f25a"/><ellipse cx="129" cy="116" rx="1.6" ry="2.2" fill="#c6f25a"/>
+    </g>
+  </svg>`,
+  };
+  const _witchParam = new URLSearchParams(location.search).get("witch");
+  const WITCH_SVG = WITCHES[_witchParam] || WITCHES[WITCH_CHOICE];
+  window.HW_WITCHES = WITCHES; // used by halloween-preview.html
 
   function make(id, html, cls) {
     const el = document.createElement("div");
