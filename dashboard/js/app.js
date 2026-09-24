@@ -724,10 +724,10 @@ function renderChart(td) {
 
 // Draws one stacked bar. Normally plain rectangles (exactly as before); when a
 // theme passes a tipColor it's drawn as a candy corn instead, matching the
-// owner's artwork: wide base, straight sides narrowing to half width, then a
-// rounded point in the tip color. Width follows height for short bars (a small
-// hour is a small candy corn), and the tip grows with tall bars so they read
-// as a stretched candy corn rather than a pencil.
+// owner's artwork: one smooth outline (straight taper for the lower 68%, then a
+// rounded point) with rounded bottom corners, never wider than it is tall. The
+// color bands (and the tip color) fall wherever the numbers put them. Short
+// hours shrink only moderately so they still read as candy corn.
 function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
   if (!segs.length) return;
   if (!tipColor) {
@@ -736,21 +736,32 @@ function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
   }
   const bodyTop = segs[segs.length - 1].yTop;
   const bodyH = Math.max(1, yBase - bodyTop);
-  const bw = Math.min(w, 1.04 * bodyH);
-  const tipH = Math.min(46, Math.max(0.6 * bw, 0.25 * bodyH));
+  let bw = Math.min(70, w, Math.max(1.04 * bodyH, Math.min(0.65 * w, 3.7 * bodyH)));
+  const tipH = Math.min(38, Math.max(0.5 * bw, 0.2 * bodyH));
+  bw = Math.min(bw, 0.95 * (bodyH + tipH));
   const apexY = bodyTop - tipH;
   const totalH = yBase - apexY;
-  const tb = bodyH / totalH;                       // fraction of the height that's body (below the tip)
   const cx = x + w / 2;
-  const halfW = t => t <= tb
-    ? (bw / 2) * (1 - 0.5 * t / tb)                // straight taper to half width
-    : 0.25 * bw * Math.pow(1 - Math.pow((t - tb) / (1 - tb), 1.25), 0.7);   // rounded point
+  const TB = 0.68;
+  const halfW = t => t <= TB
+    ? (bw / 2) * (1 - 0.45 * t / TB)
+    : 0.275 * bw * Math.pow(1 - Math.pow((t - TB) / (1 - TB), 1.9), 0.55);
+  const r = Math.min(0.14 * bw, 8, bodyH * 0.5 + tipH * 0.3);   // rounded bottom corners
+  const leftSide = [];
+  for (let k = 0; k <= 10; k++) {
+    const ang = (k / 10) * Math.PI / 2;
+    leftSide.push([cx - bw / 2 + r - r * Math.sin(ang), yBase - r + r * Math.cos(ang)]);
+  }
+  const N = 60;
+  for (let i = 1; i <= N; i++) {
+    const t = i / N;
+    if (t * totalH < r) continue;
+    leftSide.push([cx - halfW(t), yBase - t * totalH]);
+  }
   const shape = () => {
-    const N = 40;
     ctx.beginPath();
-    ctx.moveTo(cx - bw / 2, yBase);
-    for (let i = 1; i <= N; i++) ctx.lineTo(cx - halfW(i / N), yBase - (i / N) * totalH);
-    for (let i = N - 1; i >= 0; i--) ctx.lineTo(cx + halfW(i / N), yBase - (i / N) * totalH);
+    leftSide.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py));
+    for (let i = leftSide.length - 1; i >= 0; i--) ctx.lineTo(2 * cx - leftSide[i][0], leftSide[i][1]);
     ctx.closePath();
   };
   ctx.save();
