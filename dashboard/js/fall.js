@@ -73,6 +73,19 @@
     -webkit-mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px);
             mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px); }
 
+  /* Chart key: pumpkins instead of circles (each pumpkin keeps its series color) */
+  #chart-legend .legend-dot.fall-pumpkin { width: 18px; height: 18px; background: none !important;
+    box-shadow: none !important; border-radius: 0; }
+  #chart-legend .legend-dot.fall-pumpkin svg { display: block; width: 100%; height: 100%; }
+
+  /* A plain 0 becomes a dark blinking eye (sized to the text around it) */
+  .fall-eye { display: inline-block; width: 1.25em; height: 0.84em; vertical-align: -0.1em; }
+  .fall-eye svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .fall-eye .lid { transform-origin: 12px 8px; animation: fall-blink 5s infinite; animation-delay: var(--blink-delay, 0s); }
+  .fall-eye .iris { animation: fall-glance 7s ease-in-out infinite; animation-delay: var(--blink-delay, 0s); }
+  @keyframes fall-blink { 0%, 90%, 100% { transform: scaleY(1); } 93%, 95% { transform: scaleY(0.08); } }
+  @keyframes fall-glance { 0%, 30%, 100% { transform: translateX(0); } 40%, 60% { transform: translateX(-2.2px); } 70%, 85% { transform: translateX(2.2px); } }
+
   @media (prefers-reduced-motion: reduce) { #fall-spider, #fall-pumpkin-cat, #fall-skeletons { display: none; } }`;
   document.head.appendChild(style);
 
@@ -184,7 +197,75 @@
     title.insertAdjacentHTML("beforeend", `<div id="fall-skeletons" aria-hidden="true"></div>`);
   }
 
+  // ── Chart key: swap each colored circle for a pumpkin in the same color ──
+  // renderChart (js/app.js) rebuilds the key on every refresh, so watch for that and re-swap.
+  const pumpkinSvg = (fill) => `
+    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="${fill}" stroke="rgba(74,44,23,0.55)" stroke-width="0.9">
+        <ellipse cx="6.2" cy="12.2" rx="4.9" ry="5.9"/>
+        <ellipse cx="13.8" cy="12.2" rx="4.9" ry="5.9"/>
+        <ellipse cx="10" cy="12.2" rx="4.4" ry="6.4"/>
+      </g>
+      <path d="M9.1 6.2 C9.2 4.4 9.6 3.1 11 2.2 L11.9 3.2 C11 3.9 10.8 4.9 10.9 6.2 Z" fill="#5b6b2a"/>
+    </svg>`;
+  function pumpkinLegend() {
+    const legend = document.getElementById("chart-legend");
+    if (!legend) return;
+    const swap = () => legend.querySelectorAll(".legend-dot:not(.fall-pumpkin)").forEach(dot => {
+      const color = dot.style.backgroundColor || "#f08120";
+      dot.classList.add("fall-pumpkin");
+      dot.innerHTML = pumpkinSvg(color);
+    });
+    swap();
+    new MutationObserver(swap).observe(legend, { childList: true });
+  }
+
+  // ── A plain 0 anywhere on the page becomes a dark blinking eye ──
+  // Only text that is exactly "0" (so 10, 100 and 2026 stay normal). The page rewrites
+  // its numbers on every refresh, so keep watching and swap any new 0s.
+  const EYE_SVG = `
+    <svg viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g class="lid">
+        <path d="M1 8 C5 1.5 19 1.5 23 8 C19 14.5 5 14.5 1 8 Z" fill="#1c120c" stroke="#3a2416" stroke-width="1"/>
+        <g class="iris">
+          <circle cx="12" cy="8" r="4.3" fill="#c25a12"/>
+          <circle cx="12" cy="8" r="2.6" fill="#e8942e"/>
+          <ellipse cx="12" cy="8" rx="1" ry="3.2" fill="#0a0604"/>
+          <circle cx="13.6" cy="6.4" r="0.8" fill="#fff4dc" opacity="0.8"/>
+        </g>
+      </g>
+    </svg>`;
+  const SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "OPTION", "TITLE"]);
+  function eyeZeros(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.nodeValue.trim() === "0" && n.parentElement && !SKIP.has(n.parentElement.tagName)
+        && !n.parentElement.closest("svg, .fall-eye") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP,
+    });
+    const zeros = [];
+    while (walker.nextNode()) zeros.push(walker.currentNode);
+    zeros.forEach(n => {
+      const eye = document.createElement("span");
+      eye.className = "fall-eye";
+      eye.setAttribute("role", "img");
+      eye.setAttribute("aria-label", "0");
+      eye.style.setProperty("--blink-delay", (-Math.random() * 5).toFixed(2) + "s");  // don't all blink together
+      eye.innerHTML = EYE_SVG;
+      n.replaceWith(eye);
+    });
+  }
+  function watchZeros() {
+    eyeZeros(document.body);
+    new MutationObserver(muts => {
+      for (const m of muts) {
+        const t = m.type === "characterData" ? m.target.parentElement : m.target;
+        if (t && t.isConnected) eyeZeros(t);
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+
   function start() {
+    watchZeros();
+    pumpkinLegend();
     addSquirrel();
     addSkeletons();
     addPumpkin();
