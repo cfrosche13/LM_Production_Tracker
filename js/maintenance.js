@@ -225,6 +225,7 @@ function cleanRenderChecklist() {
   const progressKey = cleanProgressKey(machine, shift);
   const savedChecks = window._checklistProgress?.[progressKey]?.checks || {};
   const hasSaved    = Object.keys(savedChecks).some(k => savedChecks[k]);
+  cleanRestoreTime(hasSaved ? (window._checklistProgress[progressKey].elapsedSec || 0) : 0);
   const resumeBanner = document.getElementById("clean-resume-banner");
   if (resumeBanner) resumeBanner.style.display = hasSaved ? "" : "none";
 
@@ -314,7 +315,7 @@ function cleanUpdateProgress() {
       btn.style.background = allDone ? "#2288cc" : "#1a6a3a";
       btn.style.color = "#fff";
       btn.style.cursor = "pointer";
-      btn.textContent = allDone ? "✓ Submit Complete" : "✓ Submit Partial (" + done + "/" + total + ")";
+      btn.textContent = allDone ? "✓ Submit Complete" : "Submit as Incomplete (" + done + "/" + total + ")";
     } else {
       btn.disabled = true;
       btn.style.background = "#ccddee";
@@ -338,8 +339,10 @@ function cleanSaveProgress() {
   const op      = document.getElementById("clean-operator")?.value.trim() || "";
   if (!machine || !Object.values(_cleanChecks).some(v => v)) return;
 
+  // Save the timer too, so reopening picks up where it left off instead of restarting at 0
+  if (cleanRunning) cleanSec = Math.floor((Date.now() - cleanStartWall) / 1000);
   const key  = cleanProgressKey(machine, shift);
-  const data = { machine, shift, op, checks: { ..._cleanChecks }, savedAt: new Date().toISOString() };
+  const data = { machine, shift, op, checks: { ..._cleanChecks }, elapsedSec: cleanSec, savedAt: new Date().toISOString() };
 
   if (!window._checklistProgress) window._checklistProgress = {};
   window._checklistProgress[key] = data;
@@ -366,8 +369,10 @@ function cleanSubmit() {
   const notes   = document.getElementById("clean-notes")?.value.trim() || "";
   const tasks   = Object.keys(_cleanChecks);
   const completed = tasks.filter(t => _cleanChecks[t]).length;
-  const partial = completed < tasks.length;
-  const detail  = `${shift} · ${machine} · ${completed}/${tasks.length} tasks${partial ? " (partial)" : ""} · ${fmt(cleanSec)}`;
+  const incomplete = completed < tasks.length;
+  // "(incomplete)" was "(partial)" before 2026-09-24 -- the daily maintenance
+  // report email (ShipConfirmSync/maintenance_report.py) matches both.
+  const detail  = `${shift} · ${machine} · ${completed}/${tasks.length} tasks${incomplete ? " (incomplete)" : ""} · ${fmt(cleanSec)}`;
   const notesFull = [notes, "Tasks: " + tasks.map(t => (_cleanChecks[t]?"✓":"✗") + " " + t).join(", ")].filter(Boolean).join("\n");
   addMaintEntry({ type:"Cleaning", color:"#5599cc", detail, notes:notesFull, op, machine, time:new Date() });
   if (window._fb) {
@@ -397,6 +402,18 @@ function cleanStart() {
   }, 500);
 }
 
+// Sets the timer to a saved checklist's time (or back to 0 when switching to one with
+// nothing saved). A running timer keeps running from the new value.
+let _cleanRestoredSec = 0;
+function cleanRestoreTime(sec) {
+  if (!sec && !_cleanRestoredSec) return;       // nothing saved now or before -- leave the timer alone
+  _cleanRestoredSec = sec;
+  cleanSec = sec;
+  if (cleanRunning) cleanStartWall = Date.now() - sec * 1000;
+  const d = document.getElementById("clean-timer-display");
+  if (d) d.textContent = fmt(sec);
+}
+
 function cleanStop() {
   if (!cleanRunning) return;
   clearInterval(cleanInterval); cleanRunning = false;
@@ -410,7 +427,7 @@ function cleanCancel() {
 }
 
 function cleanReset() {
-  clearInterval(cleanInterval); cleanRunning = false; cleanSec = 0; cleanStartWall = 0;
+  clearInterval(cleanInterval); cleanRunning = false; cleanSec = 0; cleanStartWall = 0; _cleanRestoredSec = 0;
   const d = document.getElementById("clean-timer-display");
   if (d) d.textContent = "00:00:00";
   _cleanChecks = {};
