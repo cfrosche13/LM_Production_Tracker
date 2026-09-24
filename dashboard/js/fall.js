@@ -54,7 +54,10 @@
   #view-weekly > .section-title { display: flex; align-items: flex-end; }
   #fall-skeletons { flex: 1; position: relative; align-self: stretch; margin-left: 24px; pointer-events: none; }
   #fall-skeletons::before { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; height: 58px;
-    background: url(img/dancing-skeletons.gif) repeat-x left bottom / auto 58px; }
+    background: url(img/dancing-skeletons.gif) repeat-x left bottom / auto 58px;
+    /* hide every other pair so there's a gap between them (owner: "that's a lot") */
+    -webkit-mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px);
+            mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px); }
 
   @media (prefers-reduced-motion: reduce) { #fall-spider, #fall-pumpkin-cat, #fall-skeletons { display: none; } }`;
   document.head.appendChild(style);
