@@ -362,6 +362,7 @@ function cleanSaveProgress() {
 }
 
 function cleanSubmit() {
+  if (cleanRunning) cleanSec = Math.floor((Date.now() - cleanStartWall) / 1000); // exact time at the moment of submit
   clearInterval(cleanInterval); cleanRunning = false;
   const op      = document.getElementById("clean-operator")?.value.trim() || document.getElementById("global-operator")?.value || "—";
   const machine = document.getElementById("clean-machine")?.value || "—";
