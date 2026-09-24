@@ -30,7 +30,7 @@ Requires Python 3 (included in Windows 11).
 - Track wait time (idle timer)
 - Log stamped pieces (tally + misprint counter)
 - View production reports and export to Excel
-- Open PrintLog app (https://egstudiolog.netlify.app/) via button in production reports toolbar
+- Open EGReport's Pre-Production tab (https://egstudioreport.netlify.app/?tab=preprod) via the "🏭 Pre-Production" button in the production reports toolbar (was a Print Log link until 2026-09-24; work is logged in Tempo now)
 - View open orders imported from warehouse spreadsheet
 
 ### File structure
