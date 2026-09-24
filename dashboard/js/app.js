@@ -655,7 +655,7 @@ function renderChart(td) {
   // Canvas height comes from its flex-allocated space (see CSS: #hourly-chart { flex:1 })
   // rather than a fixed constant, so it fills whatever room the rotating view gives it.
   const cssH = canvas.clientHeight || 260;
-  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyTip ? 30 : 16, PAD_RIGHT=12;
+  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyShape ? 34 : 16, PAD_RIGHT=12;
   const CHART_H = Math.max(80, cssH - PAD_TOP - PAD_BOTTOM);
   const BAR_GROUP_W = Math.floor((cssWidth-PAD_LEFT-PAD_RIGHT) / hours.length);
   const GROUP_GAP  = 10;  // breathing room between hours
@@ -691,29 +691,29 @@ function renderChart(td) {
 
     // Stacked printed bar — one segment per machine
     let cumulative = 0;
+    const printedSegs = [];
     activeMachines.forEach(m => {
       const val = hourlyData[m][h] || 0;
       if (val <= 0) return;
       const yBottom = PAD_TOP + CHART_H - cumulative*yScale;
       const yTop    = yBottom - val*yScale;
-      ctx.fillStyle = machineColor(m);
-      ctx.fillRect(printedX, yTop, BAR_W, yBottom-yTop);
+      printedSegs.push({ yTop, yBottom, color: machineColor(m) });
       cumulative += val;
     });
-    if (T.candyTip && cumulative > 0) _drawCandyTip(ctx, printedX, BAR_W, PAD_TOP + CHART_H - cumulative*yScale, PAD_TOP + CHART_H, T);
+    _drawBar(ctx, printedX, BAR_W, PAD_TOP + CHART_H, printedSegs, T.candyShape ? T.tipColor : null, T);
 
     // Shipping pipeline bar — stacked, light-to-dark blue, Shipped at bottom up to Assembled
     let shipCumulative = 0;
+    const shipSegs = [];
     STATION_STACK.forEach(s => {
       const val = stackForHour(s.key, h);
       if (val <= 0) return;
       const yBottom = PAD_TOP + CHART_H - shipCumulative*yScale;
       const yTop    = yBottom - val*yScale;
-      ctx.fillStyle = stationColor(s);
-      ctx.fillRect(shippedX, yTop, BAR_W, yBottom-yTop);
+      shipSegs.push({ yTop, yBottom, color: stationColor(s) });
       shipCumulative += val;
     });
-    if (T.candyTip && shipCumulative > 0) _drawCandyTip(ctx, shippedX, BAR_W, PAD_TOP + CHART_H - shipCumulative*yScale, PAD_TOP + CHART_H, T);
+    _drawBar(ctx, shippedX, BAR_W, PAD_TOP + CHART_H, shipSegs, T.candyShape ? (T.shipTipColor || T.tipColor) : null, T);
 
     // Hour label
     const label = h>12 ? (h-12)+"pm" : h===12 ? "12pm" : h+"am";
@@ -722,24 +722,42 @@ function renderChart(td) {
   });
 }
 
-// Candy-corn cap for a finished bar: a pointed tip on top plus a thin outline
-// around the whole bar (so the white top still shows on a light background).
-function _drawCandyTip(ctx, x, w, yTop, yBase, T) {
-  const tipH = Math.min(w * 0.9, 16);
-  ctx.beginPath();
-  ctx.moveTo(x, yTop);
-  ctx.lineTo(x + w / 2, yTop - tipH);
-  ctx.lineTo(x + w, yTop);
-  ctx.closePath();
-  ctx.fillStyle = T.tipColor || "#fffaf0";
-  ctx.fill();
-  if (T.outline) {
+// Draws one stacked bar. Normally plain rectangles (exactly as before); when a
+// theme passes a tipColor it's shaped like a candy corn instead: rounded bottom,
+// sides narrowing toward the top, a rounded point in the tip color, a darker
+// left edge, and a thin outline.
+function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
+  if (!segs.length) return;
+  if (!tipColor) {
+    segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop); });
+    return;
+  }
+  const bodyTop = segs[segs.length - 1].yTop;
+  const bodyH = yBase - bodyTop;
+  const tipH = Math.min(w * 1.1, 24);
+  const inset = w * 0.16;                       // how much the top narrows on each side
+  const r = Math.min(w * 0.3, 8, bodyH / 2);    // rounded bottom corners
+  const outline = () => {
     ctx.beginPath();
-    ctx.moveTo(x, yBase);
-    ctx.lineTo(x, yTop);
-    ctx.lineTo(x + w / 2, yTop - tipH);
-    ctx.lineTo(x + w, yTop);
-    ctx.lineTo(x + w, yBase);
+    ctx.moveTo(x + r, yBase);
+    ctx.quadraticCurveTo(x, yBase, x, yBase - r);
+    ctx.lineTo(x + inset, bodyTop);
+    ctx.bezierCurveTo(x + inset + w * 0.08, bodyTop - tipH * 1.25, x + w - inset - w * 0.08, bodyTop - tipH * 1.25, x + w - inset, bodyTop);
+    ctx.lineTo(x + w, yBase - r);
+    ctx.quadraticCurveTo(x + w, yBase, x + w - r, yBase);
+    ctx.closePath();
+  };
+  ctx.save();
+  outline();
+  ctx.clip();
+  segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop + 0.5); });
+  ctx.fillStyle = tipColor;
+  ctx.fillRect(x, bodyTop - tipH * 1.5, w, tipH * 1.5);
+  ctx.fillStyle = "rgba(90,40,10,0.13)";          // the darker left edge from the artwork
+  ctx.fillRect(x, bodyTop - tipH * 1.5, w * 0.2, bodyH + tipH * 1.5);
+  ctx.restore();
+  if (T.outline) {
+    outline();
     ctx.strokeStyle = T.outline;
     ctx.lineWidth = 1;
     ctx.stroke();

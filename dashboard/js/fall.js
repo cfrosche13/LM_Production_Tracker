@@ -10,21 +10,24 @@
 //  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
 //                      free under the Pixabay Content License)
-//  - Production by Hour chart: candy corn colored bars with pointed tips (EG_CHART_THEME)
+//  - Production by Hour chart: bars shaped and colored like the owner's candy corn art (EG_CHART_THEME)
 //  Self-contained: remove this file + its <script> tag to take it out.
 // ══════════════════════════════════════════
 (function () {
   // Production by Hour chart as candy corn (read by renderChart in js/app.js).
-  // Printed bar, bottom to top in machine order: deep orange -> orange -> yellow -> cream white.
-  // Shipping bar uses the classic candy corn order instead: yellow base -> orange -> white.
+  // Colors sampled from the owner's candy corn artwork (Desktop\candy corn.png, 2026-09-24):
+  //   Printed = the orange candy corn: yellows at the bottom -> oranges -> cream tip
+  //   Shipping = the purple candy corn: salmon at the bottom -> lavender -> purple -> peach tip
+  // Each machine / shipping stage gets its own shade so every category still shows.
   window.EG_CHART_THEME = {
-    machineColors: { "30": "#d9621a", "30+": "#ec7f22", "H5": "#f39c2c", "Colex": "#f6b73c",
-                     "Wallets": "#f8cc4a", "Drinkware M1": "#fbe07a", "Drinkware M2": "#fff3d2" },
-    stationColors: { shipped: "#f3c623", readyToShip: "#f7d96b", sorting: "#ee7f1b", assembly: "#fff3d2" },
-    tipColor: "#fffaf0",
+    machineColors: { "30": "#f1bd02", "30+": "#f9c91d", "H5": "#f5a524", "Colex": "#f08120",
+                     "Wallets": "#e8710c", "Drinkware M1": "#f6d9a0", "Drinkware M2": "#efe6c4" },
+    stationColors: { shipped: "#e79d82", readyToShip: "#aa91ab", sorting: "#46408a", assembly: "#7d6fb0" },
+    tipColor: "#faf6dc",
+    shipTipColor: "#fee4d2",
     outline: "rgba(74,44,23,0.45)",
     axisColor: "#6b4226",
-    candyTip: true,
+    candyShape: true,
   };
 
   const style = document.createElement("style");
