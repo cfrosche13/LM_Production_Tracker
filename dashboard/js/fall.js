@@ -5,7 +5,7 @@
 //  - Sidebar:          a spider drops down on its thread now and then
 //  - Machine Summary:  every so often a squirrel pops up from behind a random card, facing left
 //                      or right, looks around, and ducks back down (no running, no turning)
-//  - Weekly:           two dancing skeletons at the right end of the title line
+//  - Weekly:           a line of dancing skeletons across the open space of the title line
 //                      (img/dancing-skeletons.gif, Pixabay, by MXJ_files, free under the Pixabay Content License)
 //  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
@@ -49,9 +49,12 @@
   #fall-pumpkin-cat { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; }
   #fall-pumpkin-cat img { height: 100%; max-height: 380px; width: auto; }
 
-  /* Weekly: dancing skeletons standing on the right end of the title line */
-  #view-weekly > .section-title { position: relative; }
-  #fall-skeletons { position: absolute; right: 6px; bottom: 1px; height: 58px; width: auto; pointer-events: none; }
+  /* Weekly: a chorus line of dancing skeletons filling the title line after the text.
+     The GIF is tiled as a repeating background, so it fills any screen width. */
+  #view-weekly > .section-title { display: flex; align-items: flex-end; }
+  #fall-skeletons { flex: 1; position: relative; align-self: stretch; margin-left: 24px; pointer-events: none; }
+  #fall-skeletons::before { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; height: 58px;
+    background: url(img/dancing-skeletons.gif) repeat-x left bottom / auto 58px; }
 
   @media (prefers-reduced-motion: reduce) { #fall-spider, #fall-pumpkin-cat, #fall-skeletons { display: none; } }`;
   document.head.appendChild(style);
@@ -161,7 +164,7 @@
   function addSkeletons() {
     const title = document.querySelector("#view-weekly > .section-title");
     if (!title) return;
-    title.insertAdjacentHTML("beforeend", `<img id="fall-skeletons" src="img/dancing-skeletons.gif" alt="" aria-hidden="true">`);
+    title.insertAdjacentHTML("beforeend", `<div id="fall-skeletons" aria-hidden="true"></div>`);
   }
 
   function start() {
