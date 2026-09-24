@@ -10,7 +10,7 @@
 //  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
 //                      free under the Pixabay Content License)
-//  - Production by Hour chart: bars shaped and colored like the owner's candy corn art (EG_CHART_THEME)
+//  - Production by Hour chart: bars colored like the owner's candy corn art (EG_CHART_THEME)
 //  Self-contained: remove this file + its <script> tag to take it out.
 // ══════════════════════════════════════════
 (function () {
@@ -23,11 +23,8 @@
     machineColors: { "30": "#f1bd02", "30+": "#f9c91d", "H5": "#f5a524", "Colex": "#f08120",
                      "Wallets": "#e8710c", "Drinkware M1": "#f6d9a0", "Drinkware M2": "#efe6c4" },
     stationColors: { shipped: "#e79d82", readyToShip: "#aa91ab", sorting: "#46408a", assembly: "#7d6fb0" },
-    tipColor: "#faf6dc",
-    shipTipColor: "#fee4d2",
     outline: "rgba(74,44,23,0.45)",
     axisColor: "#6b4226",
-    candyShape: true,
   };
 
   const style = document.createElement("style");

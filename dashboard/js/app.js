@@ -609,8 +609,8 @@ function renderWeekRow(gridId, dateStrs) {
 function renderChart(td) {
   const canvas = document.getElementById("hourly-chart");
   const legend = document.getElementById("chart-legend");
-  // Optional seasonal look, set by a theme script (e.g. js/fall.js sets candy
-  // corn colors + a pointed tip). Without it the chart draws exactly as before.
+  // Optional seasonal colors, set by a theme script (e.g. js/fall.js sets candy
+  // corn colors). Without it the chart draws exactly as before.
   const T = window.EG_CHART_THEME || {};
   const machineColor = m => (T.machineColors||{})[m] || MACHINE_COLORS[m] || "#aaa";
   const stationColor = s => (T.stationColors||{})[s.key] || s.color;
@@ -655,7 +655,7 @@ function renderChart(td) {
   // Canvas height comes from its flex-allocated space (see CSS: #hourly-chart { flex:1 })
   // rather than a fixed constant, so it fills whatever room the rotating view gives it.
   const cssH = canvas.clientHeight || 260;
-  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyShape ? 52 : 16, PAD_RIGHT=12;
+  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=16, PAD_RIGHT=12;
   const CHART_H = Math.max(80, cssH - PAD_TOP - PAD_BOTTOM);
   const BAR_GROUP_W = Math.floor((cssWidth-PAD_LEFT-PAD_RIGHT) / hours.length);
   const GROUP_GAP  = 10;  // breathing room between hours
@@ -700,7 +700,7 @@ function renderChart(td) {
       printedSegs.push({ yTop, yBottom, color: machineColor(m) });
       cumulative += val;
     });
-    _drawBar(ctx, printedX, BAR_W, PAD_TOP + CHART_H, printedSegs, T.candyShape ? T.tipColor : null, T);
+    _drawBar(ctx, printedX, BAR_W, PAD_TOP + CHART_H, printedSegs, T);
 
     // Shipping pipeline bar — stacked, light-to-dark blue, Shipped at bottom up to Assembled
     let shipCumulative = 0;
@@ -713,7 +713,7 @@ function renderChart(td) {
       shipSegs.push({ yTop, yBottom, color: stationColor(s) });
       shipCumulative += val;
     });
-    _drawBar(ctx, shippedX, BAR_W, PAD_TOP + CHART_H, shipSegs, T.candyShape ? (T.shipTipColor || T.tipColor) : null, T);
+    _drawBar(ctx, shippedX, BAR_W, PAD_TOP + CHART_H, shipSegs, T);
 
     // Hour label
     const label = h>12 ? (h-12)+"pm" : h===12 ? "12pm" : h+"am";
@@ -722,63 +722,16 @@ function renderChart(td) {
   });
 }
 
-// Draws one stacked bar. Normally plain rectangles (exactly as before); when a
-// theme passes a tipColor it's drawn as a candy corn instead, matching the
-// owner's artwork: one smooth outline (straight taper for the lower 68%, then a
-// rounded point) with rounded bottom corners, never wider than it is tall. The
-// color bands (and the tip color) fall wherever the numbers put them. Short
-// hours shrink only moderately so they still read as candy corn.
-function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
+// Draws one stacked bar as plain rectangles. A theme can add a thin outline
+// around the whole bar (helps pale colors like cream show on a light background).
+function _drawBar(ctx, x, w, yBase, segs, T) {
   if (!segs.length) return;
-  if (!tipColor) {
-    segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop); });
-    return;
-  }
-  const bodyTop = segs[segs.length - 1].yTop;
-  const bodyH = Math.max(1, yBase - bodyTop);
-  let bw = Math.min(70, w, Math.max(1.04 * bodyH, Math.min(0.65 * w, 3.7 * bodyH)));
-  const tipH = Math.min(38, Math.max(0.5 * bw, 0.2 * bodyH));
-  bw = Math.min(bw, 0.95 * (bodyH + tipH));
-  const apexY = bodyTop - tipH;
-  const totalH = yBase - apexY;
-  const cx = x + w / 2;
-  const TB = 0.68;
-  const halfW = t => t <= TB
-    ? (bw / 2) * (1 - 0.45 * t / TB)
-    : 0.275 * bw * Math.pow(1 - Math.pow((t - TB) / (1 - TB), 1.9), 0.55);
-  const r = Math.min(0.14 * bw, 8, bodyH * 0.5 + tipH * 0.3);   // rounded bottom corners
-  const leftSide = [];
-  for (let k = 0; k <= 10; k++) {
-    const ang = (k / 10) * Math.PI / 2;
-    leftSide.push([cx - bw / 2 + r - r * Math.sin(ang), yBase - r + r * Math.cos(ang)]);
-  }
-  const N = 60;
-  for (let i = 1; i <= N; i++) {
-    const t = i / N;
-    if (t * totalH < r) continue;
-    leftSide.push([cx - halfW(t), yBase - t * totalH]);
-  }
-  const shape = () => {
-    ctx.beginPath();
-    leftSide.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py));
-    for (let i = leftSide.length - 1; i >= 0; i--) ctx.lineTo(2 * cx - leftSide[i][0], leftSide[i][1]);
-    ctx.closePath();
-  };
-  ctx.save();
-  shape();
-  ctx.clip();
-  segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop + 0.5); });
-  ctx.fillStyle = tipColor;
-  ctx.fillRect(x, apexY - 2, w, tipH + 2);
-  ctx.fillStyle = "rgba(90,40,10,0.13)";           // darker left edge, like the artwork
-  ctx.fillRect(cx - bw / 2, apexY, bw * 0.2, totalH);
-  ctx.restore();
+  segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop); });
   if (T.outline) {
-    shape();
-    ctx.lineJoin = "round";
+    const top = segs[segs.length - 1].yTop;
     ctx.strokeStyle = T.outline;
     ctx.lineWidth = 1;
-    ctx.stroke();
+    ctx.strokeRect(x + 0.5, top + 0.5, w - 1, yBase - top - 1);
   }
 }
 
