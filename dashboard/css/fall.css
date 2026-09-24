@@ -9,7 +9,8 @@
      content bubbles   soft orange   #fbe0c2
      inner bubbles     soft yellow   #fff1c7
    Fonts
-     headers  "Sofia"  (Google stand-in for Pumpkin Sofia)
+     headers  "Rubik Wet Paint" (bold dripping-paint Halloween font, owner pick 2026-09-24;
+              replaced Sofia script, which read as too playful)
      body     "Quicksand" (rounded, clean; more professional than Mali)
 
    Status colors (green = on track, orange = behind / down, chart bars,
@@ -23,7 +24,7 @@
   --fall-dkbrown: #4a2c17;
   --fall-bubble: #fbe0c2;
   --fall-inner: #fff1c7;
-  --fall-head: 'Sofia', cursive;
+  --fall-head: 'Rubik Wet Paint', 'Quicksand', sans-serif;
   --fall-body: 'Quicksand', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -40,15 +41,15 @@ body * { font-family: var(--fall-body) !important; }
   font-family: var(--fall-head) !important; color: var(--fall-red) !important;
   text-transform: none; letter-spacing: 0.01em; font-weight: 400;
 }
-.section-title { font-size: 26px; border-bottom-color: var(--fall-red); }
+.section-title { font-size: 24px; border-bottom-color: var(--fall-red); }
 /* Keep the whole title in the script font, including the "— Night Shift" part */
 .section-title span { font-family: var(--fall-head) !important; color: inherit !important; }
-.card-machine-name { font-size: 27px; }
-.pace2-name { font-size: 32px; }
-.ship2-name { font-size: 27px; }
-.spg-name { font-size: 16px; }
-.counter-label { font-size: 15px; }
-.shift-row-label { font-size: 18px; }
+.card-machine-name { font-size: 22px; }
+.pace2-name { font-size: 28px; }
+.ship2-name { font-size: 22px; }
+.spg-name { font-size: 13px; }
+.counter-label { font-size: 12px; line-height: 1.15; text-align: center; }
+.shift-row-label { font-size: 15px; }
 
 /* ── Body text: brown ── */
 .legend-item, .open-machine-name, .top-materials-name { color: var(--fall-dkbrown); }
