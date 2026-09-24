@@ -655,7 +655,7 @@ function renderChart(td) {
   // Canvas height comes from its flex-allocated space (see CSS: #hourly-chart { flex:1 })
   // rather than a fixed constant, so it fills whatever room the rotating view gives it.
   const cssH = canvas.clientHeight || 260;
-  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyShape ? 34 : 16, PAD_RIGHT=12;
+  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyShape ? 52 : 16, PAD_RIGHT=12;
   const CHART_H = Math.max(80, cssH - PAD_TOP - PAD_BOTTOM);
   const BAR_GROUP_W = Math.floor((cssWidth-PAD_LEFT-PAD_RIGHT) / hours.length);
   const GROUP_GAP  = 10;  // breathing room between hours
@@ -723,9 +723,11 @@ function renderChart(td) {
 }
 
 // Draws one stacked bar. Normally plain rectangles (exactly as before); when a
-// theme passes a tipColor it's shaped like a candy corn instead: rounded bottom,
-// sides narrowing toward the top, a rounded point in the tip color, a darker
-// left edge, and a thin outline.
+// theme passes a tipColor it's drawn as a candy corn instead, matching the
+// owner's artwork: wide base, straight sides narrowing to half width, then a
+// rounded point in the tip color. Width follows height for short bars (a small
+// hour is a small candy corn), and the tip grows with tall bars so they read
+// as a stretched candy corn rather than a pencil.
 function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
   if (!segs.length) return;
   if (!tipColor) {
@@ -733,31 +735,36 @@ function _drawBar(ctx, x, w, yBase, segs, tipColor, T) {
     return;
   }
   const bodyTop = segs[segs.length - 1].yTop;
-  const bodyH = yBase - bodyTop;
-  const tipH = Math.min(w * 1.1, 24);
-  const inset = w * 0.16;                       // how much the top narrows on each side
-  const r = Math.min(w * 0.3, 8, bodyH / 2);    // rounded bottom corners
-  const outline = () => {
+  const bodyH = Math.max(1, yBase - bodyTop);
+  const bw = Math.min(w, 1.04 * bodyH);
+  const tipH = Math.min(46, Math.max(0.6 * bw, 0.25 * bodyH));
+  const apexY = bodyTop - tipH;
+  const totalH = yBase - apexY;
+  const tb = bodyH / totalH;                       // fraction of the height that's body (below the tip)
+  const cx = x + w / 2;
+  const halfW = t => t <= tb
+    ? (bw / 2) * (1 - 0.5 * t / tb)                // straight taper to half width
+    : 0.25 * bw * Math.pow(1 - Math.pow((t - tb) / (1 - tb), 1.25), 0.7);   // rounded point
+  const shape = () => {
+    const N = 40;
     ctx.beginPath();
-    ctx.moveTo(x + r, yBase);
-    ctx.quadraticCurveTo(x, yBase, x, yBase - r);
-    ctx.lineTo(x + inset, bodyTop);
-    ctx.bezierCurveTo(x + inset + w * 0.08, bodyTop - tipH * 1.25, x + w - inset - w * 0.08, bodyTop - tipH * 1.25, x + w - inset, bodyTop);
-    ctx.lineTo(x + w, yBase - r);
-    ctx.quadraticCurveTo(x + w, yBase, x + w - r, yBase);
+    ctx.moveTo(cx - bw / 2, yBase);
+    for (let i = 1; i <= N; i++) ctx.lineTo(cx - halfW(i / N), yBase - (i / N) * totalH);
+    for (let i = N - 1; i >= 0; i--) ctx.lineTo(cx + halfW(i / N), yBase - (i / N) * totalH);
     ctx.closePath();
   };
   ctx.save();
-  outline();
+  shape();
   ctx.clip();
   segs.forEach(g => { ctx.fillStyle = g.color; ctx.fillRect(x, g.yTop, w, g.yBottom - g.yTop + 0.5); });
   ctx.fillStyle = tipColor;
-  ctx.fillRect(x, bodyTop - tipH * 1.5, w, tipH * 1.5);
-  ctx.fillStyle = "rgba(90,40,10,0.13)";          // the darker left edge from the artwork
-  ctx.fillRect(x, bodyTop - tipH * 1.5, w * 0.2, bodyH + tipH * 1.5);
+  ctx.fillRect(x, apexY - 2, w, tipH + 2);
+  ctx.fillStyle = "rgba(90,40,10,0.13)";           // darker left edge, like the artwork
+  ctx.fillRect(cx - bw / 2, apexY, bw * 0.2, totalH);
   ctx.restore();
   if (T.outline) {
-    outline();
+    shape();
+    ctx.lineJoin = "round";
     ctx.strokeStyle = T.outline;
     ctx.lineWidth = 1;
     ctx.stroke();
