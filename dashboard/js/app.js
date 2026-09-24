@@ -609,12 +609,18 @@ function renderWeekRow(gridId, dateStrs) {
 function renderChart(td) {
   const canvas = document.getElementById("hourly-chart");
   const legend = document.getElementById("chart-legend");
+  // Optional seasonal look, set by a theme script (e.g. js/fall.js sets candy
+  // corn colors + a pointed tip). Without it the chart draws exactly as before.
+  const T = window.EG_CHART_THEME || {};
+  const machineColor = m => (T.machineColors||{})[m] || MACHINE_COLORS[m] || "#aaa";
+  const stationColor = s => (T.stationColors||{})[s.key] || s.color;
+  const axisColor = T.axisColor || "#0d6748";
 
   const activeMachines = MACHINES.filter(m => (machineReports[m]||[]).some(s=>localDateStr(s.time)===td));
   legend.innerHTML = activeMachines.map(m=>
-    `<div class="legend-item"><div class="legend-dot" style="background:${MACHINE_COLORS[m]||'#aaa'}"></div>${m}</div>`
+    `<div class="legend-item"><div class="legend-dot" style="background:${machineColor(m)}${T.outline ? ';box-shadow:0 0 0 1px ' + T.outline : ''}"></div>${m}</div>`
   ).join("") + STATION_STACK.map(s=>
-    `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}</div>`
+    `<div class="legend-item"><div class="legend-dot" style="background:${stationColor(s)}${T.outline ? ';box-shadow:0 0 0 1px ' + T.outline : ''}"></div>${s.label}</div>`
   ).join("");
 
   if (!activeMachines.length) {
@@ -649,7 +655,7 @@ function renderChart(td) {
   // Canvas height comes from its flex-allocated space (see CSS: #hourly-chart { flex:1 })
   // rather than a fixed constant, so it fills whatever room the rotating view gives it.
   const cssH = canvas.clientHeight || 260;
-  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=16, PAD_RIGHT=12;
+  const PAD_LEFT=48, PAD_BOTTOM=38, PAD_TOP=T.candyTip ? 30 : 16, PAD_RIGHT=12;
   const CHART_H = Math.max(80, cssH - PAD_TOP - PAD_BOTTOM);
   const BAR_GROUP_W = Math.floor((cssWidth-PAD_LEFT-PAD_RIGHT) / hours.length);
   const GROUP_GAP  = 10;  // breathing room between hours
@@ -673,7 +679,7 @@ function renderChart(td) {
   for (let i=0;i<=gridLines;i++) {
     const y = PAD_TOP+CHART_H-(i/gridLines)*CHART_H;
     ctx.beginPath(); ctx.moveTo(PAD_LEFT,y); ctx.lineTo(cssWidth-PAD_RIGHT,y); ctx.stroke();
-    ctx.fillStyle="#0d6748"; ctx.font="bold 10px Helvetica,Arial,sans-serif"; ctx.textAlign="right";
+    ctx.fillStyle=axisColor; ctx.font="bold 10px Helvetica,Arial,sans-serif"; ctx.textAlign="right";
     ctx.fillText(Math.round((i/gridLines)*maxVal), PAD_LEFT-5, y+3);
   }
   ctx.setLineDash([]);
@@ -690,10 +696,11 @@ function renderChart(td) {
       if (val <= 0) return;
       const yBottom = PAD_TOP + CHART_H - cumulative*yScale;
       const yTop    = yBottom - val*yScale;
-      ctx.fillStyle = MACHINE_COLORS[m]||"#aaa";
+      ctx.fillStyle = machineColor(m);
       ctx.fillRect(printedX, yTop, BAR_W, yBottom-yTop);
       cumulative += val;
     });
+    if (T.candyTip && cumulative > 0) _drawCandyTip(ctx, printedX, BAR_W, PAD_TOP + CHART_H - cumulative*yScale, PAD_TOP + CHART_H, T);
 
     // Shipping pipeline bar — stacked, light-to-dark blue, Shipped at bottom up to Assembled
     let shipCumulative = 0;
@@ -702,16 +709,41 @@ function renderChart(td) {
       if (val <= 0) return;
       const yBottom = PAD_TOP + CHART_H - shipCumulative*yScale;
       const yTop    = yBottom - val*yScale;
-      ctx.fillStyle = s.color;
+      ctx.fillStyle = stationColor(s);
       ctx.fillRect(shippedX, yTop, BAR_W, yBottom-yTop);
       shipCumulative += val;
     });
+    if (T.candyTip && shipCumulative > 0) _drawCandyTip(ctx, shippedX, BAR_W, PAD_TOP + CHART_H - shipCumulative*yScale, PAD_TOP + CHART_H, T);
 
     // Hour label
     const label = h>12 ? (h-12)+"pm" : h===12 ? "12pm" : h+"am";
-    ctx.fillStyle="#0d6748"; ctx.font="9px Helvetica,Arial,sans-serif"; ctx.textAlign="center";
+    ctx.fillStyle=axisColor; ctx.font="9px Helvetica,Arial,sans-serif"; ctx.textAlign="center";
     ctx.fillText(label, groupX+usableW/2, PAD_TOP+CHART_H+14);
   });
+}
+
+// Candy-corn cap for a finished bar: a pointed tip on top plus a thin outline
+// around the whole bar (so the white top still shows on a light background).
+function _drawCandyTip(ctx, x, w, yTop, yBase, T) {
+  const tipH = Math.min(w * 0.9, 16);
+  ctx.beginPath();
+  ctx.moveTo(x, yTop);
+  ctx.lineTo(x + w / 2, yTop - tipH);
+  ctx.lineTo(x + w, yTop);
+  ctx.closePath();
+  ctx.fillStyle = T.tipColor || "#fffaf0";
+  ctx.fill();
+  if (T.outline) {
+    ctx.beginPath();
+    ctx.moveTo(x, yBase);
+    ctx.lineTo(x, yTop);
+    ctx.lineTo(x + w / 2, yTop - tipH);
+    ctx.lineTo(x + w, yTop);
+    ctx.lineTo(x + w, yBase);
+    ctx.strokeStyle = T.outline;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 }
 
 function renderCards(td) {

@@ -10,9 +10,23 @@
 //  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
 //                      free under the Pixabay Content License)
+//  - Production by Hour chart: candy corn colored bars with pointed tips (EG_CHART_THEME)
 //  Self-contained: remove this file + its <script> tag to take it out.
 // ══════════════════════════════════════════
 (function () {
+  // Production by Hour chart as candy corn (read by renderChart in js/app.js).
+  // Printed bar, bottom to top in machine order: deep orange -> orange -> yellow -> cream white.
+  // Shipping bar uses the classic candy corn order instead: yellow base -> orange -> white.
+  window.EG_CHART_THEME = {
+    machineColors: { "30": "#d9621a", "30+": "#ec7f22", "H5": "#f39c2c", "Colex": "#f6b73c",
+                     "Wallets": "#f8cc4a", "Drinkware M1": "#fbe07a", "Drinkware M2": "#fff3d2" },
+    stationColors: { shipped: "#f3c623", readyToShip: "#f7d96b", sorting: "#ee7f1b", assembly: "#fff3d2" },
+    tipColor: "#fffaf0",
+    outline: "rgba(74,44,23,0.45)",
+    axisColor: "#6b4226",
+    candyTip: true,
+  };
+
   const style = document.createElement("style");
   style.textContent = `
   /* Sidebar spider */
