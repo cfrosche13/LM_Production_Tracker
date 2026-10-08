@@ -5,6 +5,7 @@
 //  - Home screen:      a bat flies across every so often
 //  - Tally screens:    a spider drops down on a web line (right side)
 //  - Maintenance timer: a witch sweeps with her broom (bottom-left, fills the side space)
+//  - Dark purple / orange "Haunted House" colors and fonts (css/spooky.css), alternating by tab
 //  Turns itself off after Halloween (Nov 1).
 // ══════════════════════════════════════════
 (function () {
@@ -237,7 +238,24 @@
     return !!el && el.offsetParent !== null;
   }
 
+  // ── Dark "Haunted House" colors (css/spooky.css, built by tools/build_spooky_css.py) ──
+  // Tabs alternate: Printing purple, Maintenance orange, Colex purple, Stamped orange,
+  // Settings purple, Open Orders orange. Waiting opens from Printing, so it's purple too.
+  // The theme only applies while body has sp-on, so it goes away with the rest of this file on Nov 1.
+  const PURPLE_VIEWS = ["view-printing", "view-waiting", "view-colex", "view-settings"];
+  function syncTheme() {
+    const active = document.querySelector(".view.active");
+    const purple = !active || PURPLE_VIEWS.includes(active.id);
+    document.body.classList.add("sp-on");
+    document.body.classList.toggle("sp-purple", purple);
+    document.body.classList.toggle("sp-orange", !purple);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    syncTheme();
+    const themeWatch = new MutationObserver(syncTheme);
+    document.querySelectorAll(".view").forEach(v => themeWatch.observe(v, { attributes: true, attributeFilter: ["class"] }));
+
     // Pumpkin next to the logo
     const logo = document.querySelector("#top-bar > img");
     if (logo) {

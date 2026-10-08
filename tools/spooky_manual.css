@@ -1,0 +1,41 @@
+/* Page, bars and views sit on the palette background */
+body.sp-on, body.sp-on div.view, body.sp-on #pt-login-screen { background: var(--sp-bg) !important; color: var(--sp-text); }
+body.sp-on #top-bar, body.sp-on #nav-bar, body.sp-on #transition-bar {
+  background: var(--sp-bg) !important; border-bottom-color: var(--sp-frame) !important; box-shadow: 0 2px 14px rgba(0,0,0,0.4);
+}
+body.sp-on #reports-grid-scroll-wrap::after { background: linear-gradient(transparent, var(--sp-bg)); }
+
+/* Tabs: each tab's label is in its own palette (Printing, Colex and Settings lilac;
+   Maintenance, Stamped and Open Orders light orange). The open tab is filled. */
+body.sp-on .nav-btn { background: transparent !important; font-size: 17px; text-transform: none; letter-spacing: 0.02em; }
+body.sp-on #nav-printing, body.sp-on #nav-colex, body.sp-on #nav-settings, body.sp-on #nav-waiting { color: #d9c2f0 !important; }
+body.sp-on #nav-maintenance, body.sp-on #nav-stamped, body.sp-on #nav-orders { color: #f7c48f !important; }
+body.sp-on .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.06) !important; }
+body.sp-on .nav-btn.active { background: var(--sp-bubble) !important; border-bottom-color: var(--sp-frame) !important; }
+
+/* Form controls */
+body.sp-on select option { background: var(--sp-bubble); color: var(--sp-text); }
+body.sp-on input::placeholder, body.sp-on textarea::placeholder { color: var(--sp-muted); opacity: 0.8; }
+body.sp-on input, body.sp-on select, body.sp-on textarea { color: var(--sp-text); }
+body.sp-on ::-webkit-scrollbar-track { background: var(--sp-bg); }
+body.sp-on ::-webkit-scrollbar-thumb { background: var(--sp-soft); }
+
+/* Popups */
+body.sp-on .modal-overlay { background: rgba(0,0,0,0.6); }
+body.sp-on .modal-box { background: var(--sp-bubble) !important; border-color: var(--sp-frame) !important; }
+
+/* The logo image keeps its white box; round it so it sits like a badge */
+body.sp-on #top-bar img { border-radius: 6px; }
+
+/* Buttons the app never styled (e.g. Print Heads) would show the browser's light gray.
+   :where() keeps this at zero weight, so any color the app does set still wins. */
+:where(body.sp-on) button { background-color: var(--sp-bubble); color: var(--sp-head); border-color: var(--sp-frame); }
+
+/* Halloween decorations are dark: give them a soft light rim and a light web on the dark theme */
+body.sp-on #hw-thread { background: rgba(247,196,143,0.6) !important; }
+body.sp-on #hw-web svg { stroke: #f7c48f; }
+body.sp-on #hw-spider svg, body.sp-on #hw-bat svg, body.sp-on #hw-witch svg { filter: drop-shadow(0 0 3px rgba(247,196,143,0.75)); }
+
+/* Full-screen backdrops were a dark green tint: make them plain dark */
+body.sp-on #tally-login-overlay, body.sp-on #session-gate { background: rgba(0,0,0,0.75) !important; }
+body.sp-on [style*="background:rgba(255,255,255,0.92)"] { background: rgba(0,0,0,0.6) !important; }
