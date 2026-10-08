@@ -8,6 +8,8 @@
 //  - Dark purple / orange "Haunted House" colors and fonts (css/spooky.css), alternating by tab
 //  - Tally screens: goo drips along the bottom of the Changeover / Waiting bar, and creatures
 //    in the empty space beside the cards that change with the piece-type tab (TALLY_CREATURES)
+//  - Every screen with empty space left and right: cobwebs in the top corners of that space,
+//    plus creatures on some tabs (VIEW_CREATURES)
 //  Turns itself off after Halloween (Nov 1).
 // ══════════════════════════════════════════
 (function () {
@@ -84,6 +86,12 @@
     85%     { transform: translateY(8px) scaleY(1.15); opacity: 1; }
     100%    { transform: translateY(40px); opacity: 0; }
   }
+
+  /* Cobwebs in the top corners of the empty side space */
+  .hw-cobweb { position: absolute; top: 0; width: 170px; height: 170px; opacity: 0.6; }
+  .hw-cobweb.l { left: 0; }
+  .hw-cobweb.r { right: 0; transform: scaleX(-1); }
+  .hw-cobweb svg { display: block; width: 100%; height: 100%; }
 
   /* Tally screens: creatures in the empty space left and right of the cards */
   .hw-gutter { position: fixed; overflow: hidden; pointer-events: none; z-index: 150; display: none; }
@@ -404,11 +412,31 @@
     "Drinkware": "cauldron",         // witch's brew for the cup station
   };
 
+  // Creatures for whole tabs (the Printing tab uses TALLY_CREATURES while a tally is open)
+  const VIEW_CREATURES = {
+    "view-orders": "cauldron",
+    "view-settings": "bats",
+    "view-maintenance": "ghost-mix",
+  };
+
+  // Corner cobweb, hub in the top-left corner (mirrored for the right side)
+  const COBWEB_SVG = (() => {
+    const R = 165, angs = [0, 15, 30, 45, 60, 75, 90], rings = [26, 52, 80, 110, 140, 162];
+    const pt = (r, a) => [r * Math.cos(a * Math.PI / 180), r * Math.sin(a * Math.PI / 180)];
+    let d = angs.map(a => { const [x, y] = pt(R, a); return `M0 0L${x.toFixed(1)} ${y.toFixed(1)}`; }).join("");
+    rings.forEach(r => angs.slice(1).forEach((a, i) => {
+      const [x1, y1] = pt(r, angs[i]), [x2, y2] = pt(r, a), [cx, cy] = pt(r * 0.82, (angs[i] + a) / 2);
+      d += `M${x1.toFixed(1)} ${y1.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    }));
+    return `<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="none"
+      stroke="var(--sp-head, #d9c2f0)" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+  })();
+
   function ghostsHtml(kind, seed) {
     // a few ghosts at different spots, sizes and speeds, floating up the side space
-    return [[10, 17, 0, 58], [50, 21, -7, 44], [28, 19, -13, 50], [66, 15, -4, 40]].map(([x, dur, delay, size]) =>
+    return [[10, 17, 0, 58], [50, 21, -7, 44], [28, 19, -13, 50], [66, 15, -4, 40]].map(([x, dur, delay, size], i) =>
       `<div class="hw-ghost" style="left:${x}%;--dur:${dur + seed}s;--delay:${delay - seed * 2}s;--size:${size}px">
-         <div class="sway">${GHOSTS[kind]}</div>
+         <div class="sway">${GHOSTS[kind === "mix" ? ["sheet", "drape", "treat"][(i + seed) % 3] : kind]}</div>
        </div>`).join("");
   }
 
@@ -490,25 +518,56 @@
     const gutterL = make("hw-gutter-l", "", "hw-gutter");
     const gutterR = make("hw-gutter-r", "", "hw-gutter");
     gutterL.className = gutterR.className = "hw-gutter";   // own positioning, not .hw-deco
-    let shownCreature = null;
-    function placeCreatures(show) {
-      const screen = document.getElementById("print-tally2-screen");
-      const cat = typeof _t2Cat === "string" ? _t2Cat : "";
-      const creature = show && screen && isShown("print-tally2-screen") ? (TALLY_CREATURES[cat] || null) : null;
-      if (!creature) {
-        gutterL.classList.remove("show"); gutterR.classList.remove("show");
-        return;
+    // The content box of the open tab, so the creatures and webs use only the empty space
+    // beside it. Full-width wrappers are looked into; anything truly full width means no space.
+    function contentBox(view) {
+      const vw = view.getBoundingClientRect().width;
+      let left = Infinity, right = -Infinity, full = false;
+      (function walk(el, depth) {
+        for (const c of el.children) {
+          if (c.offsetParent === null) continue;
+          const r = c.getBoundingClientRect();
+          if (r.width < 2 || r.height < 2) continue;
+          if (r.width >= vw * 0.9) {
+            if (depth < 3 && c.children.length) walk(c, depth + 1); else full = true;
+            continue;
+          }
+          left = Math.min(left, r.left); right = Math.max(right, r.right);
+        }
+      })(view, 0);
+      return full || left === Infinity ? null : { left, right };
+    }
+
+    let shownKey = null;
+    function placeCreatures(show, spiderShown) {
+      const view = document.querySelector(".view.active");
+      let box = null, creature = null;
+      if (show && view) {
+        const tally2 = document.getElementById("print-tally2-screen");
+        if (view.id === "view-printing" && tally2 && isShown("print-tally2-screen")) {
+          const r = tally2.getBoundingClientRect();
+          box = { left: r.left, right: r.right };
+          creature = TALLY_CREATURES[typeof _t2Cat === "string" ? _t2Cat : ""] || null;
+        } else {
+          box = contentBox(view);
+          creature = VIEW_CREATURES[view.id] || null;
+        }
       }
-      const r = screen.getBoundingClientRect();
-      const tb = document.getElementById("transition-bar");
-      const top = Math.max(0, (tb && tb.offsetParent ? tb.getBoundingClientRect().bottom : 0) + 24);
-      const widthL = Math.max(0, r.left - 24), widthR = Math.max(0, window.innerWidth - r.right - 24);
+      if (!box) { gutterL.classList.remove("show"); gutterR.classList.remove("show"); return; }
+
+      const tb = document.getElementById("transition-bar"), nav = document.getElementById("nav-bar");
+      const bar = tb && tb.offsetParent ? tb : nav;
+      const top = Math.max(0, (bar ? bar.getBoundingClientRect().bottom : 0) + 24);
+      const widthL = Math.max(0, box.left - 24), widthR = Math.max(0, window.innerWidth - box.right - 24);
       Object.assign(gutterL.style, { top: top + "px", bottom: "0px", left: "8px", width: widthL + "px" });
-      Object.assign(gutterR.style, { top: top + "px", bottom: "0px", left: (r.right + 16) + "px", width: widthR + "px" });
-      if (creature !== shownCreature) {
-        shownCreature = creature;
-        gutterL.innerHTML = creatureHtml(creature, "L");
-        gutterR.innerHTML = creatureHtml(creature, "R");
+      Object.assign(gutterR.style, { top: top + "px", bottom: "0px", left: (box.right + 16) + "px", width: widthR + "px" });
+
+      const key = `${view.id}|${creature}|${spiderShown}`;
+      if (key !== shownKey) {
+        shownKey = key;
+        gutterL.innerHTML = `<div class="hw-cobweb l">${COBWEB_SVG}</div>` + (creature ? creatureHtml(creature, "L") : "");
+        // the dropping spider brings its own web on the right
+        gutterR.innerHTML = (spiderShown ? "" : `<div class="hw-cobweb r">${COBWEB_SVG}</div>`) + (creature ? creatureHtml(creature, "R") : "");
       }
       gutterL.classList.toggle("show", widthL >= 90);
       gutterR.classList.toggle("show", widthR >= 90 && gutterR.innerHTML !== "");
@@ -534,7 +593,7 @@
       spiderWrap.classList.toggle("show", !!onTally);
       const onPrintTally = !loggedOut && printingActive && (isShown("print-tally-screen") || isShown("print-tally2-screen"));
       document.body.classList.toggle("sp-tally", !!onPrintTally);
-      placeCreatures(!!onPrintTally && !onMaintTimer);
+      placeCreatures(!loggedOut && !onMaintTimer, !!onTally);
       witch.classList.toggle("show", !!onMaintTimer);
 
       // Bat: first flight shortly after landing on home, then every ~25s

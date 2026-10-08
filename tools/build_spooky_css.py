@@ -340,7 +340,7 @@ def main():
     parts.append("\n/* ── Inline colors (index.html and js/) ── */")
     parts += inline_rules(sources, js_sources)
     parts.append("\n/* ── Page-level areas stay dark with light text (even where the old theme drew a box) ── */")
-    parts.append(",\n".join(f"{SCOPE} {a}" for a in DARK_AREAS) + " { " + DARK_VARS.replace(";", " !important;") + " color: var(--sp-text) !important; }")
+    parts.append(",\n".join([SCOPE] + [f"{SCOPE} {a}" for a in DARK_AREAS]) + " { " + DARK_VARS.replace(";", " !important;") + " color: var(--sp-text) !important; }")
     parts.append("\n/* ── Hand-written (tools/spooky_manual.css) ── */")
     parts.append(open("tools/spooky_manual.css", encoding="utf-8").read())
     open("css/spooky.css", "w", encoding="utf-8", newline="\n").write("\n".join(parts) + "\n")
