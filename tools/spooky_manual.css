@@ -57,3 +57,32 @@ body.sp-on #od-results .od-table th { background: var(--sp-fill) !important; col
 body.sp-on #od-results .od-table td { border-bottom-color: var(--sp-soft) !important; }
 body.sp-on #od-results .od-table tr.sub td { background: var(--sp-inner) !important; }
 body.sp-on #od-results .od-table tr.tot td { background: var(--sp-inner) !important; border-top-color: var(--sp-frame) !important; color: var(--sp-head); }
+
+/* Tally screens (Tally and Tally 2.0 piece cards): a goo edge drips off the bottom of each
+   card, like the potion bars on EGDash, and one drop slowly forms and falls now and then.
+   The cards are built in js with inline styles and no class, so find them by their count box. */
+body.sp-on div:has(> [id^="t2-count-"]), body.sp-on div:has(> [id^="tc-count-"]) { position: relative; overflow: visible; }
+body.sp-on div:has(> [id^="t2-count-"])::after, body.sp-on div:has(> [id^="tc-count-"])::after {
+  content: ""; position: absolute; left: 10px; right: 10px; top: 100%; margin-top: -2px; height: 22px;
+  background: var(--sp-frame); pointer-events: none; z-index: 2;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22' viewBox='0 0 120 22'%3E%3Cpath d='M0 0H120V4C110 5 100 4.5 90 5.5C80 4.5 70 5.5 60 4.6C50 5.6 40 4.4 30 5.4C20 4.6 10 5.4 0 4.4ZM7.0 3.5C10.0 4.5 10.0 5.0 10.0 7.0A4.0 4.0 0 0 0 18.0 7.0C18.0 5.0 18.0 4.5 21.0 3.5ZM33.0 3.5C36.0 4.5 36.0 13.0 36.0 15.0A5.0 5.0 0 0 0 46.0 15.0C46.0 13.0 46.0 4.5 49.0 3.5ZM59.5 3.5C62.5 4.5 62.5 2.5 62.5 4.5A3.5 3.5 0 0 0 69.5 4.5C69.5 2.5 69.5 4.5 72.5 3.5ZM87.5 3.5C90.5 4.5 90.5 8.5 90.5 10.5A4.5 4.5 0 0 0 99.5 10.5C99.5 8.5 99.5 4.5 102.5 3.5Z'/%3E%3C/svg%3E") repeat-x left top / 120px 22px;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22' viewBox='0 0 120 22'%3E%3Cpath d='M0 0H120V4C110 5 100 4.5 90 5.5C80 4.5 70 5.5 60 4.6C50 5.6 40 4.4 30 5.4C20 4.6 10 5.4 0 4.4ZM7.0 3.5C10.0 4.5 10.0 5.0 10.0 7.0A4.0 4.0 0 0 0 18.0 7.0C18.0 5.0 18.0 4.5 21.0 3.5ZM33.0 3.5C36.0 4.5 36.0 13.0 36.0 15.0A5.0 5.0 0 0 0 46.0 15.0C46.0 13.0 46.0 4.5 49.0 3.5ZM59.5 3.5C62.5 4.5 62.5 2.5 62.5 4.5A3.5 3.5 0 0 0 69.5 4.5C69.5 2.5 69.5 4.5 72.5 3.5ZM87.5 3.5C90.5 4.5 90.5 8.5 90.5 10.5A4.5 4.5 0 0 0 99.5 10.5C99.5 8.5 99.5 4.5 102.5 3.5Z'/%3E%3C/svg%3E") repeat-x left top / 120px 22px;
+  filter: drop-shadow(0 0 3px var(--sp-frame));
+}
+body.sp-on div:has(> [id^="t2-count-"])::before, body.sp-on div:has(> [id^="tc-count-"])::before {
+  content: ""; position: absolute; left: 30%; top: 100%; margin-top: 10px; width: 9px; height: 11px; z-index: 2;
+  background: var(--sp-frame); border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%; pointer-events: none;
+  animation: sp-tally-drip 4.5s ease-in infinite;
+}
+/* stagger the falling drop so the cards don't all drip at once */
+body.sp-on div:has(> [id^="t2-count-"]):nth-child(3n+2)::before, body.sp-on div:has(> [id^="tc-count-"]):nth-child(3n+2)::before { left: 68%; animation-delay: -1.6s; }
+body.sp-on div:has(> [id^="t2-count-"]):nth-child(3n)::before, body.sp-on div:has(> [id^="tc-count-"]):nth-child(3n)::before { left: 45%; animation-delay: -3.1s; }
+@keyframes sp-tally-drip {
+  0%, 45% { transform: translateY(-4px) scaleY(.4); opacity: 0; }
+  55%     { transform: translateY(0) scaleY(.8); opacity: 1; }
+  85%     { transform: translateY(6px) scaleY(1.15); opacity: 1; }
+  100%    { transform: translateY(18px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.sp-on div:has(> [id^="t2-count-"])::before, body.sp-on div:has(> [id^="tc-count-"])::before { animation: none; opacity: 0; }
+}
