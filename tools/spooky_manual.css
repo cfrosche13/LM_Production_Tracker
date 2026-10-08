@@ -57,3 +57,18 @@ body.sp-on #od-results .od-table th { background: var(--sp-fill) !important; col
 body.sp-on #od-results .od-table td { border-bottom-color: var(--sp-soft) !important; }
 body.sp-on #od-results .od-table tr.sub td { background: var(--sp-inner) !important; }
 body.sp-on #od-results .od-table tr.tot td { background: var(--sp-inner) !important; border-top-color: var(--sp-frame) !important; color: var(--sp-head); }
+
+/* Maintenance Actions / Log / Reports tabs: plain tabs on the dark page, not a light box.
+   js/maintenance.js marks the open tab by setting its color to #e87820. */
+body.sp-on div:has(> #maint-tab-actions) {
+  background: transparent !important; border-bottom: 2px solid var(--sp-frame) !important; margin-bottom: 14px;
+}
+body.sp-on [id^="maint-tab-"] {
+  color: var(--sp-D-muted) !important; border-bottom: 3px solid transparent !important;
+  font-size: 15px !important; padding: 10px 26px !important; border-radius: 8px 8px 0 0;
+}
+body.sp-on [id^="maint-tab-"]:hover { color: var(--sp-D-head) !important; background: rgba(255,255,255,0.05) !important; }
+body.sp-on [id^="maint-tab-"][style*="color:#e87820"],
+body.sp-on [id^="maint-tab-"][style*="rgb(232, 120, 32)"] {
+  color: var(--sp-D-head) !important; border-bottom-color: var(--sp-frame) !important; background: rgba(255,255,255,0.06) !important;
+}
