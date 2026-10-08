@@ -6,6 +6,8 @@
 //  - Tally screens:    a spider drops down on a web line (right side)
 //  - Maintenance timer: a witch sweeps with her broom (bottom-left, fills the side space)
 //  - Dark purple / orange "Haunted House" colors and fonts (css/spooky.css), alternating by tab
+//  - Tally screens: goo drips along the bottom of the Changeover / Waiting bar, and creatures
+//    in the empty space beside the cards that change with the piece-type tab (TALLY_CREATURES)
 //  Turns itself off after Halloween (Nov 1).
 // ══════════════════════════════════════════
 (function () {
@@ -67,7 +69,51 @@
                         30% { opacity: 0.7; }
                         100% { opacity: 0; transform: translate(-22px,-14px) scale(1.3); } }
 
+  /* Tally screens: goo drips off the bottom edge of the Changeover / Waiting / Purge bar */
+  body.sp-tally #transition-bar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%;
+    height: 22px; margin-top: -1px; background: var(--sp-frame, #a07cc5); pointer-events: none;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22' viewBox='0 0 120 22'%3E%3Cpath d='M0 0H120V4C110 5 100 4.5 90 5.5C80 4.5 70 5.5 60 4.6C50 5.6 40 4.4 30 5.4C20 4.6 10 5.4 0 4.4ZM7.0 3.5C10.0 4.5 10.0 5.0 10.0 7.0A4.0 4.0 0 0 0 18.0 7.0C18.0 5.0 18.0 4.5 21.0 3.5ZM33.0 3.5C36.0 4.5 36.0 13.0 36.0 15.0A5.0 5.0 0 0 0 46.0 15.0C46.0 13.0 46.0 4.5 49.0 3.5ZM59.5 3.5C62.5 4.5 62.5 2.5 62.5 4.5A3.5 3.5 0 0 0 69.5 4.5C69.5 2.5 69.5 4.5 72.5 3.5ZM87.5 3.5C90.5 4.5 90.5 8.5 90.5 10.5A4.5 4.5 0 0 0 99.5 10.5C99.5 8.5 99.5 4.5 102.5 3.5Z'/%3E%3C/svg%3E") repeat-x left top / 120px 22px; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='22' viewBox='0 0 120 22'%3E%3Cpath d='M0 0H120V4C110 5 100 4.5 90 5.5C80 4.5 70 5.5 60 4.6C50 5.6 40 4.4 30 5.4C20 4.6 10 5.4 0 4.4ZM7.0 3.5C10.0 4.5 10.0 5.0 10.0 7.0A4.0 4.0 0 0 0 18.0 7.0C18.0 5.0 18.0 4.5 21.0 3.5ZM33.0 3.5C36.0 4.5 36.0 13.0 36.0 15.0A5.0 5.0 0 0 0 46.0 15.0C46.0 13.0 46.0 4.5 49.0 3.5ZM59.5 3.5C62.5 4.5 62.5 2.5 62.5 4.5A3.5 3.5 0 0 0 69.5 4.5C69.5 2.5 69.5 4.5 72.5 3.5ZM87.5 3.5C90.5 4.5 90.5 8.5 90.5 10.5A4.5 4.5 0 0 0 99.5 10.5C99.5 8.5 99.5 4.5 102.5 3.5Z'/%3E%3C/svg%3E") repeat-x left top / 120px 22px;
+    filter: drop-shadow(0 0 3px var(--sp-frame, #a07cc5)); }
+  #hw-goo-drops { position: absolute; left: 0; right: 0; top: 100%; height: 0; pointer-events: none; display: none; }
+  body.sp-tally #hw-goo-drops { display: block; }
+  #hw-goo-drops span { position: absolute; top: 12px; width: 9px; height: 11px; background: var(--sp-frame, #a07cc5);
+    border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%; animation: hw-goo-drip 5s ease-in infinite; }
+  @keyframes hw-goo-drip {
+    0%, 45% { transform: translateY(-6px) scaleY(.4); opacity: 0; }
+    55%     { transform: translateY(0) scaleY(.8); opacity: 1; }
+    85%     { transform: translateY(8px) scaleY(1.15); opacity: 1; }
+    100%    { transform: translateY(40px); opacity: 0; }
+  }
+
+  /* Tally screens: creatures in the empty space left and right of the cards */
+  .hw-gutter { position: fixed; overflow: hidden; pointer-events: none; z-index: 150; display: none; }
+  .hw-gutter.show { display: block; }
+  .hw-ghost { position: absolute; bottom: -70px; width: 46px; opacity: 0;
+    animation: hw-ghost-rise var(--dur, 16s) linear infinite; animation-delay: var(--delay, 0s); }
+  .hw-ghost .sway { animation: hw-ghost-sway 3.2s ease-in-out infinite; }
+  .hw-ghost svg { display: block; width: 100%; filter: drop-shadow(0 0 6px rgba(255,246,234,0.6)); }
+  .hw-ghost .boo { position: absolute; left: 34px; top: -14px; font-family: 'Jolly Lodger', cursive;
+    font-size: 22px; color: #fff6ea; text-shadow: 0 0 6px rgba(255,246,234,0.7); white-space: nowrap; }
+  @keyframes hw-ghost-rise {
+    0%   { transform: translateY(0); opacity: 0; }
+    10%  { opacity: 0.9; }
+    85%  { opacity: 0.9; }
+    100% { transform: translateY(-115vh); opacity: 0; }
+  }
+  @keyframes hw-ghost-sway { 0%,100% { transform: translateX(-12px) rotate(-6deg); } 50% { transform: translateX(12px) rotate(6deg); } }
+  #hw-mummy { position: absolute; bottom: 14px; left: 0; width: 120px; animation: hw-walk 22s linear infinite; }
+  #hw-mummy .face { animation: hw-turn 22s steps(1) infinite; }
+  #hw-mummy svg { display: block; width: 100%; overflow: visible; filter: drop-shadow(0 0 4px rgba(255,246,234,0.45)); }
+  #hw-mummy .whole { animation: hw-shuffle 0.9s ease-in-out infinite; transform-origin: 40px 58px; }
+  #hw-mummy .tail { animation: hw-bandage 1.4s ease-in-out infinite alternate; transform-origin: 34px 21px; }
+  #hw-mummy .eye { filter: drop-shadow(0 0 2px #ffcf4a) drop-shadow(0 0 4px #ff8c2e); }
+  @keyframes hw-walk { 0% { left: 0; } 50% { left: calc(100% - 120px); } 100% { left: 0; } }
+  @keyframes hw-turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } }
+  @keyframes hw-shuffle { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
+  @keyframes hw-bandage { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+
   @media (prefers-reduced-motion: reduce) {
+    #hw-goo-drops span, .hw-ghost, .hw-ghost .sway, #hw-mummy, #hw-mummy .whole, #hw-mummy .tail { animation: none; }
     #hw-pumpkin, #hw-bat .wing-l, #hw-bat .wing-r, #hw-spider .legs,
     .hw-witch-art .body, .hw-witch-art .broom, .hw-witch-art .dust, .hw-witch-art .tail { animation: none; }
   }`;
@@ -223,6 +269,46 @@
   const WITCH_SVG = WITCHES[_witchParam] || WITCHES[WITCH_CHOICE];
   window.HW_WITCHES = WITCHES; // used by halloween-preview.html
 
+  const GHOST_SVG = `
+  <svg viewBox="0 0 26 30" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13 1C6 1 2 6 2 13v15l4-3 3.5 3 3.5-3 3.5 3 3.5-3 4 3V13C24 6 20 1 13 1Z" fill="#fff6ea"/>
+    <ellipse cx="9.5" cy="12" rx="2" ry="2.6" fill="#2b1e17"/><ellipse cx="16.5" cy="12" rx="2" ry="2.6" fill="#2b1e17"/>
+    <ellipse cx="13" cy="19" rx="2.6" ry="3.2" fill="#2b1e17"/>
+  </svg>`;
+
+  // Same mummy as EGDash's Machine Summary (dashboard/js/fall.js), walking instead of peeking
+  const MUMMY_SVG = `<div class="face">
+  <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg"><g class="whole">
+    <path class="tail" d="M35 19 C27 16 22 23 13 20 C16 26 25 27 34 25 Z" fill="#d9ccb0"/>
+    <rect x="27" y="34" width="26" height="28" rx="9" fill="#e8dcc4"/>
+    <rect x="44" y="37" width="30" height="7" rx="3.5" fill="#e8dcc4"/>
+    <rect x="44" y="46" width="27" height="7" rx="3.5" fill="#ddd0b4"/>
+    <path d="M28 41 L52 38 M28 48 L52 45 M28 55 L52 52" stroke="#b9a98a" stroke-width="1.3" fill="none"/>
+    <path d="M53 37 L55 44 M61 37 L63 44 M68 37 L70 44 M54 46 L56 53 M62 46 L64 53" stroke="#b9a98a" stroke-width="1" fill="none"/>
+    <g class="head">
+      <circle cx="44" cy="24" r="12" fill="#e8dcc4"/>
+      <path d="M32.5 19 L55 15 M33 31 L55 28 M35 35 L52 33" stroke="#b9a98a" stroke-width="1.3" fill="none"/>
+      <path d="M37.5 22.5 L55.5 19.5 L56 25 L38 27.5 Z" fill="#1d140f"/>
+      <circle class="eye" cx="50" cy="22.8" r="2.1" fill="#ffcf4a"/>
+      <circle cx="42.5" cy="23.9" r="1.3" fill="#ff8c2e" opacity="0.55"/>
+    </g>
+  </g></svg></div>`;
+
+  // Which creatures show beside the tally cards for each piece-type tab ("" = All).
+  // Mummy stays on the left; the spider already drops on the right.
+  const TALLY_CREATURES = {
+    "Coir OC": "ghosts",
+    "Coir FC": "mummy",
+  };
+
+  function ghostsHtml(seed) {
+    // a few ghosts at different spots / speeds; one or two say "boo!"
+    return [[12, 17, 0], [52, 21, -7], [30, 19, -13], [70, 15, -4]].map(([x, dur, delay], i) =>
+      `<div class="hw-ghost" style="left:${x}%;--dur:${dur + seed}s;--delay:${delay - seed * 2}s">
+         <div class="sway">${GHOST_SVG}${(i + seed) % 2 === 0 ? '<span class="boo">boo!</span>' : ""}</div>
+       </div>`).join("");
+  }
+
   function make(id, html, cls) {
     const el = document.createElement("div");
     el.id = id;
@@ -272,6 +358,43 @@
     const witch = make("hw-witch", WITCH_SVG);
     bat.addEventListener("animationend", () => bat.classList.remove("fly"));
 
+    // Tally screens: falling goo drops under the timer bar, creatures beside the cards
+    const tbar = document.getElementById("transition-bar");
+    if (tbar) {
+      const goo = document.createElement("div");
+      goo.id = "hw-goo-drops";
+      goo.setAttribute("aria-hidden", "true");
+      goo.innerHTML = [[14, 0], [37, -1.7], [63, -3.4], [86, -0.9]]
+        .map(([x, delay]) => `<span style="left:${x}%;animation-delay:${delay}s"></span>`).join("");
+      tbar.appendChild(goo);
+    }
+    const gutterL = make("hw-gutter-l", "", "hw-gutter");
+    const gutterR = make("hw-gutter-r", "", "hw-gutter");
+    gutterL.className = gutterR.className = "hw-gutter";   // own positioning, not .hw-deco
+    let shownCreature = null;
+    function placeCreatures(show) {
+      const screen = document.getElementById("print-tally2-screen");
+      const cat = typeof _t2Cat === "string" ? _t2Cat : "";
+      const creature = show && screen && isShown("print-tally2-screen") ? (TALLY_CREATURES[cat] || null) : null;
+      if (!creature) {
+        gutterL.classList.remove("show"); gutterR.classList.remove("show");
+        return;
+      }
+      const r = screen.getBoundingClientRect();
+      const tb = document.getElementById("transition-bar");
+      const top = Math.max(0, (tb && tb.offsetParent ? tb.getBoundingClientRect().bottom : 0) + 24);
+      const widthL = Math.max(0, r.left - 24), widthR = Math.max(0, window.innerWidth - r.right - 24);
+      Object.assign(gutterL.style, { top: top + "px", bottom: "0px", left: "8px", width: widthL + "px" });
+      Object.assign(gutterR.style, { top: top + "px", bottom: "0px", left: (r.right + 16) + "px", width: widthR + "px" });
+      if (creature !== shownCreature) {
+        shownCreature = creature;
+        gutterL.innerHTML = creature === "ghosts" ? ghostsHtml(0) : `<div id="hw-mummy">${MUMMY_SVG}</div>`;
+        gutterR.innerHTML = creature === "ghosts" ? ghostsHtml(1) : "";
+      }
+      gutterL.classList.toggle("show", widthL >= 90);
+      gutterR.classList.toggle("show", widthR >= 90 && gutterR.innerHTML !== "");
+    }
+
     let lastBat = 0;
     function tick() {
       const loggedOut = isShown("session-gate") || isShown("pt-login-screen");
@@ -290,6 +413,9 @@
         spiderWrap.style.top = (tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0) + "px";
       }
       spiderWrap.classList.toggle("show", !!onTally);
+      const onPrintTally = !loggedOut && printingActive && (isShown("print-tally-screen") || isShown("print-tally2-screen"));
+      document.body.classList.toggle("sp-tally", !!onPrintTally);
+      placeCreatures(!!onPrintTally && !onMaintTimer);
       witch.classList.toggle("show", !!onMaintTimer);
 
       // Bat: first flight shortly after landing on home, then every ~25s
