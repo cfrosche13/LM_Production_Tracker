@@ -39,3 +39,12 @@ body.sp-on #hw-spider svg, body.sp-on #hw-bat svg, body.sp-on #hw-witch svg { fi
 /* Full-screen backdrops were a dark green tint: make them plain dark */
 body.sp-on #tally-login-overlay, body.sp-on #session-gate { background: rgba(0,0,0,0.75) !important; }
 body.sp-on [style*="background:rgba(255,255,255,0.92)"] { background: rgba(0,0,0,0.6) !important; }
+
+/* Tally count boxes (Tally and Tally 2.0 piece cards): light inside with a dark number,
+   so the count stands out from the dark card (owner request 2026-10-08) */
+body.sp-purple [id^="t2-count-"], body.sp-purple [id^="tc-count-"] {
+  background: #ece2f7 !important; border-color: #a07cc5 !important; color: #3a2452 !important;
+}
+body.sp-orange [id^="t2-count-"], body.sp-orange [id^="tc-count-"] {
+  background: #fbe6cf !important; border-color: #e0904a !important; color: #4a2c17 !important;
+}
