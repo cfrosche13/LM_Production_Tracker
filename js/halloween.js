@@ -605,5 +605,12 @@
       if (!onHome) bat.classList.remove("fly");
     }
     setInterval(tick, 500);
+    // Also run right when the tab or the Changeover bar changes (before the browser paints),
+    // so the stand-in strip and the spider move with the tab instead of up to half a second later.
+    const tabWatch = new MutationObserver(tick);
+    document.querySelectorAll(".view").forEach(v => tabWatch.observe(v, { attributes: true, attributeFilter: ["class"] }));
+    const tbar2 = document.getElementById("transition-bar");
+    if (tbar2) tabWatch.observe(tbar2, { attributes: true, attributeFilter: ["style"] });
+    tick();
   });
 })();
