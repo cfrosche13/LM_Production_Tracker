@@ -22,14 +22,16 @@ body.sp-on ::-webkit-scrollbar-thumb { background: var(--sp-soft); }
 
 /* Popups */
 body.sp-on .modal-overlay { background: rgba(0,0,0,0.6); }
-body.sp-on .modal-box { background: var(--sp-bubble) !important; border-color: var(--sp-frame) !important; }
+body.sp-on .modal-box { background: var(--sp-box) !important; border-color: var(--sp-frame) !important;
+  --sp-text: var(--sp-L-text); --sp-head: var(--sp-L-head); --sp-muted: var(--sp-L-muted);
+  --sp-inner: var(--sp-L-inner); --sp-soft: var(--sp-L-soft); color: var(--sp-text); }
 
 /* The logo image keeps its white box; round it so it sits like a badge */
 body.sp-on #top-bar img { border-radius: 6px; }
 
 /* Buttons the app never styled (e.g. Print Heads) would show the browser's light gray.
    :where() keeps this at zero weight, so any color the app does set still wins. */
-:where(body.sp-on) button { background-color: var(--sp-bubble); color: var(--sp-head); border-color: var(--sp-frame); }
+:where(body.sp-on) button { background-color: var(--sp-box); color: var(--sp-L-head); border-color: var(--sp-frame); }
 
 /* Halloween decorations are dark: give them a soft light rim and a light web on the dark theme */
 body.sp-on #hw-thread { background: rgba(247,196,143,0.6) !important; }

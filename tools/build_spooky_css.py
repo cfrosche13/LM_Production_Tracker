@@ -24,18 +24,41 @@ import re
 SCOPE = "body.sp-on"
 
 # ── Palettes (CSS variables, switched by body class) ──
+# "box" is the light middle tone for every card/box (owner request 2026-10-08: lighter boxes
+# for contrast); "L-*" are the dark text colors used inside those boxes.
 PALETTES = {
     "sp-purple": {  # Printing, Waiting, Colex, Settings
         "bg": "#3a3242", "bubble": "#4a4054", "inner": "#574c62", "soft": "#6c5f7a",
         "frame": "#a07cc5", "head": "#d9c2f0", "text": "#ece4d6", "muted": "#c3b8a8",
         "fill": "#7d55a8", "deep": "#2a2233",
+        "box": "#d6c7ea", "L-text": "#2a1d3a", "L-head": "#4b2466", "L-muted": "#5d4b6b",
+        "L-inner": "#ece2f7", "L-soft": "#a48cc4",
     },
     "sp-orange": {  # Maintenance, Stamped, Open Orders
         "bg": "#2b1e17", "bubble": "#3b2a20", "inner": "#4a3629", "soft": "#614636",
         "frame": "#e0904a", "head": "#f7c48f", "text": "#f2e6d6", "muted": "#c9b39b",
         "fill": "#b8621f", "deep": "#1d140f",
+        "box": "#f2d2ad", "L-text": "#3a2414", "L-head": "#7a3d10", "L-muted": "#6b4a33",
+        "L-inner": "#fbe6cf", "L-soft": "#c99a6e",
     },
 }
+# Status colors keep their meaning; brighter on the dark page, deeper inside the light boxes.
+STATUS_DARK = {"red": "#ff8080", "orangetxt": "#ffa04d", "blue": "#9cc4ec", "purpletxt": "#c9a3f0",
+               "pinklight": "#f0b6cf", "pink": "#ff7aa8", "redbg": "#4a2626", "redbg2": "#5a2a2a",
+               "redborder": "#8a3a3a"}
+STATUS_LIGHT = {"red": "#b3261e", "orangetxt": "#a65000", "blue": "#2a5d9f", "purpletxt": "#6b3fa0",
+                "pinklight": "#a8326a", "pink": "#b0306a", "redbg": "#f4d4d4", "redbg2": "#ecc0c0",
+                "redborder": "#d08080"}
+# Declarations added to every light box: text and nested cells inside switch to the dark set.
+LIGHT_BOX_VARS = " ".join(
+    [f"--sp-{k}: var(--sp-L-{k});" for k in ("text", "head", "muted", "inner", "soft")]
+    + [f"--sp-{k}: {v};" for k, v in STATUS_LIGHT.items()])
+# And the reverse, for dark surfaces (the page itself, near-black header strips inside a box).
+DARK_VARS = " ".join(
+    [f"--sp-{k}: var(--sp-D-{k});" for k in ("text", "head", "muted", "inner", "soft")]
+    + [f"--sp-{k}: {v};" for k, v in STATUS_DARK.items()])
+# Page-level areas that the old light theme drew as boxes but are dark here: always light text.
+DARK_AREAS = ["div.view", "#top-bar", "#nav-bar", "#transition-bar", "#pt-login-screen"]
 
 HEX_RE = re.compile(r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b")
 RGBA_RE = re.compile(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)")
@@ -74,9 +97,9 @@ V = lambda name: f"var(--sp-{name})"
 def map_bg(h):
     fam, (_, s, l) = family(h), hsl(h)
     if l >= 0.93:
-        return "#4a2626" if fam == "red" else V("bubble")
+        return V("redbg") if fam == "red" else V("box")
     if l >= 0.80:
-        return "#5a2a2a" if fam == "red" else V("inner")
+        return V("redbg2") if fam == "red" else V("inner")
     if l >= 0.30:
         if fam in ("green", "yellow"): return V("fill")
         return None                    # reds, oranges, blues, pinks keep their color (white text on them)
@@ -95,14 +118,14 @@ def map_text(h):
     if fam in ("green", "yellow"):
         if l < 0.25: return V("text")
         return V("head") if l < 0.5 else V("muted")
-    return {"red": "#ff8080", "orange": "#ffa04d", "blue": "#9cc4ec",
-            "purple": "#c9a3f0", "pink": "#f0b6cf" if l >= 0.6 else "#ff7aa8"}[fam]
+    return {"red": V("red"), "orange": V("orangetxt"), "blue": V("blue"),
+            "purple": V("purpletxt"), "pink": V("pinklight") if l >= 0.6 else V("pink")}[fam]
 
 
 def map_border(h):
     fam, (_, s, l) = family(h), hsl(h)
     if l >= 0.75:
-        return "#8a3a3a" if fam == "red" else V("soft")
+        return V("redborder") if fam == "red" else V("soft")
     if fam in ("green", "yellow", "gray"):
         return V("frame")
     return None
@@ -207,6 +230,12 @@ def convert_stylesheet(css):
                 new = swap_value(prop, val.strip())
                 if new is not None:
                     decls.append(f"  {prop}: {new};")
+            if any(d.strip().startswith("background") and "var(--sp-deep)" in d for d in decls):
+                decls.append(f"  {DARK_VARS}")
+            if any("var(--sp-box)" in d for d in decls):
+                decls.append(f"  {LIGHT_BOX_VARS}")
+                if not any(d.strip().startswith("color:") for d in decls):
+                    decls.append("  color: var(--sp-text);")
             if decls:
                 rule = f"{scoped(prelude)} {{\n" + "\n".join(decls) + "\n}"
                 out.append(f"{wrapper} {{\n{rule}\n}}" if wrapper else rule)
@@ -279,7 +308,11 @@ def inline_rules(sources, js_sources):
     for (length, prop, val), sels in sorted(groups.items(), key=lambda kv: kv[0][0]):
         sel = ",\n".join(f"{SCOPE} {s}" for s in sorted(sels))
         if prop == "background":
-            rules.append(f"{sel} {{ background-color: {val} !important; background-image: none !important; }}")
+            # a light box also switches the text inside it to the dark set (plain color: only
+            # applies when the inline style sets no text color of its own)
+            extra = (f" {LIGHT_BOX_VARS} color: var(--sp-text);" if val == V("box")
+                     else f" {DARK_VARS}" if val == V("deep") else "")
+            rules.append(f"{sel} {{ background-color: {val} !important; background-image: none !important;{extra} }}")
         else:
             rules.append(f"{sel} {{ {prop}: {val} !important; }}")
     return rules
@@ -297,7 +330,7 @@ def main():
         "   puts body.sp-on on the page (it turns itself off Nov 1). */\n",
     ]
     for cls, pal in PALETTES.items():
-        parts.append(f"body.{cls} {{\n" + "\n".join(f"  --sp-{k}: {v};" for k, v in pal.items()) + "\n}")
+        parts.append(f"body.{cls} {{\n" + "\n".join(f"  --sp-{k}: {v};" for k, v in {**pal, **{f"D-{k}": pal[k] for k in ("text", "head", "muted", "inner", "soft")}, **STATUS_DARK}.items()) + "\n}")
     parts.append("\n/* ── Fonts: Itim body, Jolly Lodger headers ── */")
     parts.append(f"{SCOPE}, {SCOPE} * {{ font-family: {FONT_BODY} !important; }}")
     heads = [scoped(s) for s in head_selectors] + [f'{SCOPE} [style*="Abril Fatface"]']
@@ -306,6 +339,8 @@ def main():
     parts += sheet_rules
     parts.append("\n/* ── Inline colors (index.html and js/) ── */")
     parts += inline_rules(sources, js_sources)
+    parts.append("\n/* ── Page-level areas stay dark with light text (even where the old theme drew a box) ── */")
+    parts.append(",\n".join(f"{SCOPE} {a}" for a in DARK_AREAS) + " { " + DARK_VARS.replace(";", " !important;") + " color: var(--sp-text) !important; }")
     parts.append("\n/* ── Hand-written (tools/spooky_manual.css) ── */")
     parts.append(open("tools/spooky_manual.css", encoding="utf-8").read())
     open("css/spooky.css", "w", encoding="utf-8", newline="\n").write("\n".join(parts) + "\n")
