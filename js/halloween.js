@@ -88,12 +88,10 @@
   /* Tally screens: creatures in the empty space left and right of the cards */
   .hw-gutter { position: fixed; overflow: hidden; pointer-events: none; z-index: 150; display: none; }
   .hw-gutter.show { display: block; }
-  .hw-ghost { position: absolute; bottom: -70px; width: 46px; opacity: 0;
+  .hw-ghost { position: absolute; bottom: -90px; width: var(--size, 52px); opacity: 0;
     animation: hw-ghost-rise var(--dur, 16s) linear infinite; animation-delay: var(--delay, 0s); }
   .hw-ghost .sway { animation: hw-ghost-sway 3.2s ease-in-out infinite; }
-  .hw-ghost svg { display: block; width: 100%; filter: drop-shadow(0 0 6px rgba(255,246,234,0.6)); }
-  .hw-ghost .boo { position: absolute; left: 34px; top: -14px; font-family: 'Jolly Lodger', cursive;
-    font-size: 22px; color: #fff6ea; text-shadow: 0 0 6px rgba(255,246,234,0.7); white-space: nowrap; }
+  .hw-ghost svg { display: block; width: 100%; overflow: visible; filter: drop-shadow(0 0 6px rgba(255,246,234,0.6)); }
   @keyframes hw-ghost-rise {
     0%   { transform: translateY(0); opacity: 0; }
     10%  { opacity: 0.9; }
@@ -101,19 +99,65 @@
     100% { transform: translateY(-115vh); opacity: 0; }
   }
   @keyframes hw-ghost-sway { 0%,100% { transform: translateX(-12px) rotate(-6deg); } 50% { transform: translateX(12px) rotate(6deg); } }
-  #hw-mummy { position: absolute; bottom: 14px; left: 0; width: 120px; animation: hw-walk 22s linear infinite; }
-  #hw-mummy .face { animation: hw-turn 22s steps(1) infinite; }
-  #hw-mummy svg { display: block; width: 100%; overflow: visible; filter: drop-shadow(0 0 4px rgba(255,246,234,0.45)); }
-  #hw-mummy .whole { animation: hw-shuffle 0.9s ease-in-out infinite; transform-origin: 40px 58px; }
-  #hw-mummy .tail { animation: hw-bandage 1.4s ease-in-out infinite alternate; transform-origin: 34px 21px; }
-  #hw-mummy .eye { filter: drop-shadow(0 0 2px #ffcf4a) drop-shadow(0 0 4px #ff8c2e); }
-  @keyframes hw-walk { 0% { left: 0; } 50% { left: calc(100% - 120px); } 100% { left: 0; } }
+  .hw-ghost .blink { animation: hw-ghost-blink 4s infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes hw-ghost-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+
+  /* Walkers (mummy, cats): stroll back and forth along the bottom of the side space */
+  .hw-walker { position: absolute; bottom: 14px; left: 0; width: var(--w);
+    animation: hw-walk var(--dur, 22s) linear infinite; animation-delay: var(--delay, 0s); }
+  .hw-walker .face { animation: hw-turn var(--dur, 22s) steps(1) infinite; animation-delay: var(--delay, 0s); }
+  .hw-walker svg { display: block; width: 100%; overflow: visible; }
+  @keyframes hw-walk { 0% { left: 0; } 50% { left: calc(100% - var(--w)); } 100% { left: 0; } }
+  .hw-mummy svg { filter: drop-shadow(0 0 4px rgba(255,246,234,0.45)); }
+  .hw-mummy .whole { animation: hw-shuffle 0.9s ease-in-out infinite; transform-origin: 40px 58px; }
+  .hw-mummy .tail { animation: hw-bandage 1.4s ease-in-out infinite alternate; transform-origin: 34px 21px; }
+  .hw-mummy .eye { filter: drop-shadow(0 0 2px #ffcf4a) drop-shadow(0 0 4px #ff8c2e); }
+  /* Black cats: a soft light rim so they show on the dark page, glowing green eyes */
+  .hw-cat svg { filter: drop-shadow(0 0 2px rgba(255,246,234,0.55)) drop-shadow(0 0 6px rgba(160,124,197,0.5)); }
+  .hw-cat .leg { transform-box: fill-box; transform-origin: 50% 0; animation: hw-leg 0.7s ease-in-out infinite alternate; }
+  .hw-cat .leg.b { animation-delay: -0.35s; }
+  .hw-cat .ctail { transform-box: fill-box; transform-origin: 100% 100%; animation: hw-ctail 1.6s ease-in-out infinite alternate; }
+  .hw-cat .ceye { filter: drop-shadow(0 0 3px #c6ff4a); }
+  @keyframes hw-leg { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+  @keyframes hw-ctail { from { transform: rotate(-10deg); } to { transform: rotate(14deg); } }
+  /* Bats: loop around the side space, wings flapping */
+  .hw-gbat { position: absolute; width: 100px; animation: hw-bat-loop var(--dur, 11s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
+  .hw-gbat svg { display: block; width: 100%; filter: drop-shadow(0 0 3px rgba(247,196,143,0.75)); }
+  .hw-gbat .wing-l, .hw-gbat .wing-r { animation: hw-flap 0.22s ease-in-out infinite alternate; }
+  .hw-gbat .wing-l { transform-origin: 34px 20px; }
+  .hw-gbat .wing-r { transform-origin: 36px 20px; }
+  @keyframes hw-bat-loop {
+    0%   { left: 8%;  top: 70%; }
+    25%  { left: 60%; top: 35%; }
+    50%  { left: 20%; top: 10%; }
+    75%  { left: 65%; top: 55%; }
+    100% { left: 8%;  top: 70%; }
+  }
+  /* Cauldron: bubbling green brew with bubbles rising out of it */
+  .hw-cauldron { position: absolute; bottom: 10px; left: 50%; width: 150px; margin-left: -75px; }
+  .hw-cauldron svg { display: block; width: 100%; overflow: visible; }
+  .hw-cauldron .brew { filter: drop-shadow(0 0 8px #7cff6b); animation: hw-brew 1.8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+  .hw-cauldron .flame { transform-box: fill-box; transform-origin: 50% 100%; animation: hw-flame 0.5s ease-in-out infinite alternate; }
+  .hw-cauldron .flame.b { animation-delay: -0.25s; }
+  .hw-bubble { position: absolute; bottom: 92px; width: var(--s, 12px); height: var(--s, 12px); border-radius: 50%;
+    background: rgba(124,255,107,0.35); border: 1.5px solid rgba(180,255,170,0.8); box-shadow: 0 0 8px rgba(124,255,107,0.6);
+    animation: hw-bubble-up var(--dur, 4s) ease-in infinite; animation-delay: var(--delay, 0s); opacity: 0; }
+  @keyframes hw-brew { from { transform: scaleY(0.85); } to { transform: scaleY(1.15); } }
+  @keyframes hw-flame { from { transform: scaleY(0.8) skewX(-6deg); } to { transform: scaleY(1.15) skewX(6deg); } }
+  @keyframes hw-bubble-up {
+    0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
+    15%  { opacity: 1; }
+    70%  { opacity: 0.9; }
+    100% { transform: translate(var(--drift, 10px), -220px) scale(1.2); opacity: 0; }
+  }
   @keyframes hw-turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } }
   @keyframes hw-shuffle { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
   @keyframes hw-bandage { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
 
   @media (prefers-reduced-motion: reduce) {
-    #hw-goo-drops span, .hw-ghost, .hw-ghost .sway, #hw-mummy, #hw-mummy .whole, #hw-mummy .tail { animation: none; }
+    #hw-goo-drops span, .hw-ghost, .hw-ghost .sway, .hw-ghost .blink, .hw-walker, .hw-walker .face,
+    .hw-mummy .whole, .hw-mummy .tail, .hw-cat .leg, .hw-cat .ctail, .hw-gbat, .hw-gbat .wing-l, .hw-gbat .wing-r,
+    .hw-cauldron .brew, .hw-cauldron .flame, .hw-bubble { animation: none; }
     #hw-pumpkin, #hw-bat .wing-l, #hw-bat .wing-r, #hw-spider .legs,
     .hw-witch-art .body, .hw-witch-art .broom, .hw-witch-art .dust, .hw-witch-art .tail { animation: none; }
   }`;
@@ -269,11 +313,65 @@
   const WITCH_SVG = WITCHES[_witchParam] || WITCHES[WITCH_CHOICE];
   window.HW_WITCHES = WITCHES; // used by halloween-preview.html
 
-  const GHOST_SVG = `
-  <svg viewBox="0 0 26 30" xmlns="http://www.w3.org/2000/svg">
-    <path d="M13 1C6 1 2 6 2 13v15l4-3 3.5 3 3.5-3 3.5 3 3.5-3 4 3V13C24 6 20 1 13 1Z" fill="#fff6ea"/>
-    <ellipse cx="9.5" cy="12" rx="2" ry="2.6" fill="#2b1e17"/><ellipse cx="16.5" cy="12" rx="2" ry="2.6" fill="#2b1e17"/>
-    <ellipse cx="13" cy="19" rx="2.6" ry="3.2" fill="#2b1e17"/>
+  // Ghost designs (owner picked from ghost-preview.html, 2026-10-08)
+  const GHOSTS = {
+    // 1. cute sheet ghost: wavy hem, sparkly eyes, rosy cheeks, blinks
+    sheet: `<svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 3C14 3 7 16 7 30v26c0 3 2 4 4 2l4-4 5 6c1.5 1.6 3 1.6 4.5 0L30 54l5.5 6c1.5 1.6 3 1.6 4.5 0l5-6 4 4c2 2 4 1 4-2V30C53 16 46 3 30 3Z" fill="#f7f1e8"/>
+      <path d="M12 38c4 4 6 10 5 18M48 38c-4 4-6 10-5 18" stroke="#ddd3c4" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <g class="blink"><ellipse cx="22.5" cy="27" rx="4" ry="5.2" fill="#1d1426"/><ellipse cx="37.5" cy="27" rx="4" ry="5.2" fill="#1d1426"/></g>
+      <circle cx="23.8" cy="25.2" r="1.3" fill="#fff"/><circle cx="38.8" cy="25.2" r="1.3" fill="#fff"/>
+      <ellipse cx="17" cy="35" rx="3.5" ry="2" fill="#f4a6b8" opacity=".75"/><ellipse cx="43" cy="35" rx="3.5" ry="2" fill="#f4a6b8" opacity=".75"/>
+      <path d="M27 36q3 3 6 0" stroke="#1d1426" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    // 4. bedsheet ghost: trick-or-treater in a sheet with two eye holes
+    drape: `<svg viewBox="0 0 64 74" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 3C18 3 11 14 10 27c-1 14-3 26-8 38 4 3 9 3 13 0 3 4 8 5 12 2 3 3 7 3 10 0 4 3 9 2 12-2 4 3 9 3 13 0-5-12-7-24-8-38C53 14 46 3 32 3Z" fill="#f2ede6"/>
+      <path d="M16 30c-2 12-4 22-7 33M24 34c-1 10-1 20-1 31M40 34c1 10 1 20 1 31M48 30c2 12 4 22 7 33" stroke="#d6cdbf" stroke-width="1.3" fill="none"/>
+      <ellipse cx="25" cy="24" rx="4.2" ry="5" fill="#1d1426"/><ellipse cx="39" cy="24" rx="4.2" ry="5" fill="#1d1426"/>
+    </svg>`,
+    // 5. trick-or-treat ghost with a jack-o'-lantern candy bucket
+    treat: `<svg viewBox="0 0 70 76" xmlns="http://www.w3.org/2000/svg">
+      <path d="M33 3C19 3 12 15 12 28v28c0 3 2 4 4 2l4-4 5 6c1.5 1.6 3 1.6 4.5 0L35 54l5.5 6c1.5 1.6 3 1.6 4.5 0l4-5V28C49 15 46 3 33 3Z" fill="#f7f1e8"/>
+      <g class="blink"><circle cx="26" cy="25" r="3.6" fill="#1d1426"/><circle cx="39" cy="25" r="3.6" fill="#1d1426"/></g>
+      <path d="M27 33q5.5 5 11 0" stroke="#1d1426" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M46 40c6 0 10 2 13 6" stroke="#f7f1e8" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M50 42 L54 34 L58 42" stroke="#5b4636" stroke-width="1.5" fill="none"/>
+      <g transform="translate(46 44)"><ellipse cx="9" cy="12" rx="11" ry="10" fill="#f08a24"/><ellipse cx="9" cy="12" rx="5" ry="10" fill="#e2761a"/>
+      <path d="M4 10l3-3 2 3zM10 10l3-3 2 3z" fill="#3a1e08"/><path d="M4 15q5 4 10 0l-2 2-2-1-2 1-2-1z" fill="#3a1e08"/></g>
+    </svg>`,
+  };
+
+  // Black cat walking, side view facing right
+  const CAT_SVG = `<div class="face">
+  <svg viewBox="0 0 90 58" xmlns="http://www.w3.org/2000/svg"><g fill="#1b1424">
+    <path class="ctail" d="M16 30 C6 28 2 16 8 6 C10 3 13 4 12 8 C9 16 12 24 18 26 Z"/>
+    <rect class="leg" x="20" y="36" width="6" height="18" rx="3"/>
+    <rect class="leg b" x="29" y="36" width="6" height="18" rx="3"/>
+    <rect class="leg b" x="50" y="36" width="6" height="18" rx="3"/>
+    <rect class="leg" x="59" y="36" width="6" height="18" rx="3"/>
+    <ellipse cx="42" cy="32" rx="25" ry="11"/>
+    <circle cx="69" cy="22" r="11"/>
+    <path d="M60 15 L61 3 L68 12 Z M71 12 L78 3 L79 16 Z"/>
+  </g>
+    <ellipse class="ceye" cx="74" cy="21" rx="2.8" ry="2.2" fill="#c6ff4a"/>
+    <ellipse cx="74.6" cy="21" rx="0.8" ry="2" fill="#1b1424"/>
+    <ellipse cx="66.5" cy="21" rx="2.2" ry="2" fill="#c6ff4a" opacity=".85"/>
+    <path d="M78 26 L88 24 M78 27.5 L88 28.5" stroke="#8a7a9e" stroke-width="0.8"/>
+  </svg></div>`;
+
+  // Witch's cauldron with a glowing green brew over a little fire
+  const CAULDRON_SVG = `
+  <svg viewBox="0 0 120 112" xmlns="http://www.w3.org/2000/svg">
+    <path class="flame" d="M38 112 C30 100 38 94 40 86 C44 96 50 100 44 112 Z" fill="#ff8c2e"/>
+    <path class="flame b" d="M56 112 C48 98 58 90 60 80 C64 92 72 98 64 112 Z" fill="#ffb347"/>
+    <path class="flame" d="M76 112 C70 102 76 96 80 88 C84 98 90 102 84 112 Z" fill="#ff8c2e"/>
+    <path d="M18 98 L10 110 M102 98 L110 110" stroke="#1b1424" stroke-width="5" stroke-linecap="round"/>
+    <path d="M14 44 Q12 102 60 104 Q108 102 106 44 Z" fill="#1b1424" stroke="#4a3f57" stroke-width="2"/>
+    <path d="M24 60 Q22 90 46 98" stroke="#4a3f57" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <ellipse class="brew" cx="60" cy="42" rx="46" ry="9" fill="#7cff6b"/>
+    <circle cx="44" cy="40" r="4" fill="#b4ffaa"/><circle cx="70" cy="42" r="3" fill="#b4ffaa"/>
+    <rect x="6" y="36" width="108" height="10" rx="5" fill="#2b2233" stroke="#4a3f57" stroke-width="2"/>
   </svg>`;
 
   // Same mummy as EGDash's Machine Summary (dashboard/js/fall.js), walking instead of peeking
@@ -294,19 +392,40 @@
     </g>
   </g></svg></div>`;
 
-  // Which creatures show beside the tally cards for each piece-type tab ("" = All).
-  // Mummy stays on the left; the spider already drops on the right.
+  // Which creatures show beside the tally cards for each piece-type tab ("All" shows none).
+  // Owner's picks 2026-10-08. The spider already drops on the right, so the mummy stays left.
   const TALLY_CREATURES = {
-    "Coir OC": "ghosts",
-    "Coir FC": "mummy",
+    "Coir OC": "ghost-drape",        // bedsheet ghosts
+    "Coir FC": "ghost-sheet",        // cute sheet ghosts
+    "Non-Coir Mats": "mummy",
+    "Signs": "cats",
+    "Display Pieces": "bats",
+    "Roll Media": "ghost-treat",     // trick-or-treat ghosts
+    "Drinkware": "cauldron",         // witch's brew for the cup station
   };
 
-  function ghostsHtml(seed) {
-    // a few ghosts at different spots / speeds; one or two say "boo!"
-    return [[12, 17, 0], [52, 21, -7], [30, 19, -13], [70, 15, -4]].map(([x, dur, delay], i) =>
-      `<div class="hw-ghost" style="left:${x}%;--dur:${dur + seed}s;--delay:${delay - seed * 2}s">
-         <div class="sway">${GHOST_SVG}${(i + seed) % 2 === 0 ? '<span class="boo">boo!</span>' : ""}</div>
+  function ghostsHtml(kind, seed) {
+    // a few ghosts at different spots, sizes and speeds, floating up the side space
+    return [[10, 17, 0, 58], [50, 21, -7, 44], [28, 19, -13, 50], [66, 15, -4, 40]].map(([x, dur, delay, size]) =>
+      `<div class="hw-ghost" style="left:${x}%;--dur:${dur + seed}s;--delay:${delay - seed * 2}s;--size:${size}px">
+         <div class="sway">${GHOSTS[kind]}</div>
        </div>`).join("");
+  }
+
+  // HTML for one side ("L" or "R") of the tally screen for a creature
+  function creatureHtml(creature, side) {
+    const seed = side === "L" ? 0 : 1;
+    if (creature.startsWith("ghost-")) return ghostsHtml(creature.slice(6), seed);
+    if (creature === "mummy") return side === "L" ? `<div class="hw-walker hw-mummy" style="--w:120px">${MUMMY_SVG}</div>` : "";
+    if (creature === "cats") return `<div class="hw-walker hw-cat" style="--w:110px;--dur:${side === "L" ? 26 : 31}s;--delay:${-seed * 9}s">${CAT_SVG}</div>`;
+    if (creature === "bats") return [[11, 0], [14, -5], [9, -3]].map(([dur, delay], i) =>
+      `<div class="hw-gbat" style="--dur:${dur + seed * 2}s;--delay:${delay - seed * 4}s;width:${100 - i * 14}px">${BAT_SVG}</div>`).join("");
+    if (creature === "cauldron") return `<div class="hw-cauldron">${CAULDRON_SVG}` +
+      [[-34, 12, 4, 0, 8], [-8, 9, 3.4, -1.2, -6], [14, 14, 4.6, -2.4, 12], [-20, 8, 3.8, -3.1, -10], [6, 11, 4.2, -0.6, 4]]
+        .map(([x, size, dur, delay, drift]) =>
+          `<span class="hw-bubble" style="left:calc(50% + ${x}px);--s:${size}px;--dur:${dur}s;--delay:${delay}s;--drift:${drift}px"></span>`).join("") +
+      `</div>`;
+    return "";
   }
 
   function make(id, html, cls) {
@@ -388,8 +507,8 @@
       Object.assign(gutterR.style, { top: top + "px", bottom: "0px", left: (r.right + 16) + "px", width: widthR + "px" });
       if (creature !== shownCreature) {
         shownCreature = creature;
-        gutterL.innerHTML = creature === "ghosts" ? ghostsHtml(0) : `<div id="hw-mummy">${MUMMY_SVG}</div>`;
-        gutterR.innerHTML = creature === "ghosts" ? ghostsHtml(1) : "";
+        gutterL.innerHTML = creatureHtml(creature, "L");
+        gutterR.innerHTML = creatureHtml(creature, "R");
       }
       gutterL.classList.toggle("show", widthL >= 90);
       gutterR.classList.toggle("show", widthR >= 90 && gutterR.innerHTML !== "");
