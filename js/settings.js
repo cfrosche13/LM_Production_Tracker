@@ -598,6 +598,11 @@ function _mpFieldsFor(machine) {
     ["cut",       "Digital Cut File", "text"],
     ["workflow",  "Workflow", "text"],
     ["printMode", "Print Mode", "text"],
+    // Third row (owner, 2026-10-08). Text, not number, so a unit can be typed (e.g. "0.25 in").
+    ["headHeight", "Head Height", "text"],
+    ["xSpacing",   "X Spacing", "text"],
+    ["ySpacing",   "Y Spacing", "text"],
+    ["margin",     "Margin", "text"],
   ];
 }
 
@@ -799,7 +804,8 @@ function mpAddRow() {
   const base = { id, machine: _settingsMPTab, rm: "", sub: "", ppt: "", style: "", verified: "no" };
   const extra = _settingsMPTab === "Drinkware"
     ? { printOrder: "", printSpeed: "", dropSize: "", qualityLevel: "", bottleTopPosition: "", zAxis: "", tAxis: "" }
-    : { biUni: "", stepping: "none", strike: "", cut: "none", workflow: "", printMode: "" };
+    : { biUni: "", stepping: "none", strike: "", cut: "none", workflow: "", printMode: "",
+        headHeight: "", xSpacing: "", ySpacing: "", margin: "" };
   window._machineProfiles.push({ ...base, ...extra });
   renderMachineProfiles();
   _mpScheduleSave();
