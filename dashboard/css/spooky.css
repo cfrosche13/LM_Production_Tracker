@@ -1,0 +1,161 @@
+/* ══════════════════════════════════════════
+   SPOOKY THEME for EGDash ("Haunted House", owner pick 2026-10-08)
+   Replaces css/fall.css (kept on disk, so swapping the <link> in index.html
+   back to fall.css restores the light fall look). Goes with js/fall.js, which
+   adds the decorations, brightens the status colors for a dark background,
+   and puts body.spooky-pace on while the Pace screen is showing.
+
+   Two palettes, same layout:
+     Orange (Machine Summary, Weekly Performance, Shipping Status)
+       background dark chocolate #2b1e17, cards #3b2a20, inner cells #4a3629,
+       frame pumpkin #e0904a, headers light orange #f7c48f, text bone #f2e6d6
+     Purple (Pace)
+       background smoky plum #3a3242, cards #4a4054, inner cells #574c62,
+       frame lilac #a07cc5, headers pale lilac #d9c2f0, text bone #ece4d6
+   Fonts: headers "Rubik Wet Paint", body "Quicksand" (same as the fall theme).
+
+   Status colors keep their meaning (green = on track, orange = behind / down);
+   they're only swapped for brighter shades so they read on the dark background.
+══════════════════════════════════════════ */
+
+body {
+  --sp-bg: #2b1e17;
+  --sp-bubble: #3b2a20;
+  --sp-inner: #4a3629;
+  --sp-soft: #614636;       /* soft borders, dividers */
+  --sp-track: #1d140f;      /* empty part of progress bars */
+  --sp-frame: #e0904a;
+  --sp-head: #f7c48f;
+  --sp-text: #f2e6d6;
+  --sp-strong: #fff6ea;
+  --sp-muted: #c9b39b;
+  --sp-shadow: rgba(0,0,0,0.4);
+  /* brightened status colors (match EG_STATUS_COLOR_SWAP in js/fall.js) */
+  --sp-green: #4cc38a;
+  --sp-teal: #7cc4ab;
+  --sp-orange: #ff8c2e;
+  --sp-blue: #7fb0e6;
+  --sp-navy: #a9c4e8;
+  --sp-headfont: 'Rubik Wet Paint', 'Quicksand', sans-serif;
+  --sp-bodyfont: 'Quicksand', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+/* Pace screen: purple Haunted House */
+body.spooky-pace {
+  --sp-bg: #3a3242;
+  --sp-bubble: #4a4054;
+  --sp-inner: #574c62;
+  --sp-soft: #6c5f7a;
+  --sp-track: #2e2835;
+  --sp-frame: #a07cc5;
+  --sp-head: #d9c2f0;
+  --sp-text: #ece4d6;
+  --sp-strong: #f4eee3;
+  --sp-muted: #c3b8a8;
+  --sp-shadow: rgba(0,0,0,0.35);
+}
+
+/* ── Page + text ── */
+body, #loading { background: var(--sp-bg); color: var(--sp-text); font-family: var(--sp-bodyfont); }
+body * { font-family: var(--sp-bodyfont) !important; }
+#loading img { border-radius: 6px; }
+
+/* ── Outer frame ── */
+#sidebar { background: var(--sp-bg); border-right-color: var(--sp-frame); box-shadow: 4px 0 28px var(--sp-shadow); }
+#sidebar-divider { background: var(--sp-frame); opacity: 0.5; }
+#sidebar img { border-radius: 6px; }   /* logo has a white box; round it so it sits like a badge */
+#sidebar [style*="height:1px;background:#e0e3de"] { background: var(--sp-soft) !important; }
+
+/* ── Headers: dripping-paint font, light orange / lilac ── */
+.section-title, .card-machine-name, .pace2-name, .ship2-name, .spg-name, .counter-label, .shift-row-label {
+  font-family: var(--sp-headfont) !important; color: var(--sp-head) !important;
+  text-transform: none; letter-spacing: 0.01em; font-weight: 400;
+}
+.section-title { font-size: 24px; border-bottom-color: var(--sp-frame); }
+.section-title span { font-family: var(--sp-headfont) !important; color: inherit !important; }
+.card-machine-name { font-size: 22px; }
+.pace2-name { font-size: 28px; }
+.ship2-name { font-size: 22px; }
+.spg-name { font-size: 13px; }
+.counter-label { font-size: 12px; line-height: 1.15; text-align: center; }
+.shift-row-label { font-size: 15px; }
+
+/* ── Body text ── */
+.legend-item, .open-machine-name, .top-materials-name { color: var(--sp-text); }
+.card-oee-label, .apq-label, .stat-label, .pace2-of, .pace2-leading, .ship2-of,
+.top-materials-qty, #sidebar-date, #last-updated, #shipping-updated, .no-data { color: var(--sp-muted); }
+.counter-value, .counter-value.stamped, .stat-val, .apq-val, .open-machine-qty,
+.pace2-actual, .ship2-actual, .card-oee-pct { color: var(--sp-strong); }
+.top-materials { border-top-color: var(--sp-soft); }
+
+/* ── Content bubbles ── */
+.counter-block, .counter-block.stamped, #chart-section, .machine-card,
+.shift-progress-banner, .pace2-card, .ship2-card {
+  background: var(--sp-bubble) !important;
+  box-shadow: 0 3px 10px var(--sp-shadow);
+}
+.counter-block, .counter-block.stamped, #chart-section, .machine-card:not(.has-down), .shift-progress-banner {
+  border-color: var(--sp-frame) !important;
+}
+/* A down machine: bright warning-orange border, thicker glow than the normal frame */
+.machine-card.has-down { border-color: var(--sp-orange) !important; box-shadow: 0 0 0 2px var(--sp-orange), 0 3px 10px var(--sp-shadow); }
+
+/* ── Inner bubbles ── */
+.apq-cell, .stat-cell, .open-machine-row, .pace2-pct, .ship2-pct {
+  background: var(--sp-inner); border-color: var(--sp-soft);
+}
+.pace2-pct, .ship2-pct { border-color: var(--pc-color, var(--sp-soft)); }
+.oee-bar-wrap, .spg-bar-wrap { background: var(--sp-track); }
+.pace-split-bottom { border-top-color: var(--sp-frame); }
+
+/* Weekly Performance calendar: day boxes match the machine cards */
+#week-this-grid > div, #week-last-grid > div { background: var(--sp-bubble) !important; border-color: var(--sp-frame) !important; box-shadow: 0 3px 10px var(--sp-shadow); }
+
+/* ── Needs Attention banner ── */
+.exceptions-banner { background: var(--sp-bubble); border-color: var(--sp-orange); }
+.exceptions-banner-title { color: var(--sp-orange); }
+.exception-chip { background: var(--sp-inner); border-color: var(--sp-orange); color: var(--sp-head); }
+.exception-chip .pj { color: var(--sp-green); }
+.exceptions-banner.clear { background: var(--sp-bubble); border-color: var(--sp-green); }
+.exceptions-banner.clear .exceptions-banner-title { color: var(--sp-green); }
+
+/* ── Buttons ── */
+.view-pin-btn { background: var(--sp-bubble); color: var(--sp-muted); border-color: var(--sp-soft); }
+.view-pin-btn.active { background: var(--sp-frame); border-color: var(--sp-frame); color: var(--sp-bg); }
+.spinner { border-color: var(--sp-soft); border-top-color: var(--sp-frame); }
+
+/* ── Colors written straight into the page by index.html / js/app.js ──
+   Light boxes become dark cells, dark text becomes light. Attribute matches
+   cover both the as-written form (#0d6748) and the browser's rgb() form. */
+#content [style*="background:#f7f8f6"], #content [style*="background:#eef3f8"],
+#content [style*="background:#ffffff"], #content [style*="background: rgb(255, 255, 255)"],
+#sidebar [style*="background:#fbfcfa"] { background: var(--sp-inner) !important; border-color: var(--sp-soft) !important; }
+body [style*="color:#0d6748"], body [style*="color: rgb(13, 103, 72)"] { color: var(--sp-green) !important; }
+body [style*="color:#568e7b"], body [style*="color: rgb(86, 142, 123)"] { color: var(--sp-teal) !important; }
+body [style*="color:#3a6ea5"], body [style*="color: rgb(58, 110, 165)"] { color: var(--sp-blue) !important; }
+body [style*="color:#1e3f66"], body [style*="color: rgb(30, 63, 102)"] { color: var(--sp-navy) !important; }
+body [style*="color:#232323"] { color: var(--sp-strong) !important; }
+body [style*="color:#6b6b6b"], body [style*="color:#9b9b9b"], body [style*="color: rgb(155, 155, 155)"],
+body [style*="color:#c8c8c8"], body [style*="color:#555"] { color: var(--sp-muted) !important; }
+/* Shipping Status stage stripes on the left edge of each card */
+[style*="border-left:4px solid #0d6748"] { border-left-color: var(--sp-green) !important; }
+[style*="border-left:4px solid #3a6ea5"] { border-left-color: var(--sp-blue) !important; }
+[style*="border-left:4px solid #1e3f66"] { border-left-color: var(--sp-navy) !important; }
+/* Empty progress bar fill set by js/app.js */
+[style*="background: rgb(224, 227, 222)"] { background: var(--sp-track) !important; }
+
+/* ── Production by Hour chart: spiderwebs in the top corners, behind the bars ── */
+#chart-section {
+  background-image: url(../img/web-corner-left.svg), url(../img/web-corner-right.svg) !important;
+  background-repeat: no-repeat !important;
+  background-position: left top, right top !important;
+  background-size: 200px 200px !important;
+}
+
+/* Machine / stage names always use the header color, even where the page
+   writes a machine color onto them (beats the inline-color swaps above). */
+body .card-machine-name[style], body .pace2-name[style], body .ship2-name[style] { color: var(--sp-head) !important; }
+
+/* Shift Progress bars use each machine's color; the two darkest greens
+   (30, 30+) disappear on the dark track, so lift them. */
+body .spg-bar[style*="background:#0d6748"] { background: #3fae7a !important; }
+body .spg-bar[style*="background:#1a7a54"] { background: #4fbf8c !important; }

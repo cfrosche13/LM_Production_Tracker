@@ -73,11 +73,13 @@ function localDateStr(d) {
   return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 }
 function today() { return localDateStr(_nowDate()); }
+// Optional seasonal swap for status colors, set by a theme script (e.g. js/fall.js
+// brightens them for a dark background). Same meaning, just a lighter shade.
+// Without it every color is returned unchanged.
+function themeColor(c) { return (window.EG_STATUS_COLOR_SWAP||{})[c] || c; }
 function oeeColor(pct) {
-  if (pct >= 85) return { bar:"#0d6748", text:"#0d6748" };
-  if (pct >= 65) return { bar:"#568e7b", text:"#568e7b" };
-  if (pct >= 40) return { bar:"#8aaa44", text:"#8aaa44" };
-  return { bar:"#c4770a", text:"#c4770a" };
+  const c = pct >= 85 ? "#0d6748" : pct >= 65 ? "#568e7b" : pct >= 40 ? "#8aaa44" : "#c4770a";
+  return { bar: themeColor(c), text: themeColor(c) };
 }
 
 function yesterday() {
@@ -336,11 +338,11 @@ function shiftElapsedFraction(group, td, shift) {
 // 5-tier color scale matching the reporting app's thresholds (lower-tier
 // inclusive: <=60 red, 61-70 orange, 71-80 yellow, 81-90 yellow-green, 91+ green).
 function paceColor(pct) {
-  if (pct<=60) return "#c4770a";
-  if (pct<=70) return "#d69a4a";
-  if (pct<=80) return "#c9b93a";
-  if (pct<=90) return "#8aaa44";
-  return "#0d6748";
+  if (pct<=60) return themeColor("#c4770a");
+  if (pct<=70) return themeColor("#d69a4a");
+  if (pct<=80) return themeColor("#c9b93a");
+  if (pct<=90) return themeColor("#8aaa44");
+  return themeColor("#0d6748");
 }
 // Animation duration in seconds — shorter = faster/more energetic motion.
 // Scales continuously with pct (clamped 15-140%) so the motion itself reads
@@ -440,7 +442,7 @@ function renderShippingPace() {
     const avg5     = key === "shipConfirm" ? shipConfirmStats.avg5    : (sb.avg5 && sb.avg5[key]);
     const expected = (avg5!=null) ? Math.round(avg5*frac) : null;
     const pct      = (expected!=null && expected>0) ? Math.round(actual/expected*100) : null;
-    const color    = pct!=null ? paceColor(pct) : "#c8cbc6";
+    const color    = pct!=null ? paceColor(pct) : themeColor("#c8cbc6");
     const dur      = paceAnimDuration(pct);
     const size     = flameSize(pct);
     const filt     = flameFilter(pct);
@@ -675,7 +677,7 @@ function renderChart(td) {
   const yScale = CHART_H/maxVal;
   const gridLines = 5;
 
-  ctx.strokeStyle="#e0e3de"; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.strokeStyle=T.gridColor||"#e0e3de"; ctx.lineWidth=1; ctx.setLineDash([3,3]);
   for (let i=0;i<=gridLines;i++) {
     const y = PAD_TOP+CHART_H-(i/gridLines)*CHART_H;
     ctx.beginPath(); ctx.moveTo(PAD_LEFT,y); ctx.lineTo(cssWidth-PAD_RIGHT,y); ctx.stroke();
@@ -886,7 +888,7 @@ function renderPace(td) {
     const printed  = sessions.reduce((a,s)=>a+(s.qtyGood||0),0);
     const expected = (plan!=null && frac!=null) ? Math.round(plan*frac) : null;
     const pct      = (expected!=null && expected>0) ? Math.round(printed/expected*100) : null;
-    const color    = pct!=null ? paceColor(pct) : "#c8cbc6";
+    const color    = pct!=null ? paceColor(pct) : themeColor("#c8cbc6");
     const dur      = paceAnimDuration(pct);
     const size     = flameSize(pct);
     const filt     = flameFilter(pct);

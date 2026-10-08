@@ -23,16 +23,31 @@
     machineColors: { "30": "#f1bd02", "30+": "#f9c91d", "H5": "#f5a524", "Colex": "#f08120",
                      "Wallets": "#e8710c", "Drinkware M1": "#f6d9a0", "Drinkware M2": "#efe6c4" },
     stationColors: { shipped: "#e79d82", readyToShip: "#aa91ab", sorting: "#46408a", assembly: "#7d6fb0" },
-    outline: "rgba(74,44,23,0.45)",
-    axisColor: "#6b4226",
+    outline: "rgba(0,0,0,0.5)",
+    axisColor: "#c9b39b",                    // spooky theme: muted bone on the dark background
+    gridColor: "rgba(247,196,143,0.18)",     // faint light-orange dashes
+  };
+
+  // Spooky theme (css/spooky.css): the dashboard's status colors are dark shades
+  // meant for a white page, so swap each for a brighter shade of the same color.
+  // Same meaning (green = on track, orange = behind); read by themeColor() in js/app.js.
+  window.EG_STATUS_COLOR_SWAP = {
+    "#0d6748": "#4cc38a",   // on track (dark green -> bright green)
+    "#568e7b": "#7cc4ab",
+    "#8aaa44": "#b5d46a",
+    "#c9b93a": "#e6d25a",
+    "#d69a4a": "#ffb766",
+    "#c4770a": "#ff8c2e",   // behind / down (orange -> bright orange)
+    "#c8cbc6": "#8a8090",   // no data yet
   };
 
   const style = document.createElement("style");
   style.textContent = `
   /* Sidebar spider */
-  #fall-spider { position: fixed; left: 19px; top: -26px; width: 1px; height: 0; background: rgba(74,44,23,0.55);
+  #fall-spider { position: fixed; left: 19px; top: -26px; width: 1px; height: 0; background: rgba(247,196,143,0.6);
     pointer-events: none; z-index: 60; animation: fall-spider-drop 16s ease-in-out infinite; }
-  #fall-spider svg { position: absolute; left: -15px; bottom: -27px; width: 30px; }
+  #fall-spider svg { position: absolute; left: -15px; bottom: -27px; width: 30px;
+    filter: drop-shadow(0 0 2px rgba(247,196,143,0.8)); }   /* soft rim so the dark spider shows on the dark theme */
   #fall-spider .legs { animation: fall-wiggle 0.5s ease-in-out infinite alternate; transform-origin: 16px 14px; }
   @keyframes fall-spider-drop {
     0%, 12%   { height: 0; }
@@ -263,7 +278,17 @@
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
+  // ── Pace screen gets the purple palette: body.spooky-pace while #content-pace is showing ──
+  function watchPace() {
+    const pace = document.getElementById("content-pace");
+    if (!pace) return;
+    const sync = () => document.body.classList.toggle("spooky-pace", pace.classList.contains("active"));
+    sync();
+    new MutationObserver(sync).observe(pace, { attributes: true, attributeFilter: ["class"] });
+  }
+
   function start() {
+    watchPace();
     watchZeros();
     pumpkinLegend();
     addSquirrel();
