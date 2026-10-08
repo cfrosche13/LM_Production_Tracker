@@ -152,8 +152,8 @@ def swap_value(prop, value):
     return new if changed else None
 
 
-FONT_HEAD = "'Jolly Lodger', 'Quicksand', sans-serif"  # owner pick 2026-10-08 (EGDash keeps Rubik Wet Paint)
-FONT_BODY = "'Quicksand', 'Libre Franklin', sans-serif"
+FONT_HEAD = "'Jolly Lodger', 'Itim', sans-serif"  # owner pick 2026-10-08 (EGDash keeps Rubik Wet Paint)
+FONT_BODY = "'Itim', 'Libre Franklin', sans-serif"  # owner pick 2026-10-08
 
 
 def scoped(selectors):
@@ -298,7 +298,7 @@ def main():
     ]
     for cls, pal in PALETTES.items():
         parts.append(f"body.{cls} {{\n" + "\n".join(f"  --sp-{k}: {v};" for k, v in pal.items()) + "\n}")
-    parts.append("\n/* ── Fonts: Quicksand body, Jolly Lodger headers ── */")
+    parts.append("\n/* ── Fonts: Itim body, Jolly Lodger headers ── */")
     parts.append(f"{SCOPE}, {SCOPE} * {{ font-family: {FONT_BODY} !important; }}")
     heads = [scoped(s) for s in head_selectors] + [f'{SCOPE} [style*="Abril Fatface"]']
     parts.append(",\n".join(heads) + f" {{ font-family: {FONT_HEAD} !important; font-weight: 400 !important; font-size-adjust: 0.72; letter-spacing: 0.02em; }}")  # Jolly Lodger is narrow with short lowercase: scale it up to a normal height
