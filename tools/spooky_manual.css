@@ -48,3 +48,10 @@ body.sp-purple [id^="t2-count-"], body.sp-purple [id^="tc-count-"] {
 body.sp-orange [id^="t2-count-"], body.sp-orange [id^="tc-count-"] {
   background: #fbe6cf !important; border-color: #e0904a !important; color: #4a2c17 !important;
 }
+
+/* Open Orders → Print Summary table (js/orderdetail.js styles it with a class, not inline) */
+body.sp-on #od-results .od-table { background: var(--sp-bubble) !important; color: var(--sp-text); }
+body.sp-on #od-results .od-table th { background: var(--sp-fill) !important; color: var(--sp-head) !important; }
+body.sp-on #od-results .od-table td { border-bottom-color: var(--sp-soft) !important; }
+body.sp-on #od-results .od-table tr.sub td { background: var(--sp-inner) !important; }
+body.sp-on #od-results .od-table tr.tot td { background: var(--sp-inner) !important; border-top-color: var(--sp-frame) !important; color: var(--sp-head); }

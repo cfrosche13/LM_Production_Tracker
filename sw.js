@@ -1,6 +1,6 @@
 // Operator Tracker PWA shell cache.
 // Bump CACHE_NAME whenever a shell file below changes, so old caches get cleared on activate.
-const CACHE_NAME = 'printtrack-shell-v41';
+const CACHE_NAME = 'printtrack-shell-v42';
 
 const SHELL_ASSETS = [
   './',
@@ -19,6 +19,7 @@ const SHELL_ASSETS = [
   './js/printheads.js',
   './js/reports.js',
   './js/orders.js',
+  './js/orderdetail.js',
   './js/settings.js',
   './js/printing.js',
   './js/stamped.js',

@@ -1429,6 +1429,7 @@ function stopAllTransitions() {
 <script src="js/printheads.js?v=11"></script>
 <script src="js/reports.js?v=5"></script>
 <script src="js/orders.js?v=4"></script>
+<script src="js/orderdetail.js?v=1"></script>
 <script src="js/settings.js?v=10"></script>
 <script src="js/printing.js?v=6"></script>
 <script src="js/stamped.js?v=4"></script>
@@ -1898,6 +1899,19 @@ function sessionGateAdmin() {
     <div id="orders-empty" style="font-family:'Josefin Slab',serif;font-size:13px;color:#7aaa88;text-align:center;padding:40px;">
       No open orders data yet — waiting on the next sync.
     </div>
+
+    <!-- Print summary from a Power BI Order Detail export (js/orderdetail.js) -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;flex-wrap:wrap;gap:8px;">
+      <span style="font-family:'Josefin Slab',serif;font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.12em;">Print Summary — Order Detail Export</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="file" id="od-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="odLoadFile(this)">
+        <button id="od-clear-btn" onclick="odClear()" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#fff;color:#1e6b40;border:1px solid #c2e8b8;border-radius:6px;padding:7px 12px;cursor:pointer;">✕ Clear</button>
+        <button id="od-print-btn" onclick="odPrint()" style="display:none;font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#fff;color:#1e6b40;border:1px solid #1e6b40;border-radius:6px;padding:7px 14px;cursor:pointer;letter-spacing:0.05em;">🖨 Print / Save PDF</button>
+        <button onclick="odPickFile()" style="font-family:'Josefin Slab',serif;font-size:11px;font-weight:700;background:#1e6b40;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;letter-spacing:0.05em;">📂 Load Order Detail</button>
+      </div>
+    </div>
+    <div id="od-status" style="font-family:'Josefin Slab',serif;font-size:11px;color:#7aaa88;margin-bottom:10px;">Load a Power BI Order Detail export to see what each machine needs to print.</div>
+    <div id="od-results" style="margin-bottom:24px;"></div>
 
     <!-- Tasks ready to close (SWMMS batch closure) -->
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #c2e8d0;flex-wrap:wrap;gap:8px;">

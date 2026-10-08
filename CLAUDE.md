@@ -49,6 +49,7 @@ js/maintenance.js       — Mechanical, cleaning (checklist), defective, maint l
 js/stamped.js           — Stamped mode tally, misprint, save/reset
 js/reports.js           — renderReports(), export to Excel, card detail modal, hourly chart
 js/orders.js            — Open orders import (XLSX upload), renderOpenOrders()
+js/orderdetail.js       — Open Orders tab "Print Summary": load a Power BI Order Detail export, per-machine SKU/size totals, print 1 page per machine + summary
 js/settings.js          — Efficiency targets table, OEE cycle time settings, updateTopCounters()
 js/app.js               — init(), switchView(), renderGrid(), selectMachine(), DOMContentLoaded
 ```
