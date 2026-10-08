@@ -8,8 +8,10 @@
 //  - Dark purple / orange "Haunted House" colors and fonts (css/spooky.css), alternating by tab
 //  - Tally screens: goo drips along the bottom of the Changeover / Waiting bar, and creatures
 //    in the empty space beside the cards that change with the piece-type tab (TALLY_CREATURES)
-//  - Every screen with empty space left and right: cobwebs in the top corners of that space,
-//    plus creatures on some tabs (VIEW_CREATURES)
+//  - Every screen with empty space left and right: creatures on some tabs (VIEW_CREATURES)
+//  - Every tab: the header ends at the same line (an empty strip stands in for the Changeover
+//    bar where a tab doesn't have one), and the spider hangs its web at the right end of that
+//    line, dropping down now and then
 //  Turns itself off after Halloween (Nov 1).
 // ══════════════════════════════════════════
 (function () {
@@ -43,14 +45,14 @@
   #hw-spider-wrap.show { display: block; }
   #hw-web { position: absolute; right: 0; top: 0; width: 150px; opacity: 0.55; transform: scaleX(-1); }
   #hw-thread { position: absolute; right: 46px; top: 24px; width: 1.5px; height: 0; background: #555;
-    animation: hw-drop 9s ease-in-out infinite; }
+    animation: hw-drop 22s ease-in-out infinite; }
   #hw-spider { position: absolute; left: -23px; bottom: -40px; width: 48px; }
   #hw-spider .legs { animation: hw-wiggle 0.5s ease-in-out infinite alternate; transform-origin: 16px 14px; }
   @keyframes hw-drop {
-    0%, 8%   { height: 0; }
-    30%      { height: 260px; }
-    36%      { height: 235px; }
-    42%, 70% { height: 255px; }
+    0%, 50%  { height: 0; }
+    62%      { height: 260px; }
+    65%      { height: 235px; }
+    68%, 80% { height: 255px; }
     92%,100% { height: 0; }
   }
   @keyframes hw-wiggle { from { transform: scaleX(1); } to { transform: scaleX(0.85); } }
@@ -87,11 +89,13 @@
     100%    { transform: translateY(40px); opacity: 0; }
   }
 
-  /* Cobwebs in the top corners of the empty side space */
-  .hw-cobweb { position: absolute; top: 0; width: 170px; height: 170px; opacity: 0.6; }
-  .hw-cobweb.l { left: 0; }
-  .hw-cobweb.r { right: 0; transform: scaleX(-1); }
-  .hw-cobweb svg { display: block; width: 100%; height: 100%; }
+  /* Stand-in for the Changeover / Waiting bar on tabs that don't have one, so the header
+     always ends at the same line (height copied from the real bar) */
+  #hw-bar-spacer { display: none; position: sticky; z-index: 198;
+    top: calc(var(--top-bar-h, 84px) + var(--nav-bar-h, 50px)); height: var(--hw-bar-h, 82px);
+    background: var(--sp-bg, #3a3242); border-bottom: 2px solid var(--sp-frame, #a07cc5);
+    box-shadow: 0 2px 14px rgba(0,0,0,0.4); }
+  body.sp-on #hw-bar-spacer.show { display: block; }
 
   /* Tally screens: creatures in the empty space left and right of the cards */
   .hw-gutter { position: fixed; overflow: hidden; pointer-events: none; z-index: 150; display: none; }
@@ -419,19 +423,6 @@
     "view-maintenance": "ghost-mix",
   };
 
-  // Corner cobweb, hub in the top-left corner (mirrored for the right side)
-  const COBWEB_SVG = (() => {
-    const R = 165, angs = [0, 15, 30, 45, 60, 75, 90], rings = [26, 52, 80, 110, 140, 162];
-    const pt = (r, a) => [r * Math.cos(a * Math.PI / 180), r * Math.sin(a * Math.PI / 180)];
-    let d = angs.map(a => { const [x, y] = pt(R, a); return `M0 0L${x.toFixed(1)} ${y.toFixed(1)}`; }).join("");
-    rings.forEach(r => angs.slice(1).forEach((a, i) => {
-      const [x1, y1] = pt(r, angs[i]), [x2, y2] = pt(r, a), [cx, cy] = pt(r * 0.82, (angs[i] + a) / 2);
-      d += `M${x1.toFixed(1)} ${y1.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    }));
-    return `<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="none"
-      stroke="var(--sp-head, #d9c2f0)" stroke-width="1.1" stroke-linecap="round"/></svg>`;
-  })();
-
   function ghostsHtml(kind, seed) {
     // a few ghosts at different spots, sizes and speeds, floating up the side space
     return [[10, 17, 0, 58], [50, 21, -7, 44], [28, 19, -13, 50], [66, 15, -4, 40]].map(([x, dur, delay, size], i) =>
@@ -515,6 +506,21 @@
         .map(([x, delay]) => `<span style="left:${x}%;animation-delay:${delay}s"></span>`).join("");
       tbar.appendChild(goo);
     }
+    const nav = document.getElementById("nav-bar");
+    const spacer = document.createElement("div");
+    spacer.id = "hw-bar-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+    if (nav) nav.insertAdjacentElement("afterend", spacer);
+    // Bottom of the header: the Changeover bar where a tab has one, otherwise the stand-in strip
+    function headerLine() {
+      const tb = document.getElementById("transition-bar");
+      const tbShown = !!(tb && tb.offsetParent !== null && tb.offsetHeight > 0);
+      if (tbShown) document.documentElement.style.setProperty("--hw-bar-h", tb.offsetHeight + "px");
+      spacer.classList.toggle("show", !tbShown);
+      const line = tbShown ? tb : spacer.offsetParent !== null ? spacer : nav;
+      return Math.max(0, line ? line.getBoundingClientRect().bottom : 0);
+    }
+
     const gutterL = make("hw-gutter-l", "", "hw-gutter");
     const gutterR = make("hw-gutter-r", "", "hw-gutter");
     gutterL.className = gutterR.className = "hw-gutter";   // own positioning, not .hw-deco
@@ -539,7 +545,7 @@
     }
 
     let shownKey = null;
-    function placeCreatures(show, spiderShown) {
+    function placeCreatures(show) {
       const view = document.querySelector(".view.active");
       let box = null, creature = null;
       if (show && view) {
@@ -555,21 +561,18 @@
       }
       if (!box) { gutterL.classList.remove("show"); gutterR.classList.remove("show"); return; }
 
-      const tb = document.getElementById("transition-bar"), nav = document.getElementById("nav-bar");
-      const bar = tb && tb.offsetParent ? tb : nav;
-      const top = Math.max(0, (bar ? bar.getBoundingClientRect().bottom : 0) + 24);
+      const top = headerLine() + 24;
       const widthL = Math.max(0, box.left - 24), widthR = Math.max(0, window.innerWidth - box.right - 24);
       Object.assign(gutterL.style, { top: top + "px", bottom: "0px", left: "8px", width: widthL + "px" });
       Object.assign(gutterR.style, { top: top + "px", bottom: "0px", left: (box.right + 16) + "px", width: widthR + "px" });
 
-      const key = `${view.id}|${creature}|${spiderShown}`;
+      const key = `${view.id}|${creature}`;
       if (key !== shownKey) {
         shownKey = key;
-        gutterL.innerHTML = `<div class="hw-cobweb l">${COBWEB_SVG}</div>` + (creature ? creatureHtml(creature, "L") : "");
-        // the dropping spider brings its own web on the right
-        gutterR.innerHTML = (spiderShown ? "" : `<div class="hw-cobweb r">${COBWEB_SVG}</div>`) + (creature ? creatureHtml(creature, "R") : "");
+        gutterL.innerHTML = creature ? creatureHtml(creature, "L") : "";
+        gutterR.innerHTML = creature ? creatureHtml(creature, "R") : "";
       }
-      gutterL.classList.toggle("show", widthL >= 90);
+      gutterL.classList.toggle("show", widthL >= 90 && gutterL.innerHTML !== "");
       gutterR.classList.toggle("show", widthR >= 90 && gutterR.innerHTML !== "");
     }
 
@@ -585,15 +588,13 @@
         document.getElementById("clean-modal")?.classList.contains("open") ||
         (document.getElementById("mech-modal")?.classList.contains("open") && isShown("mech-fix-timer"));
 
-      // Spider sits just under the top bar on the left
-      if (onTally) {
-        const tb = document.getElementById("top-bar");
-        spiderWrap.style.top = (tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0) + "px";
-      }
-      spiderWrap.classList.toggle("show", !!onTally);
+      // Spider: on every tab, web hanging from the right end of the header line
+      const line = headerLine();
+      spiderWrap.style.top = line + "px";
+      spiderWrap.classList.toggle("show", !loggedOut && !onMaintTimer);
       const onPrintTally = !loggedOut && printingActive && (isShown("print-tally-screen") || isShown("print-tally2-screen"));
       document.body.classList.toggle("sp-tally", !!onPrintTally);
-      placeCreatures(!loggedOut && !onMaintTimer, !!onTally);
+      placeCreatures(!loggedOut && !onMaintTimer);
       witch.classList.toggle("show", !!onMaintTimer);
 
       // Bat: first flight shortly after landing on home, then every ~25s
