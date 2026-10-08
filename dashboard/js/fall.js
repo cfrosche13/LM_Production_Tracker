@@ -3,9 +3,10 @@
 //  Motion stays in open space (the sidebar edge, the gaps above and below cards)
 //  and always passes BEHIND the cards, so it never covers the numbers.
 //  - Sidebar:          a spider drops down on its thread now and then
-//  - Machine Summary:  every so often a squirrel pops up from behind a random card, facing left
-//                      or right, looks around, and ducks back down (no running, no turning)
-//  - Weekly:           a line of dancing skeletons across the open space of the title line
+//  - Machine Summary:  every so often a little mummy pops up from behind a random card, facing left
+//                      or right, looks around, and ducks back down (no running, no turning).
+//                      Was a squirrel until 2026-10-08 (owner wanted something spookier, same motion).
+//  - Weekly:           a line of dancing skeletons standing on top of the This Week calendar boxes
 //                      (img/dancing-skeletons.gif, Pixabay, by MXJ_files, free under the Pixabay Content License)
 //  - Shipping Status:  a sleeping black kitten on a pumpkin fills the open space below the
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
@@ -58,19 +59,20 @@
   }
   @keyframes fall-wiggle { from { transform: scaleX(1); } to { transform: scaleX(0.85); } }
 
-  /* Machine Summary: squirrel — travels behind the cards */
+  /* Machine Summary: mummy — travels behind the cards */
   #view-today { position: relative; }
   #view-today .machine-card { position: relative; z-index: 1; }            /* cards sit in front of him */
-  #fall-squirrel-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-  #fall-squirrel { position: absolute; left: 0; top: 0; width: 58px; visibility: hidden; }
-  #fall-squirrel.show { visibility: visible; }
-  #fall-squirrel.left .face { transform: scaleX(-1); }
-  #fall-squirrel svg { display: block; width: 100%; overflow: visible; }
-  #fall-squirrel .whole { transform-origin: 40px 56px; transition: transform 0.35s ease; }
-  #fall-squirrel .tail { transform-origin: 22px 42px; }
-  #fall-squirrel.sitting .whole { transform: rotate(-16deg); }               /* sits up on its haunches */
-  #fall-squirrel.sitting .tail { animation: fall-tail-sit 1.4s ease-in-out infinite alternate; }
-  #fall-squirrel.sitting .head { animation: fall-look 1.5s ease-in-out infinite; transform-origin: 56px 36px; }
+  #fall-creature-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  #fall-creature { position: absolute; left: 0; top: 0; width: 58px; visibility: hidden; }
+  #fall-creature.show { visibility: visible; }
+  #fall-creature.left .face { transform: scaleX(-1); }
+  #fall-creature svg { display: block; width: 100%; overflow: visible; }
+  #fall-creature .whole { transform-origin: 40px 58px; transition: transform 0.35s ease; }
+  #fall-creature .tail { transform-origin: 34px 21px; }                      /* loose bandage behind his head */
+  #fall-creature .eye { filter: drop-shadow(0 0 2px #ffcf4a) drop-shadow(0 0 4px #ff8c2e); }
+  #fall-creature.sitting .whole { transform: rotate(-5deg); }                /* leans in, arms out */
+  #fall-creature.sitting .tail { animation: fall-tail-sit 1.4s ease-in-out infinite alternate; }
+  #fall-creature.sitting .head { animation: fall-look 1.5s ease-in-out infinite; transform-origin: 44px 34px; }
   @keyframes fall-tail-sit { from { transform: rotate(-4deg); } to { transform: rotate(6deg); } }
   @keyframes fall-look { 0%,60%,100% { transform: rotate(0deg); } 70%,90% { transform: rotate(-10deg); } }
 
@@ -78,15 +80,15 @@
   #fall-pumpkin-cat { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; }
   #fall-pumpkin-cat img { height: 100%; max-height: 380px; width: auto; }
 
-  /* Weekly: a chorus line of dancing skeletons filling the title line after the text.
-     The GIF is tiled as a repeating background, so it fills any screen width. */
-  #view-weekly > .section-title { display: flex; align-items: flex-end; }
-  #fall-skeletons { flex: 1; position: relative; align-self: stretch; margin-left: 24px; pointer-events: none; }
-  #fall-skeletons::before { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; height: 58px;
-    background: url(img/dancing-skeletons.gif) repeat-x left bottom / auto 58px;
+  /* Weekly: a chorus line of dancing skeletons standing on the top edge of the This Week calendar,
+     beside the "This Week" label (moved down from the title line 2026-10-08, where they ran into
+     the Shift Progress bars). The GIF is tiled as a repeating background, so it fills any width. */
+  #fall-skeleton-label { position: relative; }
+  #fall-skeletons { position: absolute; left: 110px; right: 0; bottom: -22px; height: 56px; pointer-events: none;
+    background: url(img/dancing-skeletons.gif) repeat-x left bottom / auto 56px;
     /* hide every other pair so there's a gap between them (owner: "that's a lot") */
-    -webkit-mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px);
-            mask-image: repeating-linear-gradient(to right, #000 0 58px, transparent 58px 116px); }
+    -webkit-mask-image: repeating-linear-gradient(to right, #000 0 56px, transparent 56px 112px);
+            mask-image: repeating-linear-gradient(to right, #000 0 56px, transparent 56px 112px); }
 
   /* Chart key: pumpkins instead of circles (each pumpkin keeps its series color) */
   #chart-legend .legend-dot.fall-pumpkin { width: 18px; height: 18px; background: none !important;
@@ -117,21 +119,22 @@
     <circle cx="14.5" cy="10" r="1" fill="#ff7a1a"/><circle cx="17.5" cy="10" r="1" fill="#ff7a1a"/>
   </svg>`;
 
-  const SQUIRREL_SVG = `<div class="face">
-  <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg"><g class="whole"><g class="hop">
-    <path class="tail" d="M24 44 C4 44 0 22 10 11 C18 2 32 7 29 17 C26 25 16 24 19 34 Z" fill="#9a4f24"/>
-    <ellipse cx="38" cy="43" rx="16" ry="11" fill="#b8652e"/>
-    <ellipse cx="43" cy="47" rx="9" ry="6" fill="#f0c89a"/>
-    <ellipse cx="28" cy="51" rx="8" ry="5" fill="#9a4f24"/>
-    <path d="M48 50 L54 57 M44 52 L47 58" stroke="#9a4f24" stroke-width="3.5" stroke-linecap="round"/>
+  const CREATURE_SVG = `<div class="face">
+  <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg"><g class="whole">
+    <path class="tail" d="M35 19 C27 16 22 23 13 20 C16 26 25 27 34 25 Z" fill="#d9ccb0"/>
+    <rect x="27" y="34" width="26" height="28" rx="9" fill="#e8dcc4"/>
+    <rect x="44" y="37" width="30" height="7" rx="3.5" fill="#e8dcc4"/>
+    <rect x="44" y="46" width="27" height="7" rx="3.5" fill="#ddd0b4"/>
+    <path d="M28 41 L52 38 M28 48 L52 45 M28 55 L52 52" stroke="#b9a98a" stroke-width="1.3" fill="none"/>
+    <path d="M53 37 L55 44 M61 37 L63 44 M68 37 L70 44 M54 46 L56 53 M62 46 L64 53" stroke="#b9a98a" stroke-width="1" fill="none"/>
     <g class="head">
-      <circle cx="56" cy="32" r="9.5" fill="#b8652e"/>
-      <path d="M51 25 L53 15 L58 23 Z" fill="#9a4f24"/>
-      <ellipse cx="61" cy="35" rx="4" ry="3" fill="#f0c89a"/>
-      <circle cx="59" cy="29.5" r="1.7" fill="#2b1a10"/>
-      <circle cx="65" cy="34" r="1.4" fill="#2b1a10"/>
+      <circle cx="44" cy="24" r="12" fill="#e8dcc4"/>
+      <path d="M32.5 19 L55 15 M33 31 L55 28 M35 35 L52 33" stroke="#b9a98a" stroke-width="1.3" fill="none"/>
+      <path d="M37.5 22.5 L55.5 19.5 L56 25 L38 27.5 Z" fill="#1d140f"/>
+      <circle class="eye" cx="50" cy="22.8" r="2.1" fill="#ffcf4a"/>
+      <circle cx="42.5" cy="23.9" r="1.3" fill="#ff8c2e" opacity="0.55"/>
     </g>
-  </g></g></svg></div>`;
+  </g></svg></div>`;
 
 
   const rand = (min, max) => min + Math.random() * (max - min);
@@ -140,15 +143,15 @@
     && !document.getElementById("content-pace")?.classList.contains("active");
 
   // ── Machine Summary: pop up behind a random card → look around → duck down → next card ──
-  function addSquirrel() {
+  function addCreature() {
     const view = document.getElementById("view-today");
     if (!view) return;
     const layer = document.createElement("div");
-    layer.id = "fall-squirrel-layer";
+    layer.id = "fall-creature-layer";
     layer.setAttribute("aria-hidden", "true");
     const sq = document.createElement("div");
-    sq.id = "fall-squirrel";
-    sq.innerHTML = SQUIRREL_SVG;
+    sq.id = "fall-creature";
+    sq.innerHTML = CREATURE_SVG;
     layer.appendChild(sq);
     view.prepend(layer);
 
@@ -207,9 +210,10 @@
 
   // ── Weekly: dancing skeletons ──
   function addSkeletons() {
-    const title = document.querySelector("#view-weekly > .section-title");
-    if (!title) return;
-    title.insertAdjacentHTML("beforeend", `<div id="fall-skeletons" aria-hidden="true"></div>`);
+    const label = document.getElementById("week-this-grid")?.previousElementSibling;   // the "This Week" label
+    if (!label) return;
+    label.id = "fall-skeleton-label";
+    label.insertAdjacentHTML("beforeend", `<div id="fall-skeletons" aria-hidden="true"></div>`);
   }
 
   // ── Chart key: swap each colored circle for a pumpkin in the same color ──
@@ -291,7 +295,7 @@
     watchPace();
     watchZeros();
     pumpkinLegend();
-    addSquirrel();
+    addCreature();
     addSkeletons();
     addPumpkin();
     const spider = document.createElement("div");
