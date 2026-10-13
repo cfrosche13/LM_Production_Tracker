@@ -230,6 +230,7 @@ function init() {
       _tallyStartTimes     = { ...(data.startTimes || {}) };
       _tallySavedCounts    = { ...data.counts };
       _tallySavedMisprints = { ...(data.misprints || {}) };
+      _tallyCountsDate     = todayStr();
       if (typeof tallyRenderCards === "function") tallyRenderCards();
       if (typeof _tallyAutoSaveNow === "function") _tallyAutoSaveNow();
     }

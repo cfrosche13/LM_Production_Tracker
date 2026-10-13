@@ -13,6 +13,7 @@ let _t2SavedCounts    = {};
 let _t2SavedMisprints = {};
 let _t2Cat            = "";
 let _t2SaveTimer      = null;
+let _t2CountsDate     = "";   // local date the in-memory counts belong to
 
 const _T2_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces", "Roll Media", "Drinkware"];
 
@@ -36,6 +37,14 @@ function _t2LocalTimeStr() {
 // isSwitching = false on first entry (counts restored from Firebase)
 function t2Init(isSwitching) {
   _t2Cat = "";
+  // A tablet left open overnight still holds yesterday's counts in memory —
+  // drop them on the first entry of a new day so the next operator starts at 0
+  const today = _t2LocalDateStr();
+  if (_t2CountsDate !== today) {
+    _t2Counts = {}; _t2Misprints = {}; _t2StartTimes = {};
+    _t2SavedCounts = {}; _t2SavedMisprints = {};
+    _t2CountsDate = today;
+  }
   _t2RenderCatTabs();
   if (isSwitching) {
     // Clear everything for the incoming operator

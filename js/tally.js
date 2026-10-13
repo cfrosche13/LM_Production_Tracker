@@ -17,6 +17,7 @@ let _tallySessionKeys    = [];        // Firebase keys written this session (for
 let _tallyMigrated       = {};        // tracks which piece types have had old cumulative records removed
 let _tallyActive         = false;
 let _tallyAutoSaveTimer  = null;
+let _tallyCountsDate     = "";        // local date the in-memory counts belong to
 
 const _TALLY_PIECE_CATS = ["Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces", "Roll Media", "Drinkware"];
 
@@ -193,6 +194,13 @@ function tallyLoginConfirm() {
     if (typeof t2Init === 'function') t2Init(_tallyIsSwitching);
     _tallyIsSwitching = false;
   } else {
+    // Drop yesterday's counts if the page was left open overnight
+    if (_tallyCountsDate && _tallyCountsDate !== todayStr()) {
+      _tallyCounts = {}; _tallyMisprints = {}; _tallyStartTimes = {};
+      _tallySavedCounts = {}; _tallySavedMisprints = {};
+      _tallySessionKeys = []; _tallyMigrated = {};
+    }
+    _tallyCountsDate = todayStr();
     _tallyActive = true;
     tallyRender();
     document.getElementById('print-tally-screen').style.display = 'flex';
