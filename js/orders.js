@@ -84,28 +84,28 @@ function renderReadyToCloseTasks() {
   if (!listEl) return;
 
   const data     = _readyToCloseTasks;
-  const allTasks = data?.tasks || [];
+  // Stamp-station tasks (Wallets — no piece type, machine "Stamp Station N")
+  // are left off this list entirely, same as the rest of the reporting.
+  const allTasks = (data?.tasks || []).filter(t =>
+    t.pieceType && !(t.machines || []).some(m => /^stamp station/i.test(m)));
 
-  // ── Keep filter option lists in sync with whatever's actually in the data, preserving the current selection ──
+  // ── Machine filter: the print-floor machines are always listed (even with
+  // nothing waiting) so Drinkware is there to pick; DW1 + DW2 share one
+  // "Drinkware" option. Any other machine that shows up in the data is added. ──
   if (machineSel) {
-    const machines = [...new Set(allTasks.flatMap(t => t.machines || []))].sort();
+    const machines = ["30", "30+", "H5", "Colex", "Drinkware"];
+    allTasks.flatMap(t => (t.machines || []).map(_closeTaskMachineGroup))
+      .forEach(m => { if (!machines.includes(m)) machines.push(m); });
     const prev = machineSel.value;
     machineSel.innerHTML = `<option value="">All Machines</option>` + machines.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
     if (machines.includes(prev)) machineSel.value = prev;
   }
-  // Wallets never carry a machine or piece type (they're stamped, not printed
-  // — same reason the Operator Tracker never runs OEE for Wallets), so a task
-  // with no pieceType is reliably a wallet, not a data gap. Bucketed as their
-  // own "Wallets" sub-category rather than mixed into — or silently dropped
-  // from — the regular piece-type list.
-  const hasWallets = allTasks.some(t => !t.pieceType);
   if (pieceSel) {
-    const pieceTypes = [...new Set(allTasks.map(t => t.pieceType).filter(Boolean))].sort();
+    const pieceTypes = [...new Set(allTasks.map(t => t.pieceType))].sort();
     const prev = pieceSel.value;
     pieceSel.innerHTML = `<option value="">All Piece Types</option>`
-      + (hasWallets ? `<option value="__wallets__">Wallets</option>` : "")
       + pieceTypes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
-    if (prev === "__wallets__" || pieceTypes.includes(prev)) pieceSel.value = prev;
+    if (pieceTypes.includes(prev)) pieceSel.value = prev;
   }
 
   const machineFilter = machineSel?.value || "";
@@ -121,13 +121,8 @@ function renderReadyToCloseTasks() {
   // whenever any wait-time filter (max or min) is active.
   const now = Date.now();
   const tasks = allTasks.filter(t => {
-    if (machineFilter && !(t.machines || []).includes(machineFilter)) return false;
-    // "All Piece Types" (pieceFilter === "") deliberately excludes Wallets —
-    // they're reachable only by explicitly picking the Wallets sub-category,
-    // never mixed into the default/unfiltered view.
-    if (pieceFilter === "__wallets__") { if (t.pieceType) return false; }
-    else if (pieceFilter)              { if (t.pieceType !== pieceFilter) return false; }
-    else                                { if (!t.pieceType) return false; }
+    if (machineFilter && !(t.machines || []).map(_closeTaskMachineGroup).includes(machineFilter)) return false;
+    if (pieceFilter && t.pieceType !== pieceFilter) return false;
     if (waitMs > 0) {
       if (!t.firstReadyAt) return false;
       const readyMs = now - new Date(t.firstReadyAt).getTime();
@@ -165,7 +160,7 @@ function renderReadyToCloseTasks() {
       readyMs < 86400000 ? Math.round(readyMs/3600000) + "h waiting" :
                             Math.round(readyMs/86400000) + "d waiting";
     const machineLabel = (t.machines || []).join(", ");
-    const pieceLabel = t.pieceType || "Wallets"; // missing pieceType only ever means Wallets — see hasWallets note above
+    const pieceLabel = t.pieceType;
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #c2e8b8;border-radius:8px;padding:8px 14px;">
         <span style="font-family:'Josefin Slab',serif;font-size:13px;color:#1a2a18;font-weight:700;">${esc(t.taskId)}</span>
@@ -177,6 +172,11 @@ function renderReadyToCloseTasks() {
         </div>
       </div>`;
   }).join("");
+}
+
+// Tempo names the Drinkware machines DW1 / DW2 — both filter as "Drinkware"
+function _closeTaskMachineGroup(m) {
+  return /^DW\d*$/i.test(m) ? "Drinkware" : m;
 }
 
 function copyReadyToCloseTasks() {
