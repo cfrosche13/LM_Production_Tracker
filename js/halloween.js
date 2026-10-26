@@ -20,6 +20,12 @@
 
   const css = `
   .hw-deco { position: fixed; pointer-events: none; z-index: 250; }
+  /* Party-day banner (Thursday 10/29) */
+  #hw-party-banner { display: flex; align-items: center; justify-content: center; padding: 8px 16px;
+    background: repeating-linear-gradient(135deg, #ff7a1a 0 22px, #0d0b10 22px 44px); }
+  #hw-party-banner .t { font-family: 'Creepster', cursive !important; font-size: 30px; letter-spacing: 2px;
+    background: #0d0b10; color: #8cff3a; padding: 2px 20px; border-radius: 10px; text-shadow: 0 0 10px #8cff3a;
+    white-space: nowrap; }
   #hw-pumpkin { font-size: 30px; align-self: center; margin-left: -8px; display: inline-block;
     animation: hw-wobble 3s ease-in-out infinite; transform-origin: 50% 90%; }
   @keyframes hw-wobble { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
@@ -490,6 +496,20 @@
     document.querySelectorAll(".view").forEach(v => themeWatch.observe(v, { attributes: true, attributeFilter: ["class"] }));
     // Tally 2.0 piece-type tabs: switch color the moment one is tapped (runs after its onclick)
     document.addEventListener("click", e => { if (e.target.closest("#t2-cat-tabs")) syncTheme(); });
+
+    // Company Halloween party, Thursday 10/29/2026: hazard-stripe banner above the top bar,
+    // all day (owner pick 2026-10-26). ?party=1 shows it any day for a preview.
+    const isPartyDay = now.getFullYear() === 2026 && now.getMonth() === 9 && now.getDate() === 29;
+    if (isPartyDay || new URLSearchParams(location.search).has("party")) {
+      const font = document.createElement("link");
+      font.rel = "stylesheet";
+      font.href = "https://fonts.googleapis.com/css2?family=Creepster&display=swap";
+      document.head.appendChild(font);
+      const banner = document.createElement("div");
+      banner.id = "hw-party-banner";
+      banner.innerHTML = `<span class="t">🎃 Happy Halloween, Evergreen! 🎃</span>`;
+      document.body.prepend(banner);
+    }
 
     // Pumpkin next to the logo
     const logo = document.querySelector("#top-bar > img");

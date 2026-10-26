@@ -36,7 +36,7 @@ body.sp-on #top-bar img { border-radius: 6px; }
 :where(body.sp-on) button { background-color: var(--sp-box); color: var(--sp-L-head); border-color: var(--sp-frame); }
 
 /* Halloween decorations are dark: give them a soft light rim and a light web on the dark theme */
-body.sp-on #hw-thread { background: var(--sp-head) !important; opacity: 0.7; }
+body.sp-on #hw-thread { background: color-mix(in srgb, var(--sp-head) 60%, transparent) !important; }
 body.sp-on #hw-web svg { stroke: var(--sp-head); }
 body.sp-on #hw-spider svg, body.sp-on #hw-bat svg, body.sp-on #hw-witch svg { filter: drop-shadow(0 0 3px var(--sp-head)); }
 

@@ -12,6 +12,7 @@
 //                      4 station cards (img/pumpkin-cat.gif, Pixabay "pumpkin cat relax" by MissKaLem,
 //                      free under the Pixabay Content License)
 //  - Production by Hour chart: bars colored like the owner's candy corn art (EG_CHART_THEME)
+//  - Jump scares every 30-60 min, and a party banner on Thursday 10/29/2026 (Halloween week)
 //  Self-contained: remove this file + its <script> tag to take it out.
 // ══════════════════════════════════════════
 (function () {
@@ -44,11 +45,44 @@
 
   const style = document.createElement("style");
   style.textContent = `
+  /* Party-day banner (Thursday 10/29) */
+  #fall-party-banner { flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 8px 16px;
+    border-radius: 12px; background: repeating-linear-gradient(135deg, #ff7a1a 0 22px, #0d0b10 22px 44px); }
+  #fall-party-banner .t { font-family: 'Creepster', cursive !important; font-size: 34px; letter-spacing: 2px;
+    background: #0d0b10; color: #8cff3a; padding: 2px 22px; border-radius: 10px; text-shadow: 0 0 10px #8cff3a; white-space: nowrap; }
+
+  /* Jump scares */
+  #fall-scare-layer { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
+  .js-scare { position: absolute; line-height: 1; filter: drop-shadow(0 0 30px rgba(0,0,0,.9));
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important; }
+  .js-dim { inset: 0; background: rgba(0,0,0,.55); animation: js-dim 1.5s ease-out forwards; }
+  @keyframes js-dim { 0% { opacity: 0; } 10% { opacity: 1; } 100% { opacity: 0; } }
+  .js-ghost { left: 50%; top: 50%; font-size: 40vmin; animation: js-rush 1.5s ease-in forwards; }
+  @keyframes js-rush {
+    0% { transform: translate(-50%,-50%) scale(.05); opacity: 0; }  15% { opacity: 1; }
+    70% { transform: translate(-50%,-50%) scale(1.6); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; } }
+  .js-skel { left: 50%; bottom: 0; font-size: 70vmin; animation: js-popup 1.8s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes js-popup { 0% { transform: translate(-50%, 100%); } 25% { transform: translate(-50%, 8%); }
+    70% { transform: translate(-50%, 8%) rotate(-4deg); } 100% { transform: translate(-50%, 110%); } }
+  .js-spider { left: 50%; top: 0; font-size: 55vmin; animation: js-drop 2s cubic-bezier(.3,1.5,.5,1) forwards; }
+  .js-spider::before { content: ""; position: absolute; left: 50%; bottom: 92%; width: 3px; height: 200vh; background: #ddd; transform: translateX(-50%); }
+  @keyframes js-drop { 0% { transform: translate(-50%, -110%); } 30% { transform: translate(-50%, 10%); }
+    40% { transform: translate(-50%, 2%); } 75% { transform: translate(-50%, 6%); } 100% { transform: translate(-50%, -120%); } }
+  .js-pumpkin { left: 50%; top: 50%; font-size: 65vmin; animation: js-flash 1.4s ease-out forwards; }
+  @keyframes js-flash {
+    0% { transform: translate(-50%,-50%) scale(.3); opacity: 0; }
+    12% { transform: translate(-50%,-50%) scale(1.15); opacity: 1; filter: drop-shadow(0 0 60px #ff7a1a); }
+    22% { transform: translate(-50%,-50%) scale(1); }  75% { opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(1.05); opacity: 0; } }
+  .js-bat { font-size: 14vmin; animation: js-swarm 1.6s ease-in forwards; }
+  @keyframes js-swarm { 0% { transform: translateX(-30vw) scale(.6); } 100% { transform: translateX(130vw) scale(1.3) rotate(10deg); } }
+
   /* Sidebar spider */
-  #fall-spider { position: fixed; left: 19px; top: -26px; width: 1px; height: 0; background: rgba(247,196,143,0.6);
+  #fall-spider { position: fixed; left: 19px; top: -26px; width: 1px; height: 0; background: color-mix(in srgb, var(--sp-head, #f7c48f) 60%, transparent);
     pointer-events: none; z-index: 60; animation: fall-spider-drop 16s ease-in-out infinite; }
   #fall-spider svg { position: absolute; left: -15px; bottom: -27px; width: 30px;
-    filter: drop-shadow(0 0 2px rgba(247,196,143,0.8)); }   /* soft rim so the dark spider shows on the dark theme */
+    filter: drop-shadow(0 0 2px var(--sp-head, #f7c48f)); }   /* soft rim so the dark spider shows on the dark theme */
   #fall-spider .legs { animation: fall-wiggle 0.5s ease-in-out infinite alternate; transform-origin: 16px 14px; }
   @keyframes fall-spider-drop {
     0%, 12%   { height: 0; }
@@ -282,17 +316,83 @@
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
-  // ── Pace screen gets the purple palette: body.spooky-pace while #content-pace is showing ──
-  function watchPace() {
+  // ── One neon color per screen (css/spooky.css): Machine Summary orange (default),
+  //    Weekly pink, Shipping green, Pace purple ──
+  function watchScreens() {
     const pace = document.getElementById("content-pace");
-    if (!pace) return;
-    const sync = () => document.body.classList.toggle("spooky-pace", pace.classList.contains("active"));
+    const weekly = document.getElementById("view-weekly");
+    const shipping = document.getElementById("view-shipping");
+    const sync = () => {
+      const onPace = !!pace?.classList.contains("active");
+      document.body.classList.toggle("spooky-pace", onPace);
+      document.body.classList.toggle("spooky-weekly", !onPace && !!weekly?.classList.contains("active"));
+      document.body.classList.toggle("spooky-shipping", !onPace && !!shipping?.classList.contains("active"));
+    };
     sync();
-    new MutationObserver(sync).observe(pace, { attributes: true, attributeFilter: ["class"] });
+    const mo = new MutationObserver(sync);
+    [pace, weekly, shipping].forEach(el => el && mo.observe(el, { attributes: true, attributeFilter: ["class"] }));
+  }
+
+  // ── Company Halloween party, Thursday 10/29/2026: hazard-stripe banner across the top of the
+  //    content area, all day (owner pick 2026-10-26). ?party=1 shows it any day for a preview. ──
+  const params = new URLSearchParams(location.search);
+  const now = new Date();
+  function addPartyBanner() {
+    const isPartyDay = now.getFullYear() === 2026 && now.getMonth() === 9 && now.getDate() === 29;
+    if (!isPartyDay && !params.has("party")) return;
+    const content = document.getElementById("content");
+    if (!content) return;
+    const font = document.createElement("link");
+    font.rel = "stylesheet";
+    font.href = "https://fonts.googleapis.com/css2?family=Creepster&display=swap";
+    document.head.appendChild(font);
+    const banner = document.createElement("div");
+    banner.id = "fall-party-banner";
+    banner.innerHTML = `<span class="t">🎃 Happy Halloween, Evergreen! 🎃</span>`;
+    content.prepend(banner);
+  }
+
+  // ── Jump scares (owner pick 2026-10-26, EGDash only): every 30-60 minutes something big pops
+  //    out for under 2 seconds. No sound, and it never blocks anything (pointer-events: none).
+  //    Off from Nov 1. ?scare=1 runs one every 10 seconds for a preview. ──
+  const SCARES = {
+    ghost:   () => [["js-ghost", "👻"]],
+    skel:    () => [["js-skel", "💀"]],
+    spider:  () => [["js-spider", "🕷️"]],
+    pumpkin: () => [["js-pumpkin", "🎃"]],
+    bats:    () => Array.from({ length: 9 }, (_, i) =>
+      ["js-bat", "🦇", `top:${8 + Math.random() * 70}vh;left:0;animation-delay:${i * 0.08}s`]),
+  };
+  function addJumpScares() {
+    if (now.getMonth() === 10 || now.getMonth() === 11) return;
+    const layer = document.createElement("div");
+    layer.id = "fall-scare-layer";
+    layer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(layer);
+    let last = "";
+    function scare() {
+      const kinds = Object.keys(SCARES).filter(k => k !== last);   // never the same one twice in a row
+      last = kinds[Math.floor(Math.random() * kinds.length)];
+      layer.innerHTML = `<div class="js-scare js-dim"></div>`;
+      SCARES[last]().forEach(([cls, emoji, style]) => {
+        const el = document.createElement("div");
+        el.className = "js-scare " + cls;
+        el.textContent = emoji;
+        if (style) el.style.cssText = style;
+        layer.appendChild(el);
+      });
+      setTimeout(() => { layer.innerHTML = ""; }, 2600);
+    }
+    const test = params.has("scare");
+    (function next() {
+      setTimeout(() => { scare(); next(); }, test ? 10000 : rand(30, 60) * 60000);
+    })();
   }
 
   function start() {
-    watchPace();
+    addPartyBanner();
+    addJumpScares();
+    watchScreens();
     watchZeros();
     pumpkinLegend();
     addCreature();
