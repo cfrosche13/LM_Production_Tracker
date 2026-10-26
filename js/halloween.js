@@ -463,22 +463,33 @@
   }
 
   // ── Dark "Haunted House" colors (css/spooky.css, built by tools/build_spooky_css.py) ──
-  // Tabs alternate: Printing purple, Maintenance orange, Colex purple, Stamped orange,
-  // Settings purple, Open Orders orange. Waiting opens from Printing, so it's purple too.
+  // Halloween week (owner pick 2026-10-26): black page, one neon color per tab. Waiting opens
+  // from Printing, so it's purple too. On Tally 2.0 the 8 piece-type tabs (All + 7) rotate
+  // through all four colors instead, so each color shows up twice.
   // The theme only applies while body has sp-on, so it goes away with the rest of this file on Nov 1.
-  const PURPLE_VIEWS = ["view-printing", "view-waiting", "view-colex", "view-settings"];
+  const SP_COLORS = ["sp-purple", "sp-orange", "sp-pink", "sp-green"];
+  const VIEW_COLOR = {
+    "view-printing": "sp-purple", "view-waiting": "sp-purple", "view-maintenance": "sp-orange",
+    "view-colex": "sp-pink", "view-stamped": "sp-green", "view-settings": "sp-purple", "view-orders": "sp-orange",
+  };
+  const TALLY_ORDER = ["", "Coir OC", "Coir FC", "Non-Coir Mats", "Signs", "Display Pieces", "Roll Media", "Drinkware"];
   function syncTheme() {
     const active = document.querySelector(".view.active");
-    const purple = !active || PURPLE_VIEWS.includes(active.id);
+    let color = (active && VIEW_COLOR[active.id]) || "sp-purple";
+    if (active?.id === "view-printing" && isShown("print-tally2-screen")) {
+      const i = TALLY_ORDER.indexOf(typeof _t2Cat === "string" ? _t2Cat : "");
+      if (i >= 0) color = SP_COLORS[i % SP_COLORS.length];
+    }
     document.body.classList.add("sp-on");
-    document.body.classList.toggle("sp-purple", purple);
-    document.body.classList.toggle("sp-orange", !purple);
+    SP_COLORS.forEach(c => document.body.classList.toggle(c, c === color));
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     syncTheme();
     const themeWatch = new MutationObserver(syncTheme);
     document.querySelectorAll(".view").forEach(v => themeWatch.observe(v, { attributes: true, attributeFilter: ["class"] }));
+    // Tally 2.0 piece-type tabs: switch color the moment one is tapped (runs after its onclick)
+    document.addEventListener("click", e => { if (e.target.closest("#t2-cat-tabs")) syncTheme(); });
 
     // Pumpkin next to the logo
     const logo = document.querySelector("#top-bar > img");
@@ -578,6 +589,7 @@
 
     let lastBat = 0;
     function tick() {
+      syncTheme();   // also catches the Tally 2.0 screen opening/closing
       const loggedOut = isShown("session-gate") || isShown("pt-login-screen");
       const printingActive = document.getElementById("view-printing")?.classList.contains("active");
       const onTally = !loggedOut && (

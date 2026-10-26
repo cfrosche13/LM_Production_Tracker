@@ -5,11 +5,13 @@ body.sp-on #top-bar, body.sp-on #nav-bar, body.sp-on #transition-bar {
 }
 body.sp-on #reports-grid-scroll-wrap::after { background: linear-gradient(transparent, var(--sp-bg)); }
 
-/* Tabs: each tab's label is in its own palette (Printing, Colex and Settings lilac;
-   Maintenance, Stamped and Open Orders light orange). The open tab is filled. */
+/* Tabs: each tab's label is in its own neon color (Printing and Settings purple, Maintenance
+   and Open Orders orange, Colex pink, Stamped green). The open tab is filled. */
 body.sp-on .nav-btn { background: transparent !important; font-size: 17px; text-transform: none; letter-spacing: 0.02em; }
-body.sp-on #nav-printing, body.sp-on #nav-colex, body.sp-on #nav-settings, body.sp-on #nav-waiting { color: #d9c2f0 !important; }
-body.sp-on #nav-maintenance, body.sp-on #nav-stamped, body.sp-on #nav-orders { color: #f7c48f !important; }
+body.sp-on #nav-printing, body.sp-on #nav-settings, body.sp-on #nav-waiting { color: #d4b3ff !important; }
+body.sp-on #nav-maintenance, body.sp-on #nav-orders { color: #ffbf85 !important; }
+body.sp-on #nav-colex { color: #ffadd4 !important; }
+body.sp-on #nav-stamped { color: #c9ff9e !important; }
 body.sp-on .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.06) !important; }
 body.sp-on .nav-btn.active { background: var(--sp-bubble) !important; border-bottom-color: var(--sp-frame) !important; }
 
@@ -34,9 +36,9 @@ body.sp-on #top-bar img { border-radius: 6px; }
 :where(body.sp-on) button { background-color: var(--sp-box); color: var(--sp-L-head); border-color: var(--sp-frame); }
 
 /* Halloween decorations are dark: give them a soft light rim and a light web on the dark theme */
-body.sp-on #hw-thread { background: rgba(247,196,143,0.6) !important; }
-body.sp-on #hw-web svg { stroke: #f7c48f; }
-body.sp-on #hw-spider svg, body.sp-on #hw-bat svg, body.sp-on #hw-witch svg { filter: drop-shadow(0 0 3px rgba(247,196,143,0.75)); }
+body.sp-on #hw-thread { background: var(--sp-head) !important; opacity: 0.7; }
+body.sp-on #hw-web svg { stroke: var(--sp-head); }
+body.sp-on #hw-spider svg, body.sp-on #hw-bat svg, body.sp-on #hw-witch svg { filter: drop-shadow(0 0 3px var(--sp-head)); }
 
 /* Full-screen backdrops were a dark green tint: make them plain dark */
 body.sp-on #tally-login-overlay, body.sp-on #session-gate { background: rgba(0,0,0,0.75) !important; }
@@ -44,11 +46,8 @@ body.sp-on [style*="background:rgba(255,255,255,0.92)"] { background: rgba(0,0,0
 
 /* Tally count boxes (Tally and Tally 2.0 piece cards): light inside with a dark number,
    so the count stands out from the dark card (owner request 2026-10-08) */
-body.sp-purple [id^="t2-count-"], body.sp-purple [id^="tc-count-"] {
-  background: #ece2f7 !important; border-color: #a07cc5 !important; color: #3a2452 !important;
-}
-body.sp-orange [id^="t2-count-"], body.sp-orange [id^="tc-count-"] {
-  background: #fbe6cf !important; border-color: #e0904a !important; color: #4a2c17 !important;
+body.sp-on [id^="t2-count-"], body.sp-on [id^="tc-count-"] {
+  background: var(--sp-L-inner) !important; border-color: var(--sp-frame) !important; color: var(--sp-L-text) !important;
 }
 
 /* Open Orders → Print Summary table (js/orderdetail.js styles it with a class, not inline) */

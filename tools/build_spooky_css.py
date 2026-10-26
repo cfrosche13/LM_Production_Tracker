@@ -11,7 +11,7 @@ maps every color it finds into the theme:
     el.style.color)
 
 Everything is scoped to body.sp-on, which js/halloween.js adds (with
-sp-purple or sp-orange for the tab that's showing), so the theme switches off
+sp-purple/sp-orange/sp-pink/sp-green for the tab that's showing), so the theme switches off
 with the rest of the Halloween decorations on Nov 1.
 
 Run from the repo root:  python tools/build_spooky_css.py
@@ -26,20 +26,30 @@ SCOPE = "body.sp-on"
 # ── Palettes (CSS variables, switched by body class) ──
 # "box" is the light middle tone for every card/box (owner request 2026-10-08: lighter boxes
 # for contrast); "L-*" are the dark text colors used inside those boxes.
+# Halloween week (owner pick 2026-10-26): black page with one neon color per tab, and the
+# Tally 2.0 piece types rotating through all four (js/halloween.js picks the class).
+_BLACK = {"bg": "#0d0b10", "bubble": "#18141d", "inner": "#221c29", "text": "#f2ecf7",
+          "muted": "#b9adc4", "deep": "#050407"}
 PALETTES = {
-    "sp-purple": {  # Printing, Waiting, Colex, Settings
-        "bg": "#3a3242", "bubble": "#4a4054", "inner": "#574c62", "soft": "#6c5f7a",
-        "frame": "#a07cc5", "head": "#d9c2f0", "text": "#ece4d6", "muted": "#c3b8a8",
-        "fill": "#7d55a8", "deep": "#2a2233",
-        "box": "#d6c7ea", "L-text": "#2a1d3a", "L-head": "#4b2466", "L-muted": "#5d4b6b",
-        "L-inner": "#ece2f7", "L-soft": "#a48cc4",
+    "sp-purple": {**_BLACK,  # Printing, Waiting, Settings
+        "soft": "#4a2f6b", "frame": "#a45cff", "head": "#d4b3ff", "fill": "#7a3fd1",
+        "box": "#e3d2ff", "L-text": "#2a1340", "L-head": "#4b1f80", "L-muted": "#5d4b6b",
+        "L-inner": "#f1e8ff", "L-soft": "#a98bd6",
     },
-    "sp-orange": {  # Maintenance, Stamped, Open Orders
-        "bg": "#2b1e17", "bubble": "#3b2a20", "inner": "#4a3629", "soft": "#614636",
-        "frame": "#e0904a", "head": "#f7c48f", "text": "#f2e6d6", "muted": "#c9b39b",
-        "fill": "#b8621f", "deep": "#1d140f",
-        "box": "#f2d2ad", "L-text": "#3a2414", "L-head": "#7a3d10", "L-muted": "#6b4a33",
-        "L-inner": "#fbe6cf", "L-soft": "#c99a6e",
+    "sp-orange": {**_BLACK,  # Maintenance, Open Orders
+        "soft": "#6b3a17", "frame": "#ff7a1a", "head": "#ffbf85", "fill": "#c75a0e",
+        "box": "#ffd9b8", "L-text": "#3a1d08", "L-head": "#8a3c05", "L-muted": "#6b4a33",
+        "L-inner": "#ffeddc", "L-soft": "#d99a66",
+    },
+    "sp-pink": {**_BLACK,  # Colex
+        "soft": "#6b2049", "frame": "#ff4fa3", "head": "#ffadd4", "fill": "#c72a78",
+        "box": "#ffd1e6", "L-text": "#4a0f2c", "L-head": "#8f1756", "L-muted": "#6e4258",
+        "L-inner": "#ffe8f2", "L-soft": "#e08ab3",
+    },
+    "sp-green": {**_BLACK,  # Stamped. Slime green leans yellow so it doesn't read as "on track"
+        "soft": "#2f5a17", "frame": "#8cff3a", "head": "#c9ff9e", "fill": "#3f8f12",
+        "box": "#dcffc4", "L-text": "#1d3a0a", "L-head": "#2f6b0c", "L-muted": "#4a6038",
+        "L-inner": "#eeffe2", "L-soft": "#8fd65e",
     },
 }
 # Status colors keep their meaning; brighter on the dark page, deeper inside the light boxes.
