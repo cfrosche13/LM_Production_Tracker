@@ -15,7 +15,7 @@
   (function () {
     var HALLOWEEN_END = new Date(2026, 10, 1); // Nov 1, 2026, local midnight
     var left = HALLOWEEN_END - new Date();
-    if (left <= 0) return;
+    if (left <= 0 || /[?&]normal\b/.test(location.search)) return; // ?normal=1 previews the after-Halloween look
     document.write(
       '<link href="https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />' +
       '<link rel="stylesheet" href="css/spooky.css?v=3" />' +
