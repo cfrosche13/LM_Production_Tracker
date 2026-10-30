@@ -8,9 +8,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="css/styles.css" />
 <!-- SPOOKY THEME (was fall.css until 2026-10-08; link css/fall.css instead to bring the light fall look back).
-     Remove these two <link>s and the fall.js <script> below to go back to the normal look -->
-<link href="https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/spooky.css?v=3" />
+     Only loads before HALLOWEEN_END, then the dashboard is back to the normal look. The files stay on
+     disk for next year: move HALLOWEEN_END forward to turn it back on. The TV never reloads on its own,
+     so the page reloads itself at HALLOWEEN_END to drop the theme without anyone touching it. -->
+<script>
+  (function () {
+    var HALLOWEEN_END = new Date(2026, 10, 1); // Nov 1, 2026, local midnight
+    var left = HALLOWEEN_END - new Date();
+    if (left <= 0) return;
+    document.write(
+      '<link href="https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />' +
+      '<link rel="stylesheet" href="css/spooky.css?v=3" />' +
+      '<script src="js/fall.js?v=23"><\/script>');
+    setTimeout(function () { location.reload(); }, left + 5000);
+  })();
+</script>
 <!-- Bump the ?v= query param whenever js/app.js changes — this page has no
      service worker, and it's typically left open on a TV for days, so the
      browser (and Netlify's CDN) can otherwise keep serving a stale copy
@@ -18,7 +30,6 @@
      machinePlan()/findPlanRecord() fix didn't visibly land until this was
      added. -->
 <script type="module" src="js/app.js?v=8"></script>
-<script src="js/fall.js?v=23"></script>
 </head>
 <body>
 
